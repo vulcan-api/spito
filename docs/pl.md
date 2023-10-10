@@ -1,15 +1,13 @@
 # SPITO RULES specyfikacyja (API)
-- areWeOnGoodDistro(string desiredDistro)
-    - czy mamy dobre distro na obiektu terenie
-- isPackageInstalled(string version)
+- getCurrentDistro() -> Struct (name and version)
+    - zwraca jakie mamy distro
+- isPackageInstalled(string version) -> bool
     - ten grzesio powinien sprawdzać lokalnym, natywnym package managerem, czy dany pakiet jest zainstalowany 
     - distro-dependent
-- isServiceRunning()
+- isServiceRunning() -> bool # idk czy to ma sens (daemonInfo imo better)
     - ten grzybogniew należy, aby sprawdził, czy chodzi jakiś service
     - distro-dependent (ale i tak głównie używają ludzie systemd)
-- isConfigOnSite(string pathToConfig): ConfigHook
-    - nie wiem jak technicznie miałoby to działać, ale teorytycznie powinno sprawdzać czy config jest na terenie obiektu
-- configIncludes(ConfigHook config, string variableToInclude, string valueToBeOnSite?)
-    - sprawdza, czy ten dziad zawiera daną opcję i ewentualnie czy posiada daną wartość
-- configExcludes(ConfigHook config, string variableToInclude, string valueToNotBeOnSite?)
-    - sprawdza, czy ten dziad zawiera daną opcję i ewentualnie czy posiada daną wartość
+- daemonInfo(string daemonName) -> Struct
+    - Zwraca możliwie jak najwięcej info o daemonie
+  # fs
+- read-only api
