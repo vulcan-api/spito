@@ -40,8 +40,8 @@ func iFErrPrint(err error) {
 	}
 }
 
-func getPackageInfo(packageName string, packageManager string) (string, error) {
-	cmd := exec.Command(packageManager, "-Qi", packageName)
+func getPackageInfoString(packageName string, packageManager string) (string, error) {
+	cmd := exec.Command("LANG=C", packageManager, "-Qi", packageName)
 	data, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -50,7 +50,7 @@ func getPackageInfo(packageName string, packageManager string) (string, error) {
 	return string(data), nil
 }
 
-func (p *Package) SetField(key string, value string) {
+func (p *Package) setField(key string, value string) {
 	fieldType, _ := reflections.GetFieldType(p, key)
 	if value == "None" {
 		return
@@ -71,7 +71,7 @@ func (p *Package) SetField(key string, value string) {
 	case "bool":
 		err := reflections.SetField(p, key, value == "Yes")
 		iFErrPrint(err)
-		
+
 		break
 	default:
 		err := errors.New("Handling type " + fieldType + " in Package is not implemented")
@@ -80,7 +80,7 @@ func (p *Package) SetField(key string, value string) {
 }
 
 func (p *Package) Get(name string) {
-	packageInfoString, err := getPackageInfo(name, packageManager)
+	packageInfoString, err := getPackageInfoString(name, packageManager)
 	if err != nil {
 		return
 	}
@@ -118,13 +118,13 @@ func (p *Package) Get(name string) {
 		}
 
 		if len(multiLineKey) != 0 {
-			p.SetField(multiLineKey, multiLineValue)
+			p.setField(multiLineKey, multiLineValue)
 
 			multiLineKey = ""
 			multiLineValue = ""
 			continue
 		}
 
-		p.SetField(key, value)
+		p.setField(key, value)
 	}
 }
