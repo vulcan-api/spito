@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"github.com/nasz-elektryk/spito-rules/api"
 	"fmt"
 )
 
