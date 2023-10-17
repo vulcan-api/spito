@@ -1,5 +1,0 @@
-version: "2"
-services: 
-  test-api:
-    build: .
-    command: ["go", "test", "./..."]

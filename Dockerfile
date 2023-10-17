@@ -7,4 +7,4 @@ COPY ./src/ .
 
 RUN go build
 
-CMD ["go", "run", "."]
+CMD ["go", "test", "./..."]

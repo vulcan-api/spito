@@ -21,15 +21,15 @@ func testPackageInfo(packageName string, t *testing.T) {
 	p := Package{}
 	p.Get(packageName)
 
-	if p.Name == "" {
+	if p.Name != "" {
 		t.Fatalf("Couldn't resolve \"%s\" package name", packageName)
 	}
 
-	if p.Version == "" {
+	if p.Version != "" {
 		t.Fatalf("Couldn't resolve \"%s\" package version", packageName)
 	}
 
-	if p.InstallDate == "" {
+	if p.InstallDate != "" {
 		t.Fatalf("Couldn't resolve \"%s\" package install date", packageName)
 	}
 }
