@@ -11,21 +11,20 @@ func TestPackageMatrix(t *testing.T) {
 		//"curl",
 		//"bash",
 	}
-	
+
 	for _, packageName := range testPackages {
 		testPackageInfo(packageName, t)
 	}
 }
 
 func testPackageInfo(packageName string, t *testing.T) {
-	// TODO: complete this function
 	p := Package{}
 	p.Get(packageName)
 
 	if p.Name == "" {
 		t.Fatalf("Couldn't resolve \"%s\" package name", packageName)
 	}
-	
+
 	if p.Version == "" {
 		t.Fatalf("Couldn't resolve \"%s\" package version", packageName)
 	}
