@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello World!")
+	fmt.Println("Wrong way, run instead \"go test ./...\"")
 }
