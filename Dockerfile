@@ -7,4 +7,4 @@ COPY ./src/ .
 
 RUN go build
 
-CMD ["go", "test", "./..."]
+CMD ["/sbin/init"]
