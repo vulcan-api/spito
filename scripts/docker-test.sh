@@ -12,4 +12,3 @@ docker stop $container_id
 docker rmi -f $image_id
 
 exit $exit_code
-
