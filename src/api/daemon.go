@@ -85,11 +85,10 @@ func GetSystemdDaemon(daemonName string) (Daemon, error) {
 	if activeErr != nil {
 		return daemonInfo, activeErr
 	}
-
 	return daemonInfo, enabledErr
 }
 
-func GetDaemon(daemonName string, initSystem string) (Daemon, error) {
+func GetDaemon(initSystem string, daemonName string) (Daemon, error) {
 	if initSystem == systemd {
 		return GetSystemdDaemon(daemonName)
 	}
