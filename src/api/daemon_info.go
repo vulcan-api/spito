@@ -17,8 +17,7 @@ type Daemon struct {
 func execSystemctl(command string, daemon string) (string, error) {
 	cmd := exec.Command(systemd, command, daemon)
 	stdout, err := cmd.Output()
-	toReturn := strings.TrimSpace(string(stdout))
-	return toReturn, err
+	return strings.TrimSpace(string(stdout)), err
 }
 
 func GetSystemdDaemon(daemonName string) (Daemon, error) {
@@ -45,5 +44,5 @@ func GetDaemon(daemonName string, initSystem string) (Daemon, error) {
 	if initSystem == systemd {
 		return GetSystemdDaemon(daemonName)
 	}
-	return Daemon{}, errors.New("none known init system has been chosen")
+	return Daemon{}, errors.New("no known init system has been chosen")
 }
