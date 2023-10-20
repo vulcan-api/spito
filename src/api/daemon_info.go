@@ -8,10 +8,62 @@ import (
 
 const systemd = "systemctl"
 
+type DaemonActive int
+type DaemonEnabled int
+
+const unknown = -1
+
+const (
+	active   DaemonActive = iota
+	inactive              // what's funny systemd treats unrecognized daemons as inactive
+	activating
+	deactivating
+	failed
+)
+
+const (
+	enabled DaemonEnabled = iota
+	disabled
+	static
+	notFound
+)
+
 type Daemon struct {
 	name      string
-	isActive  string
-	isEnabled string
+	isActive  DaemonActive
+	isEnabled DaemonEnabled
+}
+
+func getActivityIota(activity string) DaemonActive {
+	switch activity {
+	case "active":
+		return active
+	case "inactive":
+		return inactive
+	case "activating":
+		return activating
+	case "deactivating":
+		return deactivating
+	case "failed":
+		return failed
+	default:
+		return unknown
+	}
+}
+
+func getEnabledIota(isEnabled string) DaemonEnabled {
+	switch isEnabled {
+	case "isEnabled":
+		return enabled
+	case "disabled":
+		return disabled
+	case "static":
+		return static
+	case "not-found":
+		return notFound
+	default:
+		return unknown
+	}
 }
 
 func execSystemctl(command string, daemon string) (string, error) {
@@ -21,23 +73,20 @@ func execSystemctl(command string, daemon string) (string, error) {
 }
 
 func GetSystemdDaemon(daemonName string) (Daemon, error) {
-	isActive, err := execSystemctl("is-active", daemonName)
-	if err != nil {
-		return Daemon{}, err
-	}
-
-	isEnabled, err := execSystemctl("is-enabled", daemonName)
-	if err != nil {
-		return Daemon{}, err
-	}
+	isActiveStr, activeErr := execSystemctl("is-active", daemonName)
+	isEnabledStr, enabledErr := execSystemctl("is-enabled", daemonName)
 
 	daemonInfo := Daemon{
 		name:      daemonName,
-		isActive:  isActive,
-		isEnabled: isEnabled,
+		isActive:  getActivityIota(isActiveStr),
+		isEnabled: getEnabledIota(isEnabledStr),
 	}
 
-	return daemonInfo, nil
+	if activeErr != nil {
+		return daemonInfo, activeErr
+	}
+
+	return daemonInfo, enabledErr
 }
 
 func GetDaemon(daemonName string, initSystem string) (Daemon, error) {

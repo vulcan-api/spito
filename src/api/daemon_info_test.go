@@ -7,9 +7,13 @@ import (
 func TestGetDaemon(t *testing.T) {
 	daemonInfo, err := GetDaemon("dbus", "systemctl")
 
-	if err != nil {
-		t.Fatalf("Errors occured during obtaining daemon info: %s", err)
+	if daemonInfo.name == "" || daemonInfo.isActive == unknown || daemonInfo.isEnabled == unknown {
+		t.Fatalf("There's a problem when executing your init system: %s", err)
 	}
 
-	t.Logf("Name: %s, IsActive: %s, IsEnabled: %s", daemonInfo.name, daemonInfo.isActive, daemonInfo.isEnabled)
+	if daemonInfo.isEnabled == notFound {
+		t.Fatalf("Daemon is not installed: %s", err)
+	}
+
+	t.Logf("Name: %s, IsActive: %d, IsEnabled: %d", daemonInfo.name, daemonInfo.isActive, daemonInfo.isEnabled)
 }
