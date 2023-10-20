@@ -3,6 +3,7 @@ package lua
 import (
 	"github.com/Shopify/go-lua"
 	"github.com/oleiade/reflections"
+	"go/types"
 	"reflect"
 	"strings"
 )
@@ -86,6 +87,10 @@ func AddToStackPrimitiveType(L *lua.State, field interface{}) {
 
 	case bool:
 		L.PushBoolean(field.(bool))
+		break
+
+	case types.Nil:
+		L.PushNil()
 		break
 
 	default:
