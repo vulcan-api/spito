@@ -7,6 +7,7 @@ import (
 func DoesRulePasses(luaScript string) (bool, error) {
 	L := lua.NewState()
 	registerApi(L)
+	lua.OpenLibraries(L)
 
 	if err := lua.DoString(L, luaScript); err != nil {
 		return false, err
