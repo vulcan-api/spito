@@ -7,9 +7,9 @@ import (
 )
 
 type Daemon struct {
-	name      string
-	isActive  bool
-	isEnabled bool
+	Name      string
+	IsActive  bool
+	IsEnabled bool
 }
 
 func getSystemdDaemon(daemonName string) (Daemon, error) {
@@ -30,10 +30,10 @@ func getSystemdDaemon(daemonName string) (Daemon, error) {
 	}
 
 	return Daemon{
-		name:      daemonName,
-		isActive:  isActive,
-		isEnabled: isEnabled,
-	}, err
+		Name:      daemonName,
+		IsActive:  isActive,
+		IsEnabled: isEnabled,
+	}, nil
 }
 
 func GetDaemon(daemonName string) (Daemon, error) {
