@@ -41,7 +41,8 @@ func iFErrPrint(err error) {
 }
 
 func getPackageInfoString(packageName string, packageManager string) (string, error) {
-	cmd := exec.Command("LANG=C", packageManager, "-Qi", packageName)
+	cmd := exec.Command(packageManager, "-Qi", packageName)
+	cmd.Env = append(cmd.Environ(), "LANG=C")
 	data, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -79,10 +80,10 @@ func (p *Package) setField(key string, value string) {
 	}
 }
 
-func (p *Package) Get(name string) {
+func (p *Package) Get(name string) error {
 	packageInfoString, err := getPackageInfoString(name, packageManager)
 	if err != nil {
-		return
+		return err
 	}
 	packageInfo := strings.Split(packageInfoString, "\n")
 	packageInfo = packageInfo[:len(packageInfo)-2] // Delete empty elements
@@ -127,4 +128,5 @@ func (p *Package) Get(name string) {
 
 		p.setField(key, value)
 	}
+	return nil
 }

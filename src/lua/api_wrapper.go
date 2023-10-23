@@ -1,38 +1,30 @@
 package lua
 
 import (
+	"fmt"
 	"github.com/Shopify/go-lua"
-	"github.com/google/uuid"
 	"github.com/nasz-elektryk/spito-rules/api"
-	"github.com/oleiade/reflections"
 	"reflect"
-	"strings"
 )
 
 func registerApi(L *lua.State) {
-	L.Register("getCurrentDistro", GetCurrentDistro)
 	newGlobalConstructor(L, "Package", reflect.TypeOf(api.Package{}))
 }
 
 func newGlobalConstructor(L *lua.State, name string, Obj reflect.Type) {
 	L.PushGoFunction(func(state *lua.State) int {
-		userDataIdentifier := "_" + name + "_" + strings.ReplaceAll(uuid.NewString(), "-", "")
-		obj := reflect.New(Obj)
-
-		// TODO: think about some kind of deallocating this value
-		L.PushUserData(obj)
-		L.SetGlobal(userDataIdentifier)
-
-		pushMetaTableStructInterface(L, userDataIdentifier)
+		obj := reflect.New(Obj).Elem()
+		obj.FieldByName("Name").SetString("test")
+		pushMetaTableStruct(L, obj)
 
 		return 1
 	})
 	L.SetGlobal(name)
 }
 
-func pushMetaTableStructInterface(L *lua.State, userdataGlobalName string) {
+func pushMetaTableStruct(L *lua.State, obj interface{}) {
 	L.NewTable()
-	L.PushString(userdataGlobalName)
+	L.PushUserData(obj)
 	L.SetField(-2, "_userdata")
 
 	L.NewTable()
@@ -49,36 +41,40 @@ func __index(L *lua.State) int {
 	}
 
 	L.RawGetValue(1, "_userdata")
-	userdataName, ok := L.ToString(-1)
-	if !ok {
-		return 0
-	}
+	userdata := L.ToValue(-1).(reflect.Value)
 	L.Pop(1)
 
-	L.Global(userdataName)
-	p := L.ToUserData(-1)
-	L.Pop(1)
-
-	field, err := reflections.GetField(p, key)
-	if err == nil {
-		err := addToStackBasedOnType(L, field, reflect.TypeOf(field).Kind())
+	if field := userdata.FieldByName(key); field.IsValid() {
+		err := addToStackBasedOnType(L, field.Interface(), field.Kind())
 		if err != nil {
-			// TODO: consider better error handling
 			return 0
 		}
 		return 1
 	}
 
+	isMethodDeclared := false
+	var method reflect.Method
+
 	// TODO: implement method handling
-
-	return 0
-}
-
-func GetCurrentDistro(L *lua.State) int {
-	distro := api.GetCurrentDistro()
-	if err := AddStructToStack(L, distro); err != nil {
-		panic(err)
+	if m, ok := userdata.Type().MethodByName(key); ok && m.IsExported() {
+		isMethodDeclared = true
+		method = m
 	}
-
+	// TODO: implement method handling v2
+	if m, ok := reflect.PointerTo(userdata.Type()).MethodByName(key); ok && m.IsExported() {
+		isMethodDeclared = true
+		method = m
+	}
+	if !isMethodDeclared {
+		return 0
+	}
+	pushMethodToStack(L, &userdata, method, func() {
+		fmt.Printf("%+v\n\n\n", userdata)
+		println(L.TypeOf(1).String()) // Tutaj mamy errora
+		
+		L.PushUserData(userdata)
+		L.SetField(1, "_userdata")
+	})
+	
 	return 1
 }
