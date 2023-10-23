@@ -37,6 +37,5 @@ func getSystemdDaemon(daemonName string) (Daemon, error) {
 }
 
 func GetDaemon(daemonName string) (Daemon, error) {
-	// TODO: this function should detect init system
 	return getSystemdDaemon(daemonName)
 }
