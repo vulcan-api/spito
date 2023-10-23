@@ -3,9 +3,13 @@ package api
 import "testing"
 
 func TestGetDaemon(t *testing.T) {
-	daemonInfo, err := GetDaemon("systemctl", "dbus")
+	daemon, err := GetDaemon("dbus")
 
-	if daemonInfo.name == "" || daemonInfo.isActive == unknown || daemonInfo.isEnabled == unknown {
+	if err != nil {
 		t.Fatalf("Error occured when obtaining daemon data: %s", err)
+	}
+
+	if daemon.name == "" {
+		t.Fatal("Daemon name is empty")
 	}
 }

@@ -1,96 +1,42 @@
 package api
 
 import (
-	"errors"
-	"os/exec"
-	"strings"
-)
-
-const systemd = "systemctl"
-
-type DaemonActive int
-type DaemonEnabled int
-
-const unknown = -1
-
-const (
-	active   DaemonActive = iota
-	inactive              // what's funny systemd treats unrecognized daemons as inactive
-	activating
-	deactivating
-	failed
-)
-
-const (
-	enabled DaemonEnabled = iota
-	disabled
-	static
-	notFound
+	"context"
+	"github.com/taigrr/systemctl"
+	"time"
 )
 
 type Daemon struct {
 	name      string
-	isActive  DaemonActive
-	isEnabled DaemonEnabled
+	isActive  bool
+	isEnabled bool
 }
 
-func getActivityIota(activity string) DaemonActive {
-	switch activity {
-	case "active":
-		return active
-	case "inactive":
-		return inactive
-	case "activating":
-		return activating
-	case "deactivating":
-		return deactivating
-	case "failed":
-		return failed
-	default:
-		return unknown
+func getSystemdDaemon(daemonName string) (Daemon, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	opts := systemctl.Options{UserMode: false}
+	unit := daemonName
+
+	isActive, err := systemctl.IsActive(ctx, unit, opts)
+	if err != nil {
+		return Daemon{}, err
 	}
-}
 
-func getEnabledIota(isEnabled string) DaemonEnabled {
-	switch isEnabled {
-	case "isEnabled":
-		return enabled
-	case "disabled":
-		return disabled
-	case "static":
-		return static
-	case "not-found":
-		return notFound
-	default:
-		return unknown
+	isEnabled, err := systemctl.IsEnabled(ctx, unit, opts)
+	if err != nil {
+		return Daemon{}, err
 	}
-}
 
-func execSystemctl(command string, daemon string) (string, error) {
-	cmd := exec.Command(systemd, command, daemon)
-	stdout, err := cmd.Output()
-	return strings.TrimSpace(string(stdout)), err
-}
-
-func GetSystemdDaemon(daemonName string) (Daemon, error) {
-	isActiveStr, activeErr := execSystemctl("is-active", daemonName)
-	isEnabledStr, enabledErr := execSystemctl("is-enabled", daemonName)
-
-	daemonInfo := Daemon{
+	return Daemon{
 		name:      daemonName,
-		isActive:  getActivityIota(isActiveStr),
-		isEnabled: getEnabledIota(isEnabledStr),
-	}
-
-	if activeErr != nil {
-		return daemonInfo, activeErr
-	}
-	return daemonInfo, enabledErr
+		isActive:  isActive,
+		isEnabled: isEnabled,
+	}, err
 }
 
-func GetDaemon(initSystem string, daemonName string) (Daemon, error) {
-	if initSystem == systemd {
-		return GetSystemdDaemon(daemonName)
-	}
-	return Daemon{}, errors.New("no known init system has been chosen")
+func GetDaemon(daemonName string) (Daemon, error) {
+	// TODO: this function should detect init system
+	return getSystemdDaemon(daemonName)
 }
