@@ -1,6 +1,9 @@
 package api
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 func PathExists(path string) bool {
 	_, err := os.Stat(path)
@@ -21,5 +24,17 @@ func FileExists(path string, isDirectory bool) bool {
 	if !isDirectory && !info.IsDir() {
 		return true
 	}
+
 	return false
+}
+func FileContains(path string, content string) (bool, error) {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+
+	str := string(file)
+	contains := strings.Contains(str, content)
+
+	return contains, nil
 }
