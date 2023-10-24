@@ -14,8 +14,7 @@ func DoesRulePasses(script string) (bool, error) {
 	attachApi(L)
 
 	if err := L.DoString(script); err != nil {
-		// TODO: think about better error handling!
-		panic(err)
+		return false, err
 	}
 
 	err := L.CallByParam(lua.P{

@@ -12,4 +12,5 @@ func attachApi(L *lua.LState) {
 	
 	setGlobalConstructor(L, "Package", t(api.Package{}))
 	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
+	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
 }
