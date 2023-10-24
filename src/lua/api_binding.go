@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-// Every api needs to be attached here in oder to be available:
+// Every api needs to be attached here in order to be available:
 func attachApi(L *lua.LState) {
 	var t = reflect.TypeOf
 	
