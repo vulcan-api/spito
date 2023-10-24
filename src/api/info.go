@@ -5,8 +5,8 @@ import (
 )
 
 type Distro struct {
-	name string
-	version string
+	Name    string
+	Version string
 }
 
 func GetCurrentDistro() Distro {

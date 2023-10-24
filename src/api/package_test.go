@@ -7,9 +7,8 @@ import (
 func TestPackageMatrix(t *testing.T) {
 	testPackages := []string{
 		"pacman",
-		// Commented for test development speed
-		//"curl",
-		//"bash",
+		"curl",
+		"bash",
 	}
 
 	for _, packageName := range testPackages {
@@ -19,17 +18,20 @@ func TestPackageMatrix(t *testing.T) {
 
 func testPackageInfo(packageName string, t *testing.T) {
 	p := Package{}
-	p.Get(packageName)
+	err := p.Get(packageName)
+	if err != nil {
+		panic(err) 
+	}
 
-	if p.Name != "" {
+	if p.Name == "" {
 		t.Fatalf("Couldn't resolve \"%s\" package name", packageName)
 	}
 
-	if p.Version != "" {
+	if p.Version == "" {
 		t.Fatalf("Couldn't resolve \"%s\" package version", packageName)
 	}
 
-	if p.InstallDate != "" {
+	if p.InstallDate == "" {
 		t.Fatalf("Couldn't resolve \"%s\" package install date", packageName)
 	}
 }
