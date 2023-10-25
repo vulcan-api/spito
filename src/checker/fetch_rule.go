@@ -14,7 +14,6 @@ func FetchRuleSet(ruleUrlPath string) (error, string, func()) {
 		return err, "", nil
 	}
 
-	// TODO: complete this one
 	_, err = git.PlainClone(dir, false, &git.CloneOptions{
 		URL: ruleUrlPath,
 	})
