@@ -52,7 +52,6 @@ func CheckRule(rulesHistory *RulesHistory, url string, name string) bool {
 	
 	if rulesHistory.Contains(url, name) {
 		if rulesHistory.IsRuleInProgress(url, name) {
-			// TODO: consider error handling
 			panic("ERROR: Dependencies creates infinity loop")
 		} else {
 			return true
