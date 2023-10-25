@@ -34,16 +34,13 @@ func TestFileExists(t *testing.T) {
 	}
 }
 
-func TestFileContains(t *testing.T) {
+func TestGetFileContent(t *testing.T) {
 	testPath := "/etc/bash.bashrc"
-	testContent := "shopt -s checkwinsize"
-
-	contains, err := FileContains(testPath, testContent)
+	content, err := GetFileContent(testPath)
 	if err != nil {
 		t.Fatalf("Error occured during opening file: %s", err)
 	}
-
-	if !contains {
-		t.Fatalf("Your string: %s doesn't exist in your file: %s", testContent, testPath)
+	if content == "" {
+		t.Fatal("File is empty")
 	}
 }

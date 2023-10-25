@@ -2,7 +2,6 @@ package api
 
 import (
 	"os"
-	"strings"
 )
 
 func PathExists(path string) bool {
@@ -27,14 +26,11 @@ func FileExists(path string, isDirectory bool) bool {
 
 	return false
 }
-func FileContains(path string, content string) (bool, error) {
+
+func GetFileContent(path string) (string, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-
-	str := string(file)
-	contains := strings.Contains(str, content)
-
-	return contains, nil
+	return string(file), nil
 }
