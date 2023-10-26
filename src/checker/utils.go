@@ -1,0 +1,76 @@
+package checker
+
+import (
+	"errors"
+	"io/fs"
+	"os"
+	"strings"
+)
+
+const tmpRuleSetsDir = "/tmp/spito-rules/rule-sets"
+
+func initRequiredTmpDirs() error {
+	return nil
+	err := os.MkdirAll(tmpRuleSetsDir, 0700)
+	// TODO: check if needed
+	if errors.Is(err, fs.ErrExist) {
+		return nil
+	}
+	return err
+}
+
+func getDefaultRepoPrefix() string {
+	// TODO: implement logic for getting default repo prefix
+	return "github.com"
+}
+
+type RuleSetLocation struct {
+	simpleUrl string
+}
+
+// e.g. from: https://github.com/Nasz-Elektryk/spito-ruleset.git to Nasz-Elektryk/spito-ruleset
+func (r *RuleSetLocation) new(identifier string) {
+	// check if simpleUrl is url:
+	if !strings.Contains(identifier, ".") {
+		r.simpleUrl = getDefaultRepoPrefix() + "/" + identifier
+		return
+	}
+
+	simpleUrl := identifier
+	simpleUrl = strings.ReplaceAll(simpleUrl, "https://", "")
+	simpleUrl = strings.ReplaceAll(simpleUrl, "http://", "")
+	simpleUrl = strings.ReplaceAll(simpleUrl, "www.", "")
+	urlLen := len(simpleUrl)
+
+	if simpleUrl[urlLen-1] == '/' {
+		simpleUrl = simpleUrl[:urlLen-1]
+	}
+	// I still wonder whether it is good idea:
+	if simpleUrl[urlLen-5:] == ".git" {
+		simpleUrl = simpleUrl[urlLen-5:]
+	}
+
+	r.simpleUrl = simpleUrl
+}
+
+func (r *RuleSetLocation) createDir() error {
+	println(r.getRuleSetPath())
+	err := os.MkdirAll(r.getRuleSetPath(), 0700)
+	if errors.Is(err, fs.ErrExist) {
+		return nil
+	}
+	return err
+}
+
+func (r *RuleSetLocation) getFullUrl() string {
+	return "https://" + r.simpleUrl
+}
+
+func (r *RuleSetLocation) getRuleSetPath() string {
+	return tmpRuleSetsDir + "/" + r.simpleUrl
+}
+
+func (r *RuleSetLocation) isRuleSetDownloaded() bool {
+	_, err := os.ReadDir(r.getRuleSetPath())
+	return errors.Is(err, fs.ErrNotExist)
+}

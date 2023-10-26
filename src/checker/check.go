@@ -1,9 +1,5 @@
 package checker
 
-import (
-	"regexp"
-)
-
 type Rule struct {
 	url          string
 	name         string
@@ -36,43 +32,36 @@ func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 }
 
 func CheckRuleScript(script string) (bool, error) {
- 	rulesHistory := &RulesHistory{}
+	rulesHistory := &RulesHistory{}
 	return ExecuteLuaMain(script, rulesHistory)
 }
 
-func CheckRule(rulesHistory *RulesHistory, url string, name string) bool {
-	const URL_REG_EXP = "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)"
-	isValid, err := regexp.MatchString(URL_REG_EXP, url)
-	if err != nil || !isValid {
-		panic("Rule url is invalid!")
-	}
-	if url[len(url)-1] == '/' {
-		url = url[:len(url)-1]
-	}
-	
-	if rulesHistory.Contains(url, name) {
-		if rulesHistory.IsRuleInProgress(url, name) {
+func CheckRule(rulesHistory *RulesHistory, identifier string, name string) bool {
+	ruleSetLocation := RuleSetLocation{}
+	ruleSetLocation.new(identifier)
+	simpleUrl := ruleSetLocation.simpleUrl
+
+	if rulesHistory.Contains(simpleUrl, name) {
+		if rulesHistory.IsRuleInProgress(simpleUrl, name) {
 			panic("ERROR: Dependencies creates infinity loop")
 		} else {
 			return true
 		}
 	}
-	rulesHistory.Push(url, name, true)
+	rulesHistory.Push(simpleUrl, name, true)
 
-	err, ruleSetPath, removeTempDir := FetchRuleSet(url)
+	err := FetchRuleSet(&ruleSetLocation)
 	if err != nil {
-		println(err.Error())
-		panic("Failed to fetch rules from git repo: " + url)
-	}
-	defer removeTempDir()
-
-	script, err := getScript(ruleSetPath, name)
-	if err != nil {
-		println(err.Error())
-		panic("Failed to read script called: " + name + " in git repo: " + url)
+		panic("Failed to fetch rules from git: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
 	}
 
-	rulesHistory.SetProgress(url, name, false)
+	script, err := getScript(ruleSetLocation, name)
+	if err != nil {
+		println(err.Error())
+		panic("Failed to read script called: " + name + " in git: " + ruleSetLocation.getFullUrl())
+	}
+
+	rulesHistory.SetProgress(simpleUrl, name, false)
 	res, err := ExecuteLuaMain(script, rulesHistory)
 	if err != nil {
 		return false

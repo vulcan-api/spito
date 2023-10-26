@@ -1,4 +1,4 @@
-package tests
+package integration_tests
 
 import (
 	"github.com/nasz-elektryk/spito-rules/checker"
@@ -9,16 +9,16 @@ import (
 func TestRuleRequire(t *testing.T) {
 	script, err := os.ReadFile("./rule_require_test.lua")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	doesRulePasses, err := checker.CheckRuleScript(string(script))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	
 	println("rule passes: ", doesRulePasses)
 	if !doesRulePasses {
-		t.Error("Rule failed")
+		t.Fatal("Rule failed")
 	}
 }
