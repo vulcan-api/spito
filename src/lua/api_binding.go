@@ -9,8 +9,10 @@ import (
 // Every api needs to be attached here in order to be available:
 func attachApi(L *lua.LState) {
 	var t = reflect.TypeOf
-	
+
 	setGlobalConstructor(L, "Package", t(api.Package{}))
 	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
-	setGlobalFunction(L, "GetDaemon", api.GetDaemon)
+	setGlobalFunction(L, "PathExists", api.PathExists)
+	setGlobalFunction(L, "FileExists", api.FileExists)
+	setGlobalFunction(L, "GetFileContent", api.GetFileContent)
 }
