@@ -1,46 +1,58 @@
 package api
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
+
+const testDir = "/home"
+const testFile = "/etc/bash.bashrc"
 
 func TestPathExists(t *testing.T) {
-	testPath := "/home"
-	pathExists := PathExists(testPath)
+	pathExists := PathExists(testDir)
 
 	if !pathExists {
-		t.Fatalf("Path '%s' doesn't exist", testPath)
+		t.Fatalf("Path '%s' doesn't exist", testDir)
 	}
 
-	testPath = "/etc/bash.bashrc"
-	pathExists = PathExists(testPath)
+	pathExists = PathExists(testFile)
 
 	if !pathExists {
-		t.Fatalf("File '%s' doesn't exist", testPath)
+		t.Fatalf("File '%s' doesn't exist", testDir)
 	}
 }
 
 func TestFileExists(t *testing.T) {
-	testPath := "/home"
-	pathExists := FileExists(testPath, true)
+	dirExists := FileExists(testDir, true)
 
-	if !pathExists {
-		t.Fatalf("Path '%s' doesn't exist or it's file", testPath)
+	if !dirExists {
+		t.Fatalf("Path '%s' doesn't exist or it's file", testDir)
 	}
 
-	testPath = "/etc/bash.bashrc"
-	pathExists = FileExists(testPath, false)
+	fileExists := FileExists(testFile, false)
 
-	if !pathExists {
-		t.Fatalf("File '%s' doesn't exist or it's directory", testPath)
+	if !fileExists {
+		t.Fatalf("File '%s' doesn't exist or it's directory", testFile)
 	}
 }
 
 func TestGetFileContent(t *testing.T) {
-	testPath := "/etc/bash.bashrc"
-	content, err := GetFileContent(testPath)
+	content, err := GetFileContent(testFile)
 	if err != nil {
-		t.Fatalf("Error occured during opening file: %s", err)
+		t.Fatalf("Error occured during opening file: %s", fmt.Sprint(err))
 	}
 	if content == "" {
 		t.Fatal("File is empty")
+	}
+}
+
+func TestLS(t *testing.T) {
+	entries, err := LS(testDir)
+	if err != nil {
+		t.Fatalf("Error occured during getting entries: %s", fmt.Sprint(err))
+	}
+
+	if len(entries) == 0 {
+		t.Fatal("Directory is empty")
 	}
 }

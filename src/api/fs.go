@@ -34,3 +34,6 @@ func GetFileContent(path string) (string, error) {
 	}
 	return string(file), nil
 }
+func LS(path string) ([]os.DirEntry, error) {
+	return os.ReadDir(path)
+}

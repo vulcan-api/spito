@@ -12,7 +12,9 @@ func attachApi(L *lua.LState) {
 
 	setGlobalConstructor(L, "Package", t(api.Package{}))
 	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
+	setGlobalFunction(L, "GetDaemon", api.GetDaemon)
 	setGlobalFunction(L, "PathExists", api.PathExists)
 	setGlobalFunction(L, "FileExists", api.FileExists)
 	setGlobalFunction(L, "GetFileContent", api.GetFileContent)
+	setGlobalFunction(L, "LS", api.LS)
 }
