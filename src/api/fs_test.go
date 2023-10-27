@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const testDir = "/home"
+const testDir = "/etc"
 const testFile = "/etc/bash.bashrc"
 
 func TestPathExists(t *testing.T) {
