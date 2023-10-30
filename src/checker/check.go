@@ -1,5 +1,7 @@
 package checker
 
+import "errors"
+
 type Rule struct {
 	url          string
 	name         string
@@ -33,17 +35,43 @@ func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 
 func CheckRuleScript(script string) (bool, error) {
 	rulesHistory := &RulesHistory{}
-	return ExecuteLuaMain(script, rulesHistory)
+
+	errChan := make(chan error)
+	doesRulePassChan := make(chan bool)
+
+	go func() {
+		defer func() {
+			r := recover()
+			if errChan != nil {
+				errChan <- anyToError(r)
+			}
+		}()
+
+		doesRulePass, err := ExecuteLuaMain(script, rulesHistory, errChan)
+		if err != nil {
+			errChan <- err
+		}
+		doesRulePassChan <- doesRulePass
+	}()
+
+	select {
+	case doesRulePass := <-doesRulePassChan:
+		return doesRulePass, nil
+	case err := <-errChan:
+		return false, err
+	}
 }
 
-func CheckRule(rulesHistory *RulesHistory, identifier string, name string) bool {
+// This function shouldn't be executed directly
+func _InternalCheckRule(rulesHistory *RulesHistory, errChan chan error, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
 
 	if rulesHistory.Contains(simpleUrl, name) {
 		if rulesHistory.IsRuleInProgress(simpleUrl, name) {
-			panic("ERROR: Dependencies creates infinity loop")
+			errChan <- errors.New("ERROR: Dependencies creates infinity loop")
+			panic(nil)
 		} else {
 			return true
 		}
@@ -52,17 +80,18 @@ func CheckRule(rulesHistory *RulesHistory, identifier string, name string) bool 
 
 	err := FetchRuleSet(&ruleSetLocation)
 	if err != nil {
-		panic("Failed to fetch rules from git: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
+		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
+		panic(nil)
 	}
 
 	script, err := getScript(ruleSetLocation, name)
 	if err != nil {
-		println(err.Error())
-		panic("Failed to read script called: " + name + " in git: " + ruleSetLocation.getFullUrl())
+		errChan <- errors.New("Failed to read script called: " + name + " in git: " + ruleSetLocation.getFullUrl())
+		panic(nil)
 	}
 
 	rulesHistory.SetProgress(simpleUrl, name, false)
-	res, err := ExecuteLuaMain(script, rulesHistory)
+	res, err := ExecuteLuaMain(script, rulesHistory, errChan)
 	if err != nil {
 		return false
 	}

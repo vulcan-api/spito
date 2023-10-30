@@ -2,6 +2,7 @@ package checker
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"strings"
@@ -73,4 +74,14 @@ func (r *RuleSetLocation) getRuleSetPath() string {
 func (r *RuleSetLocation) isRuleSetDownloaded() bool {
 	_, err := os.ReadDir(r.getRuleSetPath())
 	return errors.Is(err, fs.ErrNotExist)
+}
+
+func anyToError(val any) error {
+	if err, ok := val.(error); ok {
+		return err
+	}
+	if err, ok := val.(string); ok {
+		return errors.New(err)
+	}
+	return fmt.Errorf("panic: %v", val)
 }

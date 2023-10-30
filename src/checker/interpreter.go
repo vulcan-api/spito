@@ -8,12 +8,12 @@ import (
 
 const devMode = false
 
-func ExecuteLuaMain(script string, rulesHistory *RulesHistory) (bool, error) {
+func ExecuteLuaMain(script string, rulesHistory *RulesHistory, errChan chan error) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: !devMode})
 	defer L.Close()
-	
+
 	attachApi(L)
-	attachRuleRequiring(L, rulesHistory)
+	attachRuleRequiring(L, rulesHistory, errChan)
 
 	if err := L.DoString(script); err != nil {
 		return false, err
@@ -31,14 +31,12 @@ func ExecuteLuaMain(script string, rulesHistory *RulesHistory) (bool, error) {
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func attachRuleRequiring(L *lua.LState, rulesHistory *RulesHistory) {
+func attachRuleRequiring(L *lua.LState, rulesHistory *RulesHistory, errChan chan error) {
 	L.SetGlobal("require_rule", L.NewFunction(func(state *lua.LState) int {
 		ruleUrl := L.Get(1).String()
 		ruleName := L.Get(2).String()
-		
-		println("arg2, ", ruleName)
-		
-		result := CheckRule(rulesHistory, ruleUrl, ruleName)
+
+		result := _InternalCheckRule(rulesHistory, errChan, ruleUrl, ruleName)
 		L.Push(lua.LBool(result))
 
 		return 1
