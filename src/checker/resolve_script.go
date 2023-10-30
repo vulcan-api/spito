@@ -29,10 +29,10 @@ func (s SpitoRulesYaml) getRulesStructVal(key string) (RuleConf, bool) {
 
 func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, error) {
 	// Support for both .yaml and .yml
-	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.getRuleSetPath() + "/SPITO_RULES.yaml")
+	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.getRuleSetPath() + "/spito-rules.yaml")
 	if errors.Is(err, fs.ErrNotExist) {
 		var _err error
-		spitoRulesDataBytes, _err = os.ReadFile(ruleSetLocation.getRuleSetPath() + "/SPITO_RULES.yml")
+		spitoRulesDataBytes, _err = os.ReadFile(ruleSetLocation.getRuleSetPath() + "/spito-rules.yml")
 		if _err != nil {
 			return "", _err
 		}
