@@ -8,12 +8,20 @@ import (
 	"strings"
 )
 
-const tmpRuleSetsDir = "/tmp/spito-rules/rule-sets"
+func getRuleSetsDir() (string, error) {
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return dir + "/.local/state/spito-rules/rule-sets", nil
+}
 
 func initRequiredTmpDirs() error {
-	return nil
-	err := os.MkdirAll(tmpRuleSetsDir, 0700)
-	// TODO: check if needed
+	dir, err := getRuleSetsDir()
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(dir, 0700)
 	if errors.Is(err, fs.ErrExist) {
 		return nil
 	}
@@ -68,7 +76,11 @@ func (r *RuleSetLocation) getFullUrl() string {
 }
 
 func (r *RuleSetLocation) getRuleSetPath() string {
-	return tmpRuleSetsDir + "/" + r.simpleUrl
+	dir, err := getRuleSetsDir()
+	if err != nil {
+		return ""
+	}
+	return dir + "/" + r.simpleUrl
 }
 
 func (r *RuleSetLocation) isRuleSetDownloaded() bool {

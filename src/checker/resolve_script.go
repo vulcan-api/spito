@@ -88,8 +88,13 @@ func getScript(ruleSetLocation RuleSetLocation, ruleName string) (string, error)
 }
 
 func GetAllDownloadedRuleSets() ([]string, error) {
+	ruleSetsDir, err := getRuleSetsDir()
+	if err != nil {
+		return nil, err
+	}
+	
 	_ = initRequiredTmpDirs() // Ignore error because it should potentially avoid errors, not cause
-	providerDirs, err := os.ReadDir(tmpRuleSetsDir)
+	providerDirs, err := os.ReadDir(ruleSetsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +102,13 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 
 	for _, provider := range providerDirs {
 		providerName := provider.Name()
-		userDirs, err := os.ReadDir(tmpRuleSetsDir + "/" + providerName)
+		userDirs, err := os.ReadDir(ruleSetsDir + "/" + providerName)
 		if err != nil {
 			continue
 		}
 		for _, user := range userDirs {
 			userName := user.Name()
-			userDirs, err := os.ReadDir(tmpRuleSetsDir + "/" + providerName + "/" + userName)
+			userDirs, err := os.ReadDir(ruleSetsDir + "/" + providerName + "/" + userName)
 			if err != nil {
 				continue
 			}
