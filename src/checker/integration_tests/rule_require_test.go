@@ -12,13 +12,13 @@ func TestRuleRequire(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	doesRulePasses, err := checker.CheckRuleScript(string(script))
+	doesRulePass, err := checker.CheckRuleScript(string(script))
 	if err != nil {
 		t.Fatal(err)
 	}
 	
-	println("rule passes: ", doesRulePasses)
-	if !doesRulePasses {
+	println("Rule passes: ", doesRulePass)
+	if !doesRulePass {
 		t.Fatal("Rule failed")
 	}
 }

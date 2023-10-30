@@ -91,9 +91,9 @@ func _InternalCheckRule(rulesHistory *RulesHistory, errChan chan error, identifi
 	}
 
 	rulesHistory.SetProgress(simpleUrl, name, false)
-	res, err := ExecuteLuaMain(script, rulesHistory, errChan)
+	doesRulePass, err := ExecuteLuaMain(script, rulesHistory, errChan)
 	if err != nil {
 		return false
 	}
-	return res
+	return doesRulePass
 }
