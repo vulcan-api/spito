@@ -33,8 +33,23 @@ func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 	rule.isInProgress = isInProgress
 }
 
+func CheckRuleByIdentifier(identifier string, ruleName string) (bool, error) {
+	rulesHistory := RulesHistory{}
+	return checkAndProcessPanics(func(errChan chan error) (bool, error) {
+		return _internalCheckRule(&rulesHistory, errChan, identifier, ruleName), nil
+	})
+}
+
 func CheckRuleScript(script string) (bool, error) {
-	rulesHistory := &RulesHistory{}
+	rulesHistory := RulesHistory{}
+	return checkAndProcessPanics(func(errChan chan error) (bool, error) {
+		return ExecuteLuaMain(script, &rulesHistory, errChan)
+	})
+}
+
+func checkAndProcessPanics(
+	checkFunc func(errChan chan error) (bool, error),
+) (bool, error) {
 
 	errChan := make(chan error)
 	doesRulePassChan := make(chan bool)
@@ -47,7 +62,7 @@ func CheckRuleScript(script string) (bool, error) {
 			}
 		}()
 
-		doesRulePass, err := ExecuteLuaMain(script, rulesHistory, errChan)
+		doesRulePass, err := checkFunc(errChan)
 		if err != nil {
 			errChan <- err
 		}
@@ -63,7 +78,7 @@ func CheckRuleScript(script string) (bool, error) {
 }
 
 // This function shouldn't be executed directly
-func _InternalCheckRule(rulesHistory *RulesHistory, errChan chan error, identifier string, name string) bool {
+func _internalCheckRule(rulesHistory *RulesHistory, errChan chan error, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
