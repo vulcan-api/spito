@@ -4,18 +4,18 @@ import (
 	"testing"
 )
 
-func TestGetCurrentDistro(t *testing.T) {
-	distroName := GetCurrentDistro().Name
+func TestGetDistro(t *testing.T) {
+	distroName := GetDistro().Name
 
 	if distroName == "" {
 		t.Fatalf("ERROR! Couldn't detect your Linux distribution!")
 	}
 }
 
-func TestGetCurrentInitSystem(t *testing.T) {
-	initSystem, err := GetCurrentInitSystem()
+func TestGetInitSystem(t *testing.T) {
+	initSystem, err := GetInitSystem()
 
-	if err != nil || initSystem == "" {
+	if err != nil || initSystem == UNKNOWN {
 		t.Fatalf("ERROR! Couldn't detect your init system!")
 	}
 }

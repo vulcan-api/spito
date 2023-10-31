@@ -38,11 +38,11 @@ const (
 
 /* API FUNCTIONS */
 
-func GetCurrentDistro() Distro {
-	var si sysinfo.SysInfo
-	si.GetSysInfo()
+func GetDistro() Distro {
+	var systemInfo sysinfo.SysInfo
+	systemInfo.GetSysInfo()
 
-	return Distro{si.OS.Name, si.OS.Release}
+	return Distro{systemInfo.OS.Name, systemInfo.OS.Release}
 }
 
 func GetInitSystem() (InitSystem, error) {
