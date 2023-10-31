@@ -19,6 +19,6 @@ jobs:
       - name: Add permissions to execute scripts
         run: chmod +x -R scripts
       
-      - name: Run docker tests
+      - name: Run docker integration_tests
         run: ./scripts/docker-test.sh
 
