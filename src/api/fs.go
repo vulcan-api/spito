@@ -27,13 +27,13 @@ func FileExists(path string, isDirectory bool) bool {
 	return false
 }
 
-func GetFileContent(path string) (string, error) {
+func ReadFile(path string) (string, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
 	return string(file), nil
 }
-func LS(path string) ([]os.DirEntry, error) {
+func ReadDir(path string) ([]os.DirEntry, error) {
 	return os.ReadDir(path)
 }

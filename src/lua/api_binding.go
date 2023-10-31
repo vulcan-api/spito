@@ -15,6 +15,6 @@ func attachApi(L *lua.LState) {
 	setGlobalFunction(L, "GetDaemon", api.GetDaemon)
 	setGlobalFunction(L, "PathExists", api.PathExists)
 	setGlobalFunction(L, "FileExists", api.FileExists)
-	setGlobalFunction(L, "GetFileContent", api.GetFileContent)
-	setGlobalFunction(L, "LS", api.LS)
+	setGlobalFunction(L, "ReadFile", api.ReadFile)
+	setGlobalFunction(L, "ReadDir", api.ReadDir)
 }

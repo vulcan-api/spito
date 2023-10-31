@@ -37,7 +37,7 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestGetFileContent(t *testing.T) {
-	content, err := GetFileContent(testFile)
+	content, err := ReadFile(testFile)
 	if err != nil {
 		t.Fatalf("Error occured during opening file: %s", fmt.Sprint(err))
 	}
@@ -47,7 +47,7 @@ func TestGetFileContent(t *testing.T) {
 }
 
 func TestLS(t *testing.T) {
-	entries, err := LS(testDir)
+	entries, err := ReadDir(testDir)
 	if err != nil {
 		t.Fatalf("Error occured during getting entries: %s", fmt.Sprint(err))
 	}
