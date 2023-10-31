@@ -11,3 +11,11 @@ func TestGetCurrentDistro(t *testing.T) {
 		t.Fatalf("ERROR! Couldn't detect your Linux distribution!")
 	}
 }
+
+func TestGetCurrentInitSystem(t *testing.T) {
+	initSystem, err := GetCurrentInitSystem()
+
+	if err != nil || initSystem == "" {
+		t.Fatalf("ERROR! Couldn't detect your init system!")
+	}
+}
