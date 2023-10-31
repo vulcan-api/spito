@@ -45,7 +45,7 @@ func GetCurrentDistro() Distro {
 	return Distro{si.OS.Name, si.OS.Release}
 }
 
-func GetCurrentInitSystem() (InitSystem, error) {
+func GetInitSystem() (InitSystem, error) {
 	initSystemProcess, err := process.NewProcess(1)
 	if err != nil {
 		return "", err
