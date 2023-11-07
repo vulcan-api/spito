@@ -58,13 +58,24 @@ func TestReadDir(t *testing.T) {
 }
 
 func TestRemoveComments(t *testing.T) {
-	const testFileWithComments = "example file#/*\nexample data/* */"
-	const testFileWithoutComment = "example file\nexample data"
+	const testFileWithComments = "example/*multi*/#single\ndata/*multi*/#single"
+	const testFileWithoutComments = "example\ndata"
+	const testFileWithoutSingleLineComment = "example/*multi*/\ndata/*multi*/"
+	const testFileWithoutMultilineComment = "example#single\ndata#single"
 
 	file := RemoveComments(testFileWithComments, "#", "/*", "*/")
-	t.Log(file)
-	if file != testFileWithoutComment {
-		t.Fatal("Output file doesn't match given one")
+	if file != testFileWithoutComments {
+		t.Fatal("Transformed file doesn't match given one")
+	}
+
+	file = RemoveComments(testFileWithComments, "#", "", "")
+	if file != testFileWithoutSingleLineComment {
+		t.Fatal("Transformed file doesn't match given one")
+	}
+
+	file = RemoveComments(testFileWithComments, "", "/*", "*/")
+	if file != testFileWithoutMultilineComment {
+		t.Fatal("Transformed file doesn't match given one")
 	}
 }
 

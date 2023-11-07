@@ -59,6 +59,9 @@ func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEn
 
 		sliceLen = len(slice)
 		realEndPos := strings.Index(slice, rangeEnd) + endLen
+		if realEndPos == -1 {
+			realEndPos = len(slice)
+		}
 
 		slice = slice[realEndPos:sliceLen]
 		sliceLen = len(slice)
@@ -69,8 +72,13 @@ func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEn
 
 func RemoveComments(file string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
 	// single line comments
-	withoutSingleLineComments := removeRanges(file, singleLineComment, "\n", false)
-	clearFile := removeRanges(withoutSingleLineComments, multilineCommentStart, multilineCommentEnd, true)
+	clearFile := file
+	if singleLineComment != "" {
+		clearFile = removeRanges(file, singleLineComment, "\n", false)
+	}
+	if multilineCommentStart != "" && multilineCommentEnd != "" {
+		clearFile = removeRanges(clearFile, multilineCommentStart, multilineCommentEnd, true)
+	}
 
 	return clearFile
 }
