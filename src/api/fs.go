@@ -40,10 +40,15 @@ func ReadDir(path string) ([]os.DirEntry, error) {
 	return os.ReadDir(path)
 }
 
-func removeRanges(file string, rangeStart string, rangeEnd string) string {
+func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
 	clearFile := ""
 	slice := file
 	sliceLen := len(slice)
+	endLen := 0
+	if removeRangeEnd {
+		endLen = len(rangeEnd)
+	}
+
 	for {
 		commentPos := strings.Index(slice, rangeStart)
 		if commentPos == -1 {
@@ -51,9 +56,11 @@ func removeRanges(file string, rangeStart string, rangeEnd string) string {
 		}
 		clearFile += slice[0:commentPos]
 		slice = slice[commentPos:sliceLen]
+
 		sliceLen = len(slice)
-		newLinePos := strings.Index(slice, rangeEnd)
-		slice = slice[newLinePos:sliceLen]
+		realEndPos := strings.Index(slice, rangeEnd) + endLen
+
+		slice = slice[realEndPos:sliceLen]
 		sliceLen = len(slice)
 	}
 	clearFile += slice[0:sliceLen]
@@ -62,8 +69,8 @@ func removeRanges(file string, rangeStart string, rangeEnd string) string {
 
 func RemoveComments(file string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
 	// single line comments
-	withoutSingleLineComments := removeRanges(file, singleLineComment, "\n")
-	clearFile := removeRanges(withoutSingleLineComments, multilineCommentStart, multilineCommentEnd)
+	withoutSingleLineComments := removeRanges(file, singleLineComment, "\n", false)
+	clearFile := removeRanges(withoutSingleLineComments, multilineCommentStart, multilineCommentEnd, true)
 
 	return clearFile
 }

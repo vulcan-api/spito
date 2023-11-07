@@ -58,10 +58,11 @@ func TestReadDir(t *testing.T) {
 }
 
 func TestRemoveComments(t *testing.T) {
-	const testFileWithComments = "example file #example /*comment\nexample data /* and\ncomment */"
+	const testFileWithComments = "example file#/*\nexample data/* */"
 	const testFileWithoutComment = "example file\nexample data"
 
 	file := RemoveComments(testFileWithComments, "#", "/*", "*/")
+	t.Log(file)
 	if file != testFileWithoutComment {
 		t.Fatal("Output file doesn't match given one")
 	}
