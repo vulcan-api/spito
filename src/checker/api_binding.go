@@ -1,4 +1,4 @@
-package lua
+package checker
 
 import (
 	"github.com/nasz-elektryk/spito-rules/api"
