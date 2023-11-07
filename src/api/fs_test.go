@@ -36,7 +36,7 @@ func TestFileExists(t *testing.T) {
 	}
 }
 
-func TestGetFileContent(t *testing.T) {
+func TestReadFile(t *testing.T) {
 	content, err := ReadFile(testFile)
 	if err != nil {
 		t.Fatalf("Error occured during opening file: %s", fmt.Sprint(err))
@@ -46,7 +46,7 @@ func TestGetFileContent(t *testing.T) {
 	}
 }
 
-func TestLS(t *testing.T) {
+func TestReadDir(t *testing.T) {
 	entries, err := ReadDir(testDir)
 	if err != nil {
 		t.Fatalf("Error occured during getting entries: %s", fmt.Sprint(err))
@@ -54,5 +54,25 @@ func TestLS(t *testing.T) {
 
 	if len(entries) == 0 {
 		t.Fatal("Directory is empty")
+	}
+}
+
+func TestRemoveComments(t *testing.T) {
+	const testFileWithComments = "example file #example /*comment\nexample data /* and\ncomment */"
+	const testFileWithoutComment = "example file\nexample data"
+
+	file := RemoveComments(testFileWithComments, "#", "/*", "*/")
+	if file != testFileWithoutComment {
+		t.Fatal("Output file doesn't match given one")
+	}
+}
+
+func TestFileContains(t *testing.T) {
+	const testFileContent = "example data"
+	const testData = "data"
+
+	contains := FileContains(testFileContent, testData)
+	if contains != true {
+		t.Fatal("Function haven't returned true")
 	}
 }
