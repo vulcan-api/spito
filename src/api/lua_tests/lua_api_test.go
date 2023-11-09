@@ -3,7 +3,7 @@ package api_tests
 import (
 	"testing"
 	"os"
-	"github.com/nasz-elektryk/spito-rules/checker"
+	"github.com/nasz-elektryk/spito/checker"
 )
 
 func TestLuaApi(t *testing.T) {

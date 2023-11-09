@@ -1,7 +1,7 @@
 package integration_tests
 
 import (
-	"github.com/nasz-elektryk/spito-rules/checker"
+	"github.com/nasz-elektryk/spito/checker"
 	"os"
 	"testing"
 )

@@ -1,4 +1,4 @@
-module github.com/nasz-elektryk/spito-rules
+module github.com/nasz-elektryk/spito
 
 go 1.21
 

@@ -1,7 +1,7 @@
 package checker
 
 import (
-	"github.com/nasz-elektryk/spito-rules/api"
+	"github.com/nasz-elektryk/spito/api"
 	"github.com/yuin/gopher-lua"
 	"reflect"
 )
