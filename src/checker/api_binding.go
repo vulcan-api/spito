@@ -1,7 +1,7 @@
 package checker
 
 import (
-	"github.com/nasz-elektryk/spito-rules/api"
+	"github.com/nasz-elektryk/spito/api"
 	"github.com/yuin/gopher-lua"
 	"reflect"
 )
@@ -9,7 +9,7 @@ import (
 // Every api needs to be attached here in order to be available:
 func attachApi(L *lua.LState) {
 	var t = reflect.TypeOf
-	
+
 	setGlobalConstructor(L, "Package", t(api.Package{}))
 	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
 	setGlobalFunction(L, "GetDaemon", api.GetDaemon)

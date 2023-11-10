@@ -36,7 +36,7 @@ func attachRuleRequiring(L *lua.LState, rulesHistory *RulesHistory, errChan chan
 		ruleUrl := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		result := _InternalCheckRule(rulesHistory, errChan, ruleUrl, ruleName)
+		result := _internalCheckRule(rulesHistory, errChan, ruleUrl, ruleName)
 		L.Push(lua.LBool(result))
 
 		return 1

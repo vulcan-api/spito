@@ -1,7 +1,7 @@
 package integration_tests
 
 import (
-	"github.com/nasz-elektryk/spito-rules/checker"
+	"github.com/nasz-elektryk/spito/checker"
 	"os"
 	"testing"
 )
@@ -16,7 +16,7 @@ func TestRuleRequire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	println("Rule passes: ", doesRulePass)
 	if !doesRulePass {
 		t.Fatal("Rule failed")
