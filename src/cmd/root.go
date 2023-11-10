@@ -7,10 +7,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "spito-rules",
-	Short: "spito-rules is powerful app for checking if your OS pass specific requirements",
+	Use:   "spito",
+	Short: "spito is powerful config management system",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Do Stuff Here
+		fmt.Println("Try running subcommand instead")
 	},
 }
 

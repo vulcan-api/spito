@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nasz-elektryk/spito-rules/cmd"
+	"github.com/nasz-elektryk/spito/cmd"
 )
 
 func main() {

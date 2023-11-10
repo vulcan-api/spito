@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/nasz-elektryk/spito-rules/checker"
+	"github.com/nasz-elektryk/spito/checker"
 	"github.com/spf13/cobra"
 	"os"
 )
