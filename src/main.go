@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/nasz-elektryk/spito/cmd"
+)
 
 func main() {
-	fmt.Println("Wrong way, run instead \"go test ./...\"")
+	cmd.Execute()
 }

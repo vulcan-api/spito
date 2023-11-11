@@ -1,7 +1,7 @@
 package checker
 
 import (
-	"github.com/nasz-elektryk/spito-rules/api"
+	"github.com/nasz-elektryk/spito/api"
 	"github.com/yuin/gopher-lua"
 	"reflect"
 )
@@ -11,7 +11,7 @@ func attachApi(L *lua.LState) {
 	var t = reflect.TypeOf
 
 	setGlobalConstructor(L, "Package", t(api.Package{}))
-	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
+	setGlobalFunction(L, "GetDistro", api.GetDistro)
 	setGlobalFunction(L, "GetDaemon", api.GetDaemon)
 	setGlobalFunction(L, "PathExists", api.PathExists)
 	setGlobalFunction(L, "FileExists", api.FileExists)
@@ -22,4 +22,5 @@ func attachApi(L *lua.LState) {
 	setGlobalFunction(L, "Find", api.Find)
 	setGlobalFunction(L, "FindAll", api.FindAll)
 	setGlobalFunction(L, "GetProperLines", api.GetProperLines)
+	setGlobalFunction(L, "GetInitSystem", api.GetInitSystem)
 }

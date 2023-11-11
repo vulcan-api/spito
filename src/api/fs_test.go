@@ -93,7 +93,6 @@ const regexTestData = "peach"
 const multilineRegexTestData = "peach\nlunch\npinch"
 const testRegex = "p([a-z]+)ch"
 
-// TODO: test new regex functions
 func TestFind(t *testing.T) {
 	index, err := Find(testRegex, regexTestData)
 	if err != nil {
