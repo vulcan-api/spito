@@ -11,6 +11,7 @@ func attachApi(L *lua.LState) {
 	var t = reflect.TypeOf
 
 	setGlobalConstructor(L, "Package", t(api.Package{}))
-	setGlobalFunction(L, "GetCurrentDistro", api.GetCurrentDistro)
+	setGlobalFunction(L, "GetDistro", api.GetDistro)
 	setGlobalFunction(L, "GetDaemon", api.GetDaemon)
+	setGlobalFunction(L, "GetInitSystem", api.GetInitSystem)
 }
