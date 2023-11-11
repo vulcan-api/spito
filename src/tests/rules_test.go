@@ -1,4 +1,4 @@
-package integration_tests
+package tests
 
 import (
 	"github.com/nasz-elektryk/spito-rules/checker"
@@ -25,7 +25,7 @@ func TestRules(t *testing.T) {
 
 		println("Rule passes: ", doesRulePass)
 		if !doesRulePass {
-			t.Fatal("Rule failed")
+			t.Fatalf("Rule %s failed", ruleFile)
 		}
 	}
 }

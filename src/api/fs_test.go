@@ -88,3 +88,43 @@ func TestFileContains(t *testing.T) {
 		t.Fatal("Function haven't returned true")
 	}
 }
+
+const regexTestData = "peach"
+const multilineRegexTestData = "peach\nlunch\npinch"
+const testRegex = "p([a-z]+)ch"
+
+// TODO: test new regex functions
+func TestFind(t *testing.T) {
+	index, err := Find(testRegex, regexTestData)
+	if err != nil {
+		t.Fatalf("Your regex is broken: %s", fmt.Sprint(err))
+	}
+	if index == nil {
+		t.Fatal("Test regex doesn't match test string")
+	}
+}
+
+func TestFindAll(t *testing.T) {
+	indexes, err := FindAll(testRegex, multilineRegexTestData)
+	if err != nil {
+		t.Fatalf("Your regex is broken: %s", fmt.Sprint(err))
+	}
+	t.Log(indexes)
+	if indexes == nil || indexes[0] == nil || indexes[1] == nil {
+		t.Fatal("Test regex doesn't match test string")
+	}
+}
+
+func TestGetProperLines(t *testing.T) {
+	multilineRegexResults := []string{"peach", "pinch"}
+	lines, err := GetProperLines(testRegex, multilineRegexTestData)
+	if err != nil {
+		t.Fatalf("Your regex is broken %s", fmt.Sprint(err))
+	}
+	for i, testLine := range lines {
+		properLine := multilineRegexResults[i]
+		if testLine != properLine {
+			t.Fatalf("Your %dth line doesn't match specified one\nproper: '%s'\ngiven: '%s'", i, properLine, testLine)
+		}
+	}
+}

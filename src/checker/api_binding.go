@@ -19,4 +19,7 @@ func attachApi(L *lua.LState) {
 	setGlobalFunction(L, "ReadDir", api.ReadDir)
 	setGlobalFunction(L, "FileContains", api.FileContains)
 	setGlobalFunction(L, "RemoveComments", api.RemoveComments)
+	setGlobalFunction(L, "Find", api.Find)
+	setGlobalFunction(L, "FindAll", api.FindAll)
+	setGlobalFunction(L, "GetProperLines", api.GetProperLines)
 }

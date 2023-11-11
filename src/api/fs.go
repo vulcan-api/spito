@@ -2,15 +2,13 @@ package api
 
 import (
 	"os"
+	"regexp"
 	"strings"
 )
 
 func PathExists(path string) bool {
 	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return !os.IsNotExist(err)
 }
 
 func FileExists(path string, isDirectory bool) bool {
@@ -18,10 +16,7 @@ func FileExists(path string, isDirectory bool) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	if isDirectory && info.IsDir() {
-		return true
-	}
-	if !isDirectory && !info.IsDir() {
+	if isDirectory && info.IsDir() || !isDirectory && !info.IsDir() {
 		return true
 	}
 
@@ -41,7 +36,7 @@ func ReadDir(path string) ([]os.DirEntry, error) {
 }
 
 func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
-	clearFile := ""
+	cleanFile := ""
 	slice := file
 	sliceLen := len(slice)
 	endLen := 0
@@ -54,7 +49,7 @@ func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEn
 		if commentPos == -1 {
 			break
 		}
-		clearFile += slice[0:commentPos]
+		cleanFile += slice[0:commentPos]
 		slice = slice[commentPos:sliceLen]
 
 		sliceLen = len(slice)
@@ -66,23 +61,71 @@ func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEn
 		slice = slice[realEndPos:sliceLen]
 		sliceLen = len(slice)
 	}
-	clearFile += slice[0:sliceLen]
-	return clearFile
+	cleanFile += slice[0:sliceLen]
+	return cleanFile
 }
 
 func RemoveComments(file string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
 	// single line comments
-	clearFile := file
+	cleanFile := file
 	if singleLineComment != "" {
-		clearFile = removeRanges(file, singleLineComment, "\n", false)
+		cleanFile = removeRanges(file, singleLineComment, "\n", false)
 	}
 	if multilineCommentStart != "" && multilineCommentEnd != "" {
-		clearFile = removeRanges(clearFile, multilineCommentStart, multilineCommentEnd, true)
+		cleanFile = removeRanges(cleanFile, multilineCommentStart, multilineCommentEnd, true)
 	}
 
-	return clearFile
+	return cleanFile
 }
 
 func FileContains(file string, content string) bool {
 	return strings.Contains(file, content)
+}
+
+func Find(regex string, file string) ([]int, error) {
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		return nil, err
+	}
+	return r.FindStringIndex(file), nil
+}
+
+func FindAll(regex string, file string) ([][]int, error) {
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		return nil, err
+	}
+	return r.FindAllStringIndex(file, -1), nil
+}
+
+func GetProperLines(regex string, file string) ([]string, error) {
+	indexesInLines, err := FindAll(regex, file)
+	if err != nil {
+		return nil, err
+	}
+
+	fileLen := len(file)
+
+	var properLines []string
+	for _, line := range indexesInLines {
+		if line != nil {
+			dataBefore := file[0:line[0]]
+			dataAfter := file[line[1]:fileLen]
+			startingLineEnd := strings.LastIndex(dataBefore, "\n")
+			endingLineEnd := strings.Index(dataAfter, "\n")
+			if startingLineEnd == -1 {
+				startingLineEnd = 0
+			} else {
+				startingLineEnd++
+			}
+			if endingLineEnd == -1 {
+				endingLineEnd = fileLen
+			} else {
+				endingLineEnd += line[1]
+			}
+			properLines = append(properLines, file[startingLineEnd:endingLineEnd])
+		}
+	}
+
+	return properLines, nil
 }
