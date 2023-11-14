@@ -58,24 +58,24 @@ func TestReadDir(t *testing.T) {
 }
 
 func TestRemoveComments(t *testing.T) {
-	const testFileWithComments = "example/*multi*/#single\ndata/*multi*/#single"
-	const testFileWithoutComments = "example\ndata"
-	const testFileWithoutSingleLineComment = "example/*multi*/\ndata/*multi*/"
-	const testFileWithoutMultilineComment = "example#single\ndata#single"
+	const testContentWithComments = "example/*multi*/#single\ndata/*multi*/#single"
+	const testContentWithoutComments = "example\ndata"
+	const testContentWithoutSingleLineComment = "example/*multi*/\ndata/*multi*/"
+	const testContentWithoutMultilineComment = "example#single\ndata#single"
 
-	file := RemoveComments(testFileWithComments, "#", "/*", "*/")
-	if file != testFileWithoutComments {
-		t.Fatal("Transformed file doesn't match given one")
+	content := RemoveComments(testContentWithComments, "#", "/*", "*/")
+	if content != testContentWithoutComments {
+		t.Fatal("Transformed content doesn't match given one")
 	}
 
-	file = RemoveComments(testFileWithComments, "#", "", "")
-	if file != testFileWithoutSingleLineComment {
-		t.Fatal("Transformed file doesn't match given one")
+	content = RemoveComments(testContentWithComments, "#", "", "")
+	if content != testContentWithoutSingleLineComment {
+		t.Fatal("Transformed content doesn't match given one")
 	}
 
-	file = RemoveComments(testFileWithComments, "", "/*", "*/")
-	if file != testFileWithoutMultilineComment {
-		t.Fatal("Transformed file doesn't match given one")
+	content = RemoveComments(testContentWithComments, "", "/*", "*/")
+	if content != testContentWithoutMultilineComment {
+		t.Fatal("Transformed content doesn't match given one")
 	}
 }
 

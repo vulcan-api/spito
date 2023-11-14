@@ -35,9 +35,9 @@ func ReadDir(path string) ([]os.DirEntry, error) {
 	return os.ReadDir(path)
 }
 
-func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
+func removeRanges(fileContent string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
 	cleanFile := ""
-	slice := file
+	slice := fileContent
 	sliceLen := len(slice)
 	endLen := 0
 	if removeRangeEnd {
@@ -63,10 +63,10 @@ func removeRanges(file string, rangeStart string, rangeEnd string, removeRangeEn
 	return cleanFile
 }
 
-func RemoveComments(file string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
-	cleanFile := file
+func RemoveComments(fileContent string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
+	cleanFile := fileContent
 	if singleLineComment != "" {
-		cleanFile = removeRanges(file, singleLineComment, "\n", false)
+		cleanFile = removeRanges(fileContent, singleLineComment, "\n", false)
 	}
 	if multilineCommentStart != "" && multilineCommentEnd != "" {
 		cleanFile = removeRanges(cleanFile, multilineCommentStart, multilineCommentEnd, true)
@@ -75,39 +75,39 @@ func RemoveComments(file string, singleLineComment string, multilineCommentStart
 	return cleanFile
 }
 
-func FileContains(file string, content string) bool {
-	return strings.Contains(file, content)
+func FileContains(fileContent string, content string) bool {
+	return strings.Contains(fileContent, content)
 }
 
-func Find(regex string, file string) ([]int, error) {
+func Find(regex string, fileContent string) ([]int, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
 	}
-	return r.FindStringIndex(file), nil
+	return r.FindStringIndex(fileContent), nil
 }
 
-func FindAll(regex string, file string) ([][]int, error) {
+func FindAll(regex string, fileContent string) ([][]int, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
 	}
-	return r.FindAllStringIndex(file, -1), nil
+	return r.FindAllStringIndex(fileContent, -1), nil
 }
 
-func GetProperLines(regex string, file string) ([]string, error) {
-	indexesInLines, err := FindAll(regex, file)
+func GetProperLines(regex string, fileContent string) ([]string, error) {
+	indexesInLines, err := FindAll(regex, fileContent)
 	if err != nil {
 		return nil, err
 	}
 
-	fileLen := len(file)
+	fileLen := len(fileContent)
 
 	var properLines []string
 	for _, line := range indexesInLines {
 		if line != nil {
-			dataBefore := file[0:line[0]]
-			dataAfter := file[line[1]:fileLen]
+			dataBefore := fileContent[0:line[0]]
+			dataAfter := fileContent[line[1]:fileLen]
 			startingLineEnd := strings.LastIndex(dataBefore, "\n")
 			endingLineEnd := strings.Index(dataAfter, "\n")
 			if startingLineEnd == -1 {
@@ -120,7 +120,7 @@ func GetProperLines(regex string, file string) ([]string, error) {
 			} else {
 				endingLineEnd += line[1]
 			}
-			properLines = append(properLines, file[startingLineEnd:endingLineEnd])
+			properLines = append(properLines, fileContent[startingLineEnd:endingLineEnd])
 		}
 	}
 
