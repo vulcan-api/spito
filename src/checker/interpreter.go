@@ -2,11 +2,9 @@ package checker
 
 import (
 	"github.com/yuin/gopher-lua"
-	"layeh.com/gopher-luar"
-	"reflect"
 )
 
-const devMode = false
+const devMode = true
 
 func ExecuteLuaMain(script string, rulesHistory *RulesHistory, errChan chan error) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: !devMode})
@@ -41,17 +39,4 @@ func attachRuleRequiring(L *lua.LState, rulesHistory *RulesHistory, errChan chan
 
 		return 1
 	}))
-}
-
-func setGlobalConstructor(L *lua.LState, name string, Obj reflect.Type) {
-	L.SetGlobal(name, L.NewFunction(func(state *lua.LState) int {
-		obj := reflect.New(Obj)
-
-		L.Push(luar.New(L, obj.Interface()))
-		return 1
-	}))
-}
-
-func setGlobalFunction(L *lua.LState, name string, fn interface{}) {
-	L.SetGlobal(name, luar.New(L, fn))
 }
