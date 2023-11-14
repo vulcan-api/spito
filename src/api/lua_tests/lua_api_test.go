@@ -10,8 +10,10 @@ func TestLuaApi(t *testing.T) {
 
 	scripts := []string{
 		"sysinfo_test.lua",
-		"fs_rules_test.lua",
+		"fs_test.lua",
 		"rule_require_test.lua",
+		"daemon_test.lua",
+		"package_test.lua",
 	}
 
 	for _, script := range scripts {
@@ -26,7 +28,7 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if !doesRulePass {
-			t.Fatalf("Rule %v did not pass!", file)
+			t.Fatalf("Rule %s did not pass!", file)
 		}
 	}
 }

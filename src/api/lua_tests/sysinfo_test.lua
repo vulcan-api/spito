@@ -1,4 +1,5 @@
 function main()
 	 initSystem = GetInitSystem()
-	 return initSystem ~= ""
+	 distro = GetDistro()
+	 return initSystem ~= "" and distro.Versio ~= "" and distro.Name ~= ""
 end
