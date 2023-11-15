@@ -1,4 +1,4 @@
 function main()
-	 initSystem = GetInitSystem()
+	 initSystem = api.sys.GetInitSystem()
 	 return initSystem ~= ""
 end
