@@ -17,10 +17,9 @@ func TestPackageMatrix(t *testing.T) {
 }
 
 func testPackageInfo(packageName string, t *testing.T) {
-	p := Package{}
-	err := p.Get(packageName)
+	p, err := GetPackage(packageName)
 	if err != nil {
-		panic(err) 
+		panic(err)
 	}
 
 	if p.Name == "" {

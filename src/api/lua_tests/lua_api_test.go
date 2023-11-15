@@ -16,8 +16,8 @@ func TestLuaApi(t *testing.T) {
 		"package_test.lua",
 	}
 
-	for _, script := range scripts {
-		file, err := os.ReadFile(script)
+	for _, scriptName := range scripts {
+		file, err := os.ReadFile(scriptName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -28,7 +28,7 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if !doesRulePass {
-			t.Fatalf("Rule %s did not pass!", file)
+			t.Fatalf("Rule %s did not pass!", scriptName)
 		}
 	}
 }
