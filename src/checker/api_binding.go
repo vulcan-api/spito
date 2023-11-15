@@ -9,16 +9,20 @@ import (
 
 // Every api needs to be attached here in order to be available:
 func attachApi(L *lua.LState) {
-	var t = reflect.TypeOf
-
 	apiNamespace := newLuaNamespace()
 
-	setGlobalConstructor(L, "Package", t(api.Package{}))
-
+	apiNamespace.AddField("pkg", getPackageNamespace(L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(L))
 
 	apiNamespace.setGlobal(L, "api")
+}
+
+func getPackageNamespace(L *lua.LState) lua.LValue {
+	pkgNamespace := newLuaNamespace()
+	pkgNamespace.AddFn("Get", api.GetPackage)
+
+	return pkgNamespace.createTable(L)
 }
 
 func getSysInfoNamespace(L *lua.LState) lua.LValue {

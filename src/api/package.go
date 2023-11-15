@@ -80,10 +80,12 @@ func (p *Package) setField(key string, value string) {
 	}
 }
 
-func (p *Package) Get(name string) error {
+func GetPackage(name string) (Package, error) {
+	p := Package{}
+
 	packageInfoString, err := getPackageInfoString(name, packageManager)
 	if err != nil {
-		return err
+		return Package{}, err
 	}
 	packageInfo := strings.Split(packageInfoString, "\n")
 	packageInfo = packageInfo[:len(packageInfo)-2] // Delete empty elements
@@ -128,5 +130,5 @@ func (p *Package) Get(name string) error {
 
 		p.setField(key, value)
 	}
-	return nil
+	return p, nil
 }
