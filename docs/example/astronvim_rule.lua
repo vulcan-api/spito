@@ -25,7 +25,7 @@ end
 
 -- check if neovim is installed:
 function neovim()
-	local does_neovim_exists = Package.exists("neovim")
+	local does_neovim_exists = api.pkg.Exists("neovim")
 	if not does_neovim_exists then
 		neovim_install_impl = implementation_import("BaderBC/spito-packages", "neovim"), {
 			root_func = "install", -- default main
@@ -38,7 +38,7 @@ end
 
 -- check if astro-nvim is installed
 function astro_nvim()
-	local isAstroInstalled = fs.PathExists("~/.config/nvim/lua/astronvim")
+	local isAstroInstalled = api.fs.PathExists("~/.config/nvim/lua/astronvim")
 	if not isAstroInstalled then
 		local astro_impl = implementation_import("BaderBC/my-configs-spito", "astro-nvim")
 	end
