@@ -33,25 +33,24 @@ func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 	rule.isInProgress = isInProgress
 }
 
-func CheckRuleByIdentifier(identifier string, ruleName string) (bool, error) {
-	rulesHistory := RulesHistory{}
-	return checkAndProcessPanics(func(errChan chan error) (bool, error) {
-		return _internalCheckRule(&rulesHistory, errChan, identifier, ruleName), nil
+func CheckRuleByIdentifier(runtimeData *RuntimeData, identifier string, ruleName string) (bool, error) {
+	return checkAndProcessPanics(runtimeData, func(errChan chan error) (bool, error) {
+		return _internalCheckRule(runtimeData, identifier, ruleName), nil
 	})
 }
 
-func CheckRuleScript(script string) (bool, error) {
-	rulesHistory := RulesHistory{}
-	return checkAndProcessPanics(func(errChan chan error) (bool, error) {
-		return ExecuteLuaMain(script, &rulesHistory, errChan)
+func CheckRuleScript(runtimeData *RuntimeData, script string) (bool, error) {
+	return checkAndProcessPanics(runtimeData, func(errChan chan error) (bool, error) {
+		return ExecuteLuaMain(script, runtimeData)
 	})
 }
 
 func checkAndProcessPanics(
+	runtimeData *RuntimeData,
 	checkFunc func(errChan chan error) (bool, error),
 ) (bool, error) {
 
-	errChan := make(chan error)
+	errChan := runtimeData.ErrChan
 	doesRulePassChan := make(chan bool)
 
 	go func() {
@@ -77,11 +76,15 @@ func checkAndProcessPanics(
 	}
 }
 
-// This function shouldn't be executed directly
-func _internalCheckRule(rulesHistory *RulesHistory, errChan chan error, identifier string, name string) bool {
+// This function shouldn't be executed directly,
+// because in case of panic it does not handle errors at all
+func _internalCheckRule(runtimeData *RuntimeData, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
+
+	rulesHistory := &runtimeData.RulesHistory
+	errChan := runtimeData.ErrChan
 
 	if rulesHistory.Contains(simpleUrl, name) {
 		if rulesHistory.IsRuleInProgress(simpleUrl, name) {
@@ -106,7 +109,7 @@ func _internalCheckRule(rulesHistory *RulesHistory, errChan chan error, identifi
 	}
 
 	rulesHistory.SetProgress(simpleUrl, name, false)
-	doesRulePass, err := ExecuteLuaMain(script, rulesHistory, errChan)
+	doesRulePass, err := ExecuteLuaMain(script, runtimeData)
 	if err != nil {
 		return false
 	}

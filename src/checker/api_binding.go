@@ -7,13 +7,14 @@ import (
 	"reflect"
 )
 
-// Every api needs to be attached here in order to be available:
-func attachApi(L *lua.LState) {
+// Every cmdApi needs to be attached here in order to be available:
+func attachApi(runtimeData *RuntimeData, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
 	apiNamespace.AddField("pkg", getPackageNamespace(L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(L))
+	apiNamespace.AddField("info", getInfoNamespace(runtimeData, L))
 
 	apiNamespace.setGlobal(L, "api")
 }
@@ -50,6 +51,19 @@ func getFsNamespace(L *lua.LState) lua.LValue {
 	fsNamespace.AddFn("GetProperLines", api.GetProperLines)
 
 	return fsNamespace.createTable(L)
+}
+
+func getInfoNamespace(runtimeData *RuntimeData, L *lua.LState) lua.LValue {
+	infoApi := runtimeData.InfoApi
+	infoNamespace := newLuaNamespace()
+
+	infoNamespace.AddFn("Log", infoApi.Log)
+	infoNamespace.AddFn("Debug", infoApi.Debug)
+	infoNamespace.AddFn("Error", infoApi.Error)
+	infoNamespace.AddFn("Warn", infoApi.Warn)
+	infoNamespace.AddFn("Important", infoApi.Important)
+
+	return infoNamespace.createTable(L)
 }
 
 type LuaNamespace struct {

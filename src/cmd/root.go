@@ -23,4 +23,6 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
+	
+	rootCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 }
