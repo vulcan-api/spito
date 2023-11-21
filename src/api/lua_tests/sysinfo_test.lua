@@ -3,5 +3,5 @@ function main()
 	 if err ~= nil then return false end
 	 distro = api.sys.GetDistro()
 	
-	 return initSystem ~= "" and distro.Name ~= ""
+	 return initSystem ~= "" and distro.Name ~= "" and distro.Version ~= ""
 end

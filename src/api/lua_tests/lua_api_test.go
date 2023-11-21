@@ -1,6 +1,7 @@
 package api_tests
 
 import (
+	"fmt"
 	"github.com/nasz-elektryk/spito/checker"
 	"os"
 	"testing"
@@ -24,7 +25,7 @@ func TestLuaApi(t *testing.T) {
 
 		doesRulePass, err := checker.CheckRuleScript(string(file))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Error occurred: %s", fmt.Sprint(err))
 		}
 
 		if !doesRulePass {
