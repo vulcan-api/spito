@@ -16,10 +16,13 @@ var checkFileCmd = &cobra.Command{
 	Short: "Check local lua rule file",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
+		path := args[1]
+
 		runtimeData := getInitialRuntimeData(cmd)
-		script, err := os.ReadFile(args[1])
+		script, err := os.ReadFile(path)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Failed to read file %s\n", path)
+			os.Exit(1)
 		}
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script))
