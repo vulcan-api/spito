@@ -11,7 +11,7 @@ func TestLuaApi(t *testing.T) {
 
 	scripts := []string{
 		"sysinfo_test.lua",
-		//"fs_test.lua",
+		"fs_test.lua",
 		"rule_require_test.lua",
 		"daemon_test.lua",
 		"package_test.lua",

@@ -2,11 +2,7 @@ package guiApi
 
 import "github.com/godbus/dbus"
 
-const (
-	dbusServiceName   = "org.spito.gui"
-	dbusObjectPath    = "/org/spito/gui"
-	dbusInterfaceName = "org.spito.gui"
-)
+const dbusInterfaceName = "org.spito.gui.api.info"
 
 type InfoApi struct {
 	BusObject dbus.BusObject
@@ -44,7 +40,7 @@ func intoInterfaceArray(args []string) []any {
 	result := make([]any, len(args))
 
 	for i, e := range args {
-		result[i+1] = e
+		result[i] = e
 	}
 
 	return result

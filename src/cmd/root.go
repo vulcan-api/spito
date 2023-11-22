@@ -25,5 +25,6 @@ func init() {
 	rootCmd.AddCommand(checkFileCmd)
 	rootCmd.AddCommand(checkCmd)
 
-	rootCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
+	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
+	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 }
