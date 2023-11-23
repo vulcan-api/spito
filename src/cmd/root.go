@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	cmdNew "github.com/nasz-elektryk/spito/cmd/new"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -23,4 +24,5 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
+	rootCmd.AddCommand(cmdNew.NewCmd)
 }
