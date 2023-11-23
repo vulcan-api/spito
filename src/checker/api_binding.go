@@ -7,13 +7,14 @@ import (
 	"reflect"
 )
 
-// Every api needs to be attached here in order to be available:
-func attachApi(L *lua.LState) {
+// Every cmdApi needs to be attached here in order to be available:
+func attachApi(importLoopData *ImportLoopData, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
 	apiNamespace.AddField("pkg", getPackageNamespace(L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(L))
+	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 
 	apiNamespace.setGlobal(L, "api")
 }
@@ -50,6 +51,19 @@ func getFsNamespace(L *lua.LState) lua.LValue {
 	fsNamespace.AddFn("GetProperLines", api.GetProperLines)
 
 	return fsNamespace.createTable(L)
+}
+
+func getInfoNamespace(importLoopData *ImportLoopData, L *lua.LState) lua.LValue {
+	infoApi := importLoopData.InfoApi
+	infoNamespace := newLuaNamespace()
+
+	infoNamespace.AddFn("Log", infoApi.Log)
+	infoNamespace.AddFn("Debug", infoApi.Debug)
+	infoNamespace.AddFn("Error", infoApi.Error)
+	infoNamespace.AddFn("Warn", infoApi.Warn)
+	infoNamespace.AddFn("Important", infoApi.Important)
+
+	return infoNamespace.createTable(L)
 }
 
 type LuaNamespace struct {
@@ -98,11 +112,6 @@ func (ln LuaNamespace) createTable(L *lua.LState) *lua.LTable {
 	}
 
 	return namespaceTable
-}
-
-func setGlobalConstructor(L *lua.LState, name string, Obj reflect.Type) {
-	L.SetGlobal(name, constructorFunction(L, Obj))
-
 }
 
 func constructorFunction(L *lua.LState, Obj reflect.Type) lua.LValue {
