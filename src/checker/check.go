@@ -33,24 +33,24 @@ func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 	rule.isInProgress = isInProgress
 }
 
-func CheckRuleByIdentifier(runtimeData *RuntimeData, identifier string, ruleName string) (bool, error) {
-	return checkAndProcessPanics(runtimeData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(runtimeData, identifier, ruleName), nil
+func CheckRuleByIdentifier(importLoopData *ImportLoopData, identifier string, ruleName string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		return _internalCheckRule(importLoopData, identifier, ruleName), nil
 	})
 }
 
-func CheckRuleScript(runtimeData *RuntimeData, script string) (bool, error) {
-	return checkAndProcessPanics(runtimeData, func(errChan chan error) (bool, error) {
-		return ExecuteLuaMain(script, runtimeData)
+func CheckRuleScript(importLoopData *ImportLoopData, script string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		return ExecuteLuaMain(script, importLoopData)
 	})
 }
 
 func checkAndProcessPanics(
-	runtimeData *RuntimeData,
+	importLoopData *ImportLoopData,
 	checkFunc func(errChan chan error) (bool, error),
 ) (bool, error) {
 
-	errChan := runtimeData.ErrChan
+	errChan := importLoopData.ErrChan
 	doesRulePassChan := make(chan bool)
 
 	go func() {
@@ -78,13 +78,13 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(runtimeData *RuntimeData, identifier string, name string) bool {
+func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
 
-	rulesHistory := &runtimeData.RulesHistory
-	errChan := runtimeData.ErrChan
+	rulesHistory := &importLoopData.RulesHistory
+	errChan := importLoopData.ErrChan
 
 	if rulesHistory.Contains(simpleUrl, name) {
 		if rulesHistory.IsRuleInProgress(simpleUrl, name) {
@@ -109,7 +109,7 @@ func _internalCheckRule(runtimeData *RuntimeData, identifier string, name string
 	}
 
 	rulesHistory.SetProgress(simpleUrl, name, false)
-	doesRulePass, err := ExecuteLuaMain(script, runtimeData)
+	doesRulePass, err := ExecuteLuaMain(script, importLoopData)
 	if err != nil {
 		return false
 	}

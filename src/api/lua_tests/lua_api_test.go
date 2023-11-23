@@ -23,7 +23,7 @@ func TestLuaApi(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		runtimeData := checker.RuntimeData{
+		runtimeData := checker.ImportLoopData{
 			RulesHistory: checker.RulesHistory{},
 			ErrChan:      make(chan error),
 			InfoApi:      cmdApi.InfoApi{},

@@ -53,7 +53,7 @@ var checkCmd = &cobra.Command{
 	},
 }
 
-func getInitialRuntimeData(cmd *cobra.Command) checker.RuntimeData {
+func getInitialRuntimeData(cmd *cobra.Command) checker.ImportLoopData {
 	isExecutedByGui, err := cmd.Flags().GetBool("gui-child-mode")
 	if err != nil {
 		isExecutedByGui = true
@@ -75,7 +75,7 @@ func getInitialRuntimeData(cmd *cobra.Command) checker.RuntimeData {
 		infoApi = cmdApi.InfoApi{}
 	}
 
-	return checker.RuntimeData{
+	return checker.ImportLoopData{
 		RulesHistory: checker.RulesHistory{},
 		ErrChan:      make(chan error),
 		InfoApi:      infoApi,
