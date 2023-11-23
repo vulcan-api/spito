@@ -1,32 +1,42 @@
-# SPITO
-SPTIO (Simple Powerful Interprocess Tool to Overpower) has been designed
-to allow users easily swap and edit configuration files.
+# Spito
+Spito has been designed to allow users easily swap 
+and edit configuration files. It's user-friendly and
+lays the foundations for auto-repair tools.
 
 ## Use cases
-**For a while it's a myth language**
+**Currently, we are working on these features**
 
-### Simple config
-- used rule: samba-guest-are-god
-- purpose: use whole ready-to-use samba config
+### Simple config - samba
+Samba is a simple FOSS file server. Samba is this kind of software
+that requires configuration on start, and it costs a lot of searching 
+when you want to do anything.
+
+**samba-guests-are-god:**
+This rule allows samba guests to do almost everything. It's especially 
+useful when using virtual machines without shared files support.
 ```shell
-spito -r samba-guests-are-god
+spito samba-guests-are-god
 ```
 
-### Variable config
-- used rule: wireguard
-- purpose: use config that may need additional information
-- good to notice: rule will generate keys for you
+### Variable config - wireguard
+Wireguard is fast, modern, secure VPN tunnel. It's not hard to 
+configure, but requires some effort. Rule can generate required
+private and public keys. Wireguard allows to easily 
+add clients, but rule add initially as many clients as 
+you specify.
 
 ```shell
 spito wireguard -o NUMBER_OF_CLIENT=3
 ```
 
-### Part of config
-- used rule: samba-guests-are-god
-- purpose: use create mask from config
+### Part of config - gdm
+Gnome is huge project that contains desktop environment,
+display manager and default some application. Let's say
+you want to install whole Gnome environment. But you can
+also install and configure only gdm.
 
 ```shell
-spito samba-guests-are-god@create-mask
+spito gnome@gdm
 ```
 ## License
 This project is licensed under the [GPL v3.0](./LICENSE)
