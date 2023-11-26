@@ -1,6 +1,9 @@
 package checker
 
-import "errors"
+import (
+	"errors"
+	"github.com/nasz-elektryk/spito/api"
+)
 
 type Rule struct {
 	url          string
@@ -100,6 +103,15 @@ func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name 
 	if err != nil {
 		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
 		panic(nil)
+	}
+
+	lockfilePath := ruleSetLocation.getRuleSetPath() + "/" + LOCK_FILENAME
+	if !api.FileExists(lockfilePath, false) {
+		_, error := ruleSetLocation.createLockfile()
+		if error != nil {
+			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
+			panic(nil)
+		}
 	}
 
 	script, err := getScript(ruleSetLocation, name)
