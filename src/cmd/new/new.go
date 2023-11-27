@@ -27,15 +27,15 @@ var spitoExampleRule []byte
 //go:embed "initial_ruleset/spito.yaml"
 var spitoYaml []byte
 
-func newRuleset(name string) error {
-	if err := os.Mkdir(name, os.ModePerm); err != nil {
+func newRuleset(directoryName string) error {
+	if err := os.Mkdir(directoryName, os.ModePerm); err != nil {
 		return err
 	}
 
-	err := os.WriteFile(name+"/name-of-rule.lua", spitoExampleRule, os.ModePerm)
+	err := os.WriteFile(directoryName+"/name-of-rule.lua", spitoExampleRule, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(name+"/spito.yaml", spitoYaml, os.ModePerm)
+	return os.WriteFile(directoryName+"/spito.yaml", spitoYaml, os.ModePerm)
 }
