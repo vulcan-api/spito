@@ -1,4 +1,4 @@
 git_prefix: github.com
 
 rules:
-  
+  name-of-rule: ./name-of-rule.lua

@@ -21,11 +21,19 @@ var NewCmd = &cobra.Command{
 	},
 }
 
+//go:embed "initial_ruleset/name-of-rule.lua"
+var spitoExampleRule []byte
+
 //go:embed "initial_ruleset/spito.yaml"
 var spitoYaml []byte
 
 func newRuleset(name string) error {
 	if err := os.Mkdir(name, os.ModePerm); err != nil {
+		return err
+	}
+
+	err := os.WriteFile(name+"/name-of-rule.lua", spitoExampleRule, os.ModePerm)
+	if err != nil {
 		return err
 	}
 
