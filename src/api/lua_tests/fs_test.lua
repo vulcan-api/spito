@@ -9,30 +9,30 @@ function main()
         return false
     end
 
-    hostsExits, err = api.fs.FileExists("/etc/hosts", false)
-    if err ~= nil and hostsExists then
+    releaseExits, err = api.fs.FileExists("/etc/os-release", false)
+    if err ~= nil and releaseExists then
         return false
     end
 
-    hosts, err = api.fs.ReadFile("/etc/hosts")
+    resolv, err = api.fs.ReadFile("/etc/resolv.conf")
     if err ~= nil then
         return false
     end
 
-    cleanHosts = api.fs.RemoveComments(hosts, "#", "", "")
-    localhostIsOnSite = api.fs.FileContains(cleanHosts, "127.0.0.1")
-    if not localhostIsOnSite then
+    cleanResolv = api.fs.RemoveComments(resolv, "#", "", "")
+    anyNameserverIsOnSite = api.fs.FileContains(cleanResolv, "nameserver")
+    if not anyNameserverIsOnSite then
         return false
     end
 
-    ipRegex = "ip6-*"
-    indexes, err = api.fs.Find(ipRegex, cleanHosts)
+    partitionRegex = "[0-9]+."
+    indexes, err = api.fs.Find(partitionRegex, cleanResolv)
 
     if err ~= nil or indexes == nil then
         return false
     end
 
-    lines, err = api.fs.GetProperLines(ipRegex, hosts)
+    lines, err = api.fs.GetProperLines(partitionRegex, resolv)
 
     if err ~= nil or lines == nil then
         return false

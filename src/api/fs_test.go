@@ -6,7 +6,7 @@ import (
 )
 
 const testDir = "/etc"
-const testFile = "/etc/bash.bashrc"
+const testFile = "/etc/os-release"
 
 func TestPathExists(t *testing.T) {
 	pathExists := PathExists(testDir)
