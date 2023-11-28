@@ -2,13 +2,11 @@ package checker
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"strings"
-	"github.com/nasz-elektryk/spito/api"
+	"sync"
 	"gopkg.in/yaml.v3"
-	"slices"
 )
 
 const CONFIG_FILENAME = "spito-rules.yml"
@@ -41,6 +39,10 @@ func getDefaultRepoPrefix() string {
 
 type RuleSetLocation struct {
 	simpleUrl string
+}
+
+type DependencyTreeLayout struct {
+	Dependencies []string
 }
 
 // e.g. from: https://github.com/Nasz-Elektryk/spito-ruleset.git to Nasz-Elektryk/spito-ruleset
@@ -94,16 +96,13 @@ func (r *RuleSetLocation) isRuleSetDownloaded() bool {
 	return !errors.Is(err, fs.ErrNotExist)
 }
 
-func (rulesetLocation *RuleSetLocation) createLockfile() ([]string, error) {
+func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
 	configPath := rulesetLocation.getRuleSetPath() + "/" + CONFIG_FILENAME
 	configFileContents, error := os.ReadFile(configPath)
 	if error != nil {
 		return []string{}, error
 	}
 
-	type DependencyTreeLayout struct {
-		Dependencies []string
-	}
 	var basicDependencyTree DependencyTreeLayout
 
 	error = yaml.Unmarshal(configFileContents, &basicDependencyTree)
@@ -115,39 +114,34 @@ func (rulesetLocation *RuleSetLocation) createLockfile() ([]string, error) {
 	outputDependencyTree.Dependencies = make([]string, len(basicDependencyTree.Dependencies))
 	copy(outputDependencyTree.Dependencies, basicDependencyTree.Dependencies)
 
+	firstDependencyLocation := RuleSetLocation{}
+	
+	if len(basicDependencyTree.Dependencies) > 0 {
+		firstDependencyLocation.new(strings.Split(basicDependencyTree.Dependencies[0], "@")[0])
+	}
+
+	var waitGroup sync.WaitGroup
+
 	for _, dependencyName := range basicDependencyTree.Dependencies {
-		dependencyLocation := RuleSetLocation{}
-		dependencyLocation.new(strings.Split(dependencyName, "@")[0])
-		if !dependencyLocation.isRuleSetDownloaded() {
-			error = FetchRuleSet(&dependencyLocation)
-			if error != nil {
-				return []string{}, error
+		waitGroup.Add(1)
+		go func(dependencyNameParameter string) {
+			defer waitGroup.Done()
+			dependencyLocation := RuleSetLocation{}
+			dependencyLocation.new(strings.Split(dependencyNameParameter, "@")[0])
+			if _, exists := rulesInProgress[dependencyNameParameter]; !exists && !dependencyLocation.isRuleSetDownloaded() {
+				rulesInProgress[dependencyNameParameter] = true
+				FetchRuleSet(&dependencyLocation)
 			}
-		}
-		lockfilePath := dependencyLocation.getRuleSetPath() + "/" + LOCK_FILENAME
-		if api.FileExists(lockfilePath, false) {
-			temporaryDependencyTree := DependencyTreeLayout{}
-			configFileContents, error = os.ReadFile(dependencyLocation.getRuleSetPath() + "/" + CONFIG_FILENAME)
-			if error != nil {
-				return []string{}, error
-			}
+		}(dependencyName)
+	}
 
-			error = yaml.Unmarshal(configFileContents, &temporaryDependencyTree)
-
-			if error != nil {
-				return []string{}, error
-			}
-			for _, nestedDependencyName := range temporaryDependencyTree.Dependencies {
-				if !slices.Contains(outputDependencyTree.Dependencies, nestedDependencyName) {
-					 outputDependencyTree.Dependencies = append(outputDependencyTree.Dependencies, nestedDependencyName)
-				}
-			}
-		} else {
-			recursiveDependencyTree, error := dependencyLocation.createLockfile()
-			if error == nil {
-				outputDependencyTree.Dependencies = append(outputDependencyTree.Dependencies, recursiveDependencyTree...)
-			}
+	waitGroup.Wait()
+	if firstDependencyLocation.simpleUrl != "" {
+		toBeAppended, error := firstDependencyLocation.createLockfile(rulesInProgress)
+		if error != nil {
+			return nil, error
 		}
+		outputDependencyTree.Dependencies = append(outputDependencyTree.Dependencies, toBeAppended...)
 	}
 
 	lockfilePath := rulesetLocation.getRuleSetPath() + "/" + LOCK_FILENAME
@@ -166,14 +160,4 @@ func (rulesetLocation *RuleSetLocation) createLockfile() ([]string, error) {
 	lockfile.Write(yamlOutput)
 
 	return outputDependencyTree.Dependencies, nil
-}
-
-func anyToError(val any) error {
-	if err, ok := val.(error); ok {
-		return err
-	}
-	if err, ok := val.(string); ok {
-		return errors.New(err)
-	}
-	return fmt.Errorf("panic: %v", val)
 }
