@@ -13,10 +13,10 @@ type Daemon struct {
 	Name      string
 	IsActive  bool
 	IsEnabled bool
+	InitLevel string
 }
 
 func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-
 	opts := systemctl.Options{UserMode: false}
 	unit := daemonName
 
@@ -34,32 +34,47 @@ func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 		Name:      daemonName,
 		IsActive:  isActive,
 		IsEnabled: isEnabled,
+		InitLevel: "", // TODO
 	}, nil
 }
 
 func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	args := []string{daemonName, "status"}
-	cmd := exec.CommandContext(ctx, "rc-service", args...)
+	cmd := exec.CommandContext(ctx, "rc-service", daemonName, "status")
 	rawOutput, err := cmd.Output()
 	if err != nil {
 		return Daemon{}, err
 	}
-	output := strings.TrimSpace(string(rawOutput))
-	rawStatus := strings.TrimLeft(output, "* status: ")
-	status := strings.TrimSpace(string(rawStatus))
+
+	output := string(rawOutput)
 
 	daemon := Daemon{}
 
-	switch status {
-	case "started":
+	if strings.Contains(output, "started") {
 		daemon.IsActive = true
-		break
-	case "stopped":
+	} else if strings.Contains(output, "stopped") {
 		daemon.IsActive = false
-		break
-	default:
-		return Daemon{}, errors.New("unknown output of rc-service")
+	} else {
+		return Daemon{}, errors.New(output)
 	}
+
+	cmd = exec.CommandContext(ctx, "rc-update", "-v", "show")
+	rawOutput, err = cmd.Output()
+
+	if err != nil {
+		return Daemon{}, err
+	}
+
+	daemonsAndInitLevels := strings.Split(string(rawOutput), "|")
+	if len(daemonsAndInitLevels) > 1 {
+		initLevel := strings.TrimSpace(daemonsAndInitLevels[1])
+		if initLevel != "" {
+			daemon.InitLevel = initLevel
+			daemon.IsEnabled = true
+		}
+	}
+
+	daemon.Name = daemonName
+
 	return daemon, nil
 }
 
@@ -71,11 +86,12 @@ func GetDaemon(daemonName string) (Daemon, error) {
 	if err != nil {
 		return Daemon{}, err
 	}
+
 	switch initSystem {
 	case SYSTEMD:
 		return getSystemdDaemon(ctx, daemonName)
 	case OPENRC:
-		return Daemon{}, err
+		return getOpenRCDaemon(ctx, daemonName)
 	case RUNIT:
 		return Daemon{}, err
 	default:

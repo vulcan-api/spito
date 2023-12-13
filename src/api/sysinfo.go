@@ -22,7 +22,7 @@ func (is InitSystem) String() string {
 	case RUNIT:
 		return "runit"
 	case OPENRC:
-		return "openrc"
+		return "init"
 	}
 	return ""
 }
@@ -32,7 +32,7 @@ func (is InitSystem) String() string {
 const (
 	SYSTEMD InitSystem = "systemd"
 	RUNIT InitSystem = "runit"
-	OPENRC InitSystem = "openrc"
+	OPENRC InitSystem = "init"
 	UNKNOWN InitSystem = ""
 )
 
