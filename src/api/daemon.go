@@ -64,12 +64,23 @@ func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 		return Daemon{}, err
 	}
 
-	daemonsAndInitLevels := strings.Split(string(rawOutput), "|")
-	if len(daemonsAndInitLevels) > 1 {
-		initLevel := strings.TrimSpace(daemonsAndInitLevels[1])
-		if initLevel != "" {
-			daemon.InitLevel = initLevel
-			daemon.IsEnabled = true
+	lines := strings.Split(string(rawOutput), "\n")
+
+	daemon.IsEnabled = false
+
+	for _, line := range lines {
+		splitedLine := strings.Split(string(line), "|")
+		if len(splitedLine) <= 1 {
+			continue
+		}
+
+		splitedLine[0] = strings.TrimSpace(splitedLine[0])
+		if splitedLine[0] == daemonName {
+			initLevel := strings.TrimSpace(splitedLine[1])
+			if initLevel != "" {
+				daemon.InitLevel = initLevel
+				daemon.IsEnabled = true
+			}
 		}
 	}
 
