@@ -3,10 +3,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/godbus/dbus"
-	"github.com/nasz-elektryk/spito/api"
 	"github.com/nasz-elektryk/spito/checker"
 	cmdApi "github.com/nasz-elektryk/spito/cmd/cmdApi"
 	"github.com/nasz-elektryk/spito/cmd/guiApi"
+	"github.com/nasz-elektryk/spito/shared"
+	"github.com/nasz-elektryk/spito/vrct"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -53,13 +54,13 @@ var checkCmd = &cobra.Command{
 	},
 }
 
-func getInitialRuntimeData(cmd *cobra.Command) checker.ImportLoopData {
+func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 	isExecutedByGui, err := cmd.Flags().GetBool("gui-child-mode")
 	if err != nil {
 		isExecutedByGui = true
 	}
 
-	var infoApi api.InfoInterface
+	var infoApi shared.InfoInterface
 
 	if isExecutedByGui {
 		conn, err := dbus.SessionBus()
@@ -75,8 +76,14 @@ func getInitialRuntimeData(cmd *cobra.Command) checker.ImportLoopData {
 		infoApi = cmdApi.InfoApi{}
 	}
 
-	return checker.ImportLoopData{
-		RulesHistory: checker.RulesHistory{},
+	ruleVRCT, err := vrct.NewRuleVRCT()
+	if err != nil {
+		panic(err)
+	}
+
+	return shared.ImportLoopData{
+		VRCT:         *ruleVRCT,
+		RulesHistory: shared.RulesHistory{},
 		ErrChan:      make(chan error),
 		InfoApi:      infoApi,
 	}

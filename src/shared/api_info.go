@@ -1,4 +1,4 @@
-package api
+package shared
 
 type InfoInterface interface {
 	Log(...string)

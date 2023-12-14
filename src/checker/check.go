@@ -1,52 +1,24 @@
 package checker
 
-import "errors"
+import (
+	"errors"
+	"github.com/nasz-elektryk/spito/shared"
+)
 
-type Rule struct {
-	url          string
-	name         string
-	isInProgress bool
-}
-
-type RulesHistory map[string]Rule
-
-func (r RulesHistory) Contains(url string, name string) bool {
-	_, ok := r[url+name]
-	return ok
-}
-
-func (r RulesHistory) IsRuleInProgress(url string, name string) bool {
-	val := r[url+name]
-	return val.isInProgress
-}
-
-func (r RulesHistory) Push(url string, name string, isInProgress bool) {
-	r[url+name] = Rule{
-		url:          url,
-		name:         name,
-		isInProgress: isInProgress,
-	}
-}
-
-func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
-	rule := r[url+name]
-	rule.isInProgress = isInProgress
-}
-
-func CheckRuleByIdentifier(importLoopData *ImportLoopData, identifier string, ruleName string) (bool, error) {
+func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		return _internalCheckRule(importLoopData, identifier, ruleName), nil
 	})
 }
 
-func CheckRuleScript(importLoopData *ImportLoopData, script string) (bool, error) {
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		return ExecuteLuaMain(script, importLoopData)
 	})
 }
 
 func checkAndProcessPanics(
-	importLoopData *ImportLoopData,
+	importLoopData *shared.ImportLoopData,
 	checkFunc func(errChan chan error) (bool, error),
 ) (bool, error) {
 
@@ -78,7 +50,7 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name string) bool {
+func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl

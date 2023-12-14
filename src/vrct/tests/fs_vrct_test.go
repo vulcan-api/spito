@@ -2,19 +2,17 @@ package tests
 
 import (
 	"github.com/nasz-elektryk/spito/vrct"
-	"github.com/nasz-elektryk/spito/vrct/vrctFs"
 	"testing"
 )
 
 func TestCreatingFile(t *testing.T) {
-	ruleVrct := vrct.NewRuleVRCT()
-	fsVrct := ruleVrct.Of((*vrctFs.FsVRCT)(nil)).(*vrctFs.FsVRCT)
-
-	if err := fsVrct.EnsureInitialized(); err != nil {
-		t.Fatal("Failed to initialize fsVrct", err)
+	ruleVrct, err := vrct.NewRuleVRCT()
+	if err != nil {
+		t.Fatal("Failed to Create VRCT instance")
 	}
+	fsVrct := &ruleVrct.Fs
 
-	err := fsVrct.CreateFile("/test/file.txt", []byte("test value"), false)
+	err = fsVrct.CreateFile("/test/file.txt", []byte("test value"), false)
 	if err != nil {
 		t.Fatal("Failed to create file /test/file.txt\n", err)
 	}

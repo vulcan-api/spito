@@ -16,28 +16,21 @@ type FsVRCT struct {
 	fsRequirements []FsRequirement
 }
 
-func (v *FsVRCT) EnsureInitialized() error {
-	if v.fsRequirements == nil {
-		v.fsRequirements = make([]FsRequirement, 0)
-	}
-
-	if v.virtualFSPath != "" {
-		return nil
-	}
-
+func NewFsVRCT() (FsVRCT, error) {
 	err := os.MkdirAll(virtualFSPathPrefix, os.ModePerm)
 	if err != nil {
-		return err
+		return FsVRCT{}, err
 	}
 
 	dir, err := os.MkdirTemp(virtualFSPathPrefix, "")
 	if err != nil {
-		return err
+		return FsVRCT{}, err
 	}
 
-	v.virtualFSPath = dir
-
-	return nil
+	return FsVRCT{
+		virtualFSPath:  dir,
+		fsRequirements: make([]FsRequirement, 0),
+	}, nil
 }
 
 func (v *FsVRCT) checkRequirements() (bool, *FsRequirement) {
@@ -242,7 +235,7 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 	}
 
 	// Todo: handle other FileTypes
-	panic("Unimplemented simulation FileType simulation")
+	panic("Unimplemented FileType simulation")
 }
 
 func (p *FilePrototype) Read(prototypePath string) error {

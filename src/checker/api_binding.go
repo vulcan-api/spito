@@ -2,18 +2,19 @@ package checker
 
 import (
 	"github.com/nasz-elektryk/spito/api"
+	"github.com/nasz-elektryk/spito/shared"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
 	"reflect"
 )
 
 // Every cmdApi needs to be attached here in order to be available:
-func attachApi(importLoopData *ImportLoopData, L *lua.LState) {
+func attachApi(importLoopData *shared.ImportLoopData, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
 	apiNamespace.AddField("pkg", getPackageNamespace(L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
-	apiNamespace.AddField("fs", getFsNamespace(L))
+	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 
 	apiNamespace.setGlobal(L, "api")
@@ -36,24 +37,28 @@ func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	return sysInfoNamespace.createTable(L)
 }
 
-func getFsNamespace(L *lua.LState) lua.LValue {
+func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue {
 	fsNamespace := newLuaNamespace()
 
-	fsNamespace.AddFn("PathExists", api.PathExists)
-	fsNamespace.AddFn("PathExists", api.PathExists)
-	fsNamespace.AddFn("FileExists", api.FileExists)
-	fsNamespace.AddFn("ReadFile", api.ReadFile)
-	fsNamespace.AddFn("ReadDir", api.ReadDir)
-	fsNamespace.AddFn("FileContains", api.FileContains)
-	fsNamespace.AddFn("RemoveComments", api.RemoveComments)
-	fsNamespace.AddFn("Find", api.Find)
-	fsNamespace.AddFn("FindAll", api.FindAll)
-	fsNamespace.AddFn("GetProperLines", api.GetProperLines)
+	apiFs := api.FsApi{
+		ImportLoopData: importLoop,
+	}
+
+	fsNamespace.AddFn("PathExists", apiFs.PathExists)
+	fsNamespace.AddFn("FileExists", apiFs.FileExists)
+	fsNamespace.AddFn("ReadFile", apiFs.ReadFile)
+	fsNamespace.AddFn("ReadDir", apiFs.ReadDir)
+	fsNamespace.AddFn("FileContains", apiFs.FileContains)
+	fsNamespace.AddFn("RemoveComments", apiFs.RemoveComments)
+	fsNamespace.AddFn("Find", apiFs.Find)
+	fsNamespace.AddFn("FindAll", apiFs.FindAll)
+	fsNamespace.AddFn("GetProperLines", apiFs.GetProperLines)
+	fsNamespace.AddFn("CreateFile", apiFs.CreateFile)
 
 	return fsNamespace.createTable(L)
 }
 
-func getInfoNamespace(importLoopData *ImportLoopData, L *lua.LState) lua.LValue {
+func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	infoApi := importLoopData.InfoApi
 	infoNamespace := newLuaNamespace()
 

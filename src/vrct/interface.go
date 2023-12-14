@@ -3,7 +3,6 @@ package vrct
 import "fmt"
 
 type VRCT interface {
-	EnsureInitialized() error
 	InnerValidate() error // TODO change type into *ConflictError
 	Apply() error
 

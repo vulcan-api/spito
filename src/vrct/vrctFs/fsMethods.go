@@ -55,7 +55,12 @@ func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
 	filePrototype := FilePrototype{}
 	err = filePrototype.Read(fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, filePath))
 	if err != nil {
-		return nil, err
+		file, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("file %s not found neither in VRCT nor real FS: %s", filePath, err)
+		}
+
+		return file, nil
 	}
 
 	if len(filePrototype.Layers) == 0 {

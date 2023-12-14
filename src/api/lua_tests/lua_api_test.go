@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"github.com/nasz-elektryk/spito/checker"
 	"github.com/nasz-elektryk/spito/cmd/cmdApi"
+	"github.com/nasz-elektryk/spito/shared"
+	"github.com/nasz-elektryk/spito/vrct"
 	"os"
 	"testing"
 )
 
 func TestLuaApi(t *testing.T) {
-
 	scripts := []string{
 		"sysinfo_test.lua",
 		"fs_test.lua",
@@ -24,8 +25,14 @@ func TestLuaApi(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		runtimeData := checker.ImportLoopData{
-			RulesHistory: checker.RulesHistory{},
+		ruleVRCT, err := vrct.NewRuleVRCT()
+		if err != nil {
+			t.Fatal("Failed to initialized rule VRCT", err)
+		}
+
+		runtimeData := shared.ImportLoopData{
+			VRCT:         *ruleVRCT,
+			RulesHistory: shared.RulesHistory{},
 			ErrChan:      make(chan error),
 			InfoApi:      cmdApi.InfoApi{},
 		}
