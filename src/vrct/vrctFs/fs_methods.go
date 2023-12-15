@@ -57,15 +57,67 @@ func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
 	if err != nil {
 		file, err := os.ReadFile(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("file %s not found neither in VRCT nor real FS: %s", filePath, err)
+			return nil, os.ErrNotExist
 		}
 
 		return file, nil
 	}
 
 	if len(filePrototype.Layers) == 0 {
-		return nil, fmt.Errorf("file %s not found", filePath)
+		return nil, os.ErrNotExist
 	}
 
 	return filePrototype.SimulateFile()
+}
+
+func (v *FsVRCT) ReadDir(path string) ([]os.DirEntry, error) {
+	dirEntries := make(map[string]os.DirEntry)
+	path, err := pathMustBeAbsolute(path)
+	if err != nil {
+		return nil, err
+	}
+
+	realFsEntries, err := os.ReadDir(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	} else {
+		for _, entry := range realFsEntries {
+			dirEntries[entry.Name()] = entry
+		}
+	}
+
+	vrctEntries, err := os.ReadDir(fmt.Sprintf("%s%s", v.virtualFSPath, path))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	} else {
+		for _, entry := range vrctEntries {
+			name := entry.Name()
+			if name[len(name)-15:] != ".prototype.bson" && !entry.IsDir() {
+				continue
+			}
+			if !entry.IsDir() {
+				name = name[:len(name)-15]
+			}
+
+			dirEntries[name] = DirEntry{
+				name:     name,
+				isDir:    entry.IsDir(),
+				type_:    entry.Type(), // TODO: consider changing it
+				infoErr:  nil,          // TODO
+				fileInfo: nil,          // TODO
+			}
+		}
+	}
+
+	res := make([]os.DirEntry, 0, len(dirEntries))
+
+	for _, entry := range dirEntries {
+		res = append(res, entry)
+	}
+
+	return res, nil
 }

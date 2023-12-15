@@ -1,22 +1,24 @@
 package api
 
 import (
-	"github.com/nasz-elektryk/spito/shared"
+	"github.com/nasz-elektryk/spito/vrct/vrctFs"
 	"os"
 	"regexp"
 	"strings"
 )
 
 type FsApi struct {
-	ImportLoopData *shared.ImportLoopData
+	FsVRCT *vrctFs.FsVRCT
 }
 
 func (*FsApi) PathExists(path string) bool {
+	// TODO: create VRCT implementation for os.Stat
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
 }
 
 func (*FsApi) FileExists(path string, isDirectory bool) bool {
+	// TODO: create VRCT implementation for os.Stat
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false
@@ -29,17 +31,16 @@ func (*FsApi) FileExists(path string, isDirectory bool) bool {
 }
 
 func (f *FsApi) ReadFile(path string) (string, error) {
-	fsVRCT := &f.ImportLoopData.VRCT.Fs
-	file, err := fsVRCT.ReadFile(path)
+	file, err := f.FsVRCT.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(file), nil
 }
 
-func (*FsApi) ReadDir(path string) ([]os.DirEntry, error) {
-	return os.ReadDir(path)
+func (f *FsApi) ReadDir(path string) ([]os.DirEntry, error) {
+	return f.FsVRCT.ReadDir(path)
 }
 
 func removeRanges(fileContent string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
@@ -139,6 +140,5 @@ type CreateFileOptions struct {
 }
 
 func (f *FsApi) CreateFile(path, content string, options CreateFileOptions) error {
-	fsVRCT := &f.ImportLoopData.VRCT.Fs
-	return fsVRCT.CreateFile(path, []byte(content), options.optional)
+	return f.FsVRCT.CreateFile(path, []byte(content), options.optional)
 }

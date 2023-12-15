@@ -41,7 +41,7 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 	fsNamespace := newLuaNamespace()
 
 	apiFs := api.FsApi{
-		ImportLoopData: importLoop,
+		FsVRCT: &importLoop.VRCT.Fs,
 	}
 
 	fsNamespace.AddFn("PathExists", apiFs.PathExists)
