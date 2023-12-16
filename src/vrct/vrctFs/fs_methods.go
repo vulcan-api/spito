@@ -2,8 +2,10 @@ package vrctFs
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool) error {
@@ -70,6 +72,55 @@ func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
 	return filePrototype.SimulateFile()
 }
 
+func (v *FsVRCT) Stat(path string) (os.FileInfo, error) {
+	path, err := pathMustBeAbsolute(path)
+	if err != nil {
+		return nil, err
+	}
+
+	splitPath := strings.Split(path, "/")
+	name := splitPath[len(splitPath)-1]
+
+	prototypePath := fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, path)
+
+	stat, err := os.Stat(prototypePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	} else {
+		filePrototype := FilePrototype{}
+		if err := filePrototype.Read(prototypePath); err != nil {
+			return nil, err
+		}
+		content, err := filePrototype.SimulateFile()
+		if err != nil {
+			return nil, err
+		}
+		
+		return FileInfo{
+			name:     name,
+			size:     int64(len(content)),
+			fileMode: stat.Mode(),    //TODO: consider changing it
+			modTime:  stat.ModTime(), //TODO: same
+			isDir:    stat.IsDir(),
+		}, nil
+	}
+
+	fileStat, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return FileInfo{
+		name:     name,
+		size:     fileStat.Size(),    //TODO: consider changing it
+		fileMode: fileStat.Mode(),    //TODO: same
+		modTime:  fileStat.ModTime(), //TODO: same
+		isDir:    fileStat.IsDir(),
+	}, nil
+}
+
 func (v *FsVRCT) ReadDir(path string) ([]os.DirEntry, error) {
 	dirEntries := make(map[string]os.DirEntry)
 	path, err := pathMustBeAbsolute(path)
@@ -104,11 +155,12 @@ func (v *FsVRCT) ReadDir(path string) ([]os.DirEntry, error) {
 			}
 
 			dirEntries[name] = DirEntry{
-				name:     name,
-				isDir:    entry.IsDir(),
-				type_:    entry.Type(), // TODO: consider changing it
-				infoErr:  nil,          // TODO
-				fileInfo: nil,          // TODO
+				name:  name,
+				isDir: entry.IsDir(),
+				type_: entry.Type(), // TODO: consider changing it
+				StatFn: func() (fs.FileInfo, error) {
+					return v.Stat(path)
+				},
 			}
 		}
 	}

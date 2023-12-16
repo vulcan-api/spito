@@ -11,15 +11,13 @@ type FsApi struct {
 	FsVRCT *vrctFs.FsVRCT
 }
 
-func (*FsApi) PathExists(path string) bool {
-	// TODO: create VRCT implementation for os.Stat
-	_, err := os.Stat(path)
+func (f *FsApi) PathExists(path string) bool {
+	_, err := f.FsVRCT.Stat(path)
 	return !os.IsNotExist(err)
 }
 
-func (*FsApi) FileExists(path string, isDirectory bool) bool {
-	// TODO: create VRCT implementation for os.Stat
-	info, err := os.Stat(path)
+func (f *FsApi) FileExists(path string, isDirectory bool) bool {
+	info, err := f.FsVRCT.Stat(path)
 	if os.IsNotExist(err) {
 		return false
 	}
