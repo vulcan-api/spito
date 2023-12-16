@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/taigrr/systemctl"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -69,14 +70,14 @@ func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	daemon.IsEnabled = false
 
 	for _, line := range lines {
-		splitedLine := strings.Split(string(line), "|")
-		if len(splitedLine) <= 1 {
+		splitLine := strings.Split(string(line), "|")
+		if len(splitLine) <= 1 {
 			continue
 		}
 
-		splitedLine[0] = strings.TrimSpace(splitedLine[0])
-		if splitedLine[0] == daemonName {
-			initLevel := strings.TrimSpace(splitedLine[1])
+		splitLine[0] = strings.TrimSpace(splitLine[0])
+		if splitLine[0] == daemonName {
+			initLevel := strings.TrimSpace(splitLine[1])
 			if initLevel != "" {
 				daemon.InitLevel = initLevel
 				daemon.IsEnabled = true
@@ -96,6 +97,13 @@ func GetDaemon(daemonName string) (Daemon, error) {
 
 	if err != nil {
 		return Daemon{}, err
+	}
+
+	daemonName = strings.TrimSpace(daemonName)
+	safetyChecker := regexp.MustCompile(`^[A-Za-z0-9_]+$`).MatchString
+
+	if safetyChecker(daemonName) {
+		return Daemon{}, errors.New("daemon name contains illegal character")
 	}
 
 	switch initSystem {
