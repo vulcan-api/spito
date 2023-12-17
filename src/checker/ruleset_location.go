@@ -80,7 +80,7 @@ func (r *RuleSetLocation) CreateDir() error {
 }
 
 func (r *RuleSetLocation) GetFullUrl() string {
-	return "https://" + GetDefaultRepoPrefix() + "/" + r.simpleUrl
+	return "https://" + r.simpleUrl
 }
 
 func (r *RuleSetLocation) GetRuleSetPath() string {
