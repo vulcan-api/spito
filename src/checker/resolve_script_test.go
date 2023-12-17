@@ -9,9 +9,9 @@ import (
 
 func TestFetchRuleSet(t *testing.T) {
 	ruleSetLocation := RuleSetLocation{}
-	ruleSetLocation.new("https://github.com/Nasz-Elektryk/spito-ruleset/")
+	ruleSetLocation.New("https://github.com/Nasz-Elektryk/spito-ruleset/")
 
-	err := ruleSetLocation.createDir()
+	err := ruleSetLocation.CreateDir()
 	if err != nil {
 		t.Fatal(err) 
 	}
@@ -37,7 +37,7 @@ func TestFetchRuleSet(t *testing.T) {
 		t.Fatal(err)
 	}
 	
-	err = os.RemoveAll(ruleSetLocation.getRuleSetPath())
+	err = os.RemoveAll(ruleSetLocation.GetRuleSetPath())
 	if err != nil {
 		t.Fatal(err)
 	}

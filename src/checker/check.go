@@ -94,7 +94,7 @@ func checkAndProcessPanics(
 // because in case of panic it does not handle errors at all
 func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
-	ruleSetLocation.new(identifier)
+	ruleSetLocation.New(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
 
 	rulesHistory := &importLoopData.RulesHistory
@@ -112,22 +112,22 @@ func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name 
 
 	err := FetchRuleSet(&ruleSetLocation)
 	if err != nil {
-		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
+		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
 		panic(nil)
 	}
 
-	lockfilePath := ruleSetLocation.getRuleSetPath() + "/" + LOCK_FILENAME
+	lockfilePath := ruleSetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
 	if !api.FileExists(lockfilePath, false) {
 		_, error := ruleSetLocation.createLockfile(map[string]bool{})
 		if error != nil {
-			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
+			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
 			panic(nil)
 		}
 	}
 
 	script, err := getScript(ruleSetLocation, name)
 	if err != nil {
-		errChan <- errors.New("Failed to read script called: " + name + " in git: " + ruleSetLocation.getFullUrl())
+		errChan <- errors.New("Failed to read script called: " + name + " in git: " + ruleSetLocation.GetFullUrl())
 		panic(nil)
 	}
 
