@@ -7,7 +7,7 @@ func TestGetDaemon(t *testing.T) {
 
 	t.Log(daemon.IsActive)
 	t.Log(daemon.IsEnabled)
-	t.Log(daemon.InitLevel)
+	t.Log(daemon.RunLevel)
 
 	if err != nil {
 		t.Fatalf("Error occured when obtaining daemon data: %s", err)

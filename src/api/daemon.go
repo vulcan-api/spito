@@ -16,7 +16,7 @@ type Daemon struct {
 	Name      string
 	IsActive  bool
 	IsEnabled bool
-	InitLevel string
+	RunLevel  string
 }
 
 func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
@@ -37,7 +37,7 @@ func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 		Name:      daemonName,
 		IsActive:  isActive,
 		IsEnabled: isEnabled,
-		InitLevel: "", // TODO
+		RunLevel:  "", // TODO
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 		if splitLine[0] == daemonName {
 			initLevel := strings.TrimSpace(splitLine[1])
 			if initLevel != "" {
-				daemon.InitLevel = initLevel
+				daemon.RunLevel = initLevel
 				daemon.IsEnabled = true
 			}
 		}
@@ -143,9 +143,9 @@ func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 		}
 
 		for _, daemonInRL := range daemonsInRL {
-			// It may be useful to change daemon.InitLevel from string to []string
+			// It may be useful to change daemon.RunLevel from string to []string
 			if daemonInRL.Name() == daemonName {
-				daemon.InitLevel = e.Name()
+				daemon.RunLevel = e.Name()
 			}
 		}
 	}
