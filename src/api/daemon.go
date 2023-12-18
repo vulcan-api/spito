@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"errors"
-	"github.com/taigrr/systemctl"
+	//"github.com/taigrr/systemctl"
 	"os/exec"
+	"os"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -17,27 +19,27 @@ type Daemon struct {
 	InitLevel string
 }
 
-func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	opts := systemctl.Options{UserMode: false}
-	unit := daemonName
-
-	isActive, err := systemctl.IsActive(ctx, unit, opts)
-	if err != nil {
-		return Daemon{}, err
-	}
-
-	isEnabled, err := systemctl.IsEnabled(ctx, unit, opts)
-	if err != nil {
-		return Daemon{}, err
-	}
-
-	return Daemon{
-		Name:      daemonName,
-		IsActive:  isActive,
-		IsEnabled: isEnabled,
-		InitLevel: "", // TODO
-	}, nil
-}
+//func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
+//	opts := systemctl.Options{UserMode: false}
+//	unit := daemonName
+//
+//	isActive, err := systemctl.IsActive(ctx, unit, opts)
+//	if err != nil {
+//		return Daemon{}, err
+//	}
+//
+//	isEnabled, err := systemctl.IsEnabled(ctx, unit, opts)
+//	if err != nil {
+//		return Daemon{}, err
+//	}
+//
+//	return Daemon{
+//		Name:      daemonName,
+//		IsActive:  isActive,
+//		IsEnabled: isEnabled,
+//		InitLevel: "", // TODO
+//	}, nil
+//}
 
 func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	cmd := exec.CommandContext(ctx, "rc-service", daemonName, "status")
@@ -90,29 +92,92 @@ func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	return daemon, nil
 }
 
+func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
+	cmd := exec.CommandContext(ctx, "sv", "status", daemonName)
+	rawOutput, err := cmd.Output()
+	if err != nil {
+		return Daemon{}, errors.New(fmt.Sprintf("Runit service problably doesn't exist. Runit output: %s", err))
+	}
+
+	output := string(rawOutput)
+	clearOut := strings.TrimSpace(output)
+
+	daemon := Daemon{}
+	daemon.IsActive = false
+
+	okStatus := "run"
+
+	statusLen := len(okStatus)
+	realOutput := clearOut[0:statusLen]
+
+	if realOutput == okStatus {
+		daemon.IsActive = true
+	}
+
+	entries, err := os.ReadDir("/var/service")
+	if err != nil {
+		entries, err = os.ReadDir("/etc/service")
+		if err != nil {
+			return Daemon{}, err
+		}
+	}
+
+	for _, e := range entries {
+		if e.Name() == daemonName  {
+			daemon.IsEnabled = true
+			break
+		}
+	}
+
+	const runsvdir = "/etc/runit/runsvdir/"
+
+	runlevels, err := os.ReadDir(runsvdir)
+	if err != nil {
+		return Daemon{},err
+	}
+
+	for _, e := range runlevels {
+		daemonsInRL, err := os.ReadDir(runsvdir + e.Name())
+		if err != nil {
+			return Daemon{}, err
+		}
+
+		for _, daemonInRL := range daemonsInRL {
+			// It may be useful to change daemon.InitLevel from string to []string
+			if daemonInRL.Name() == daemonName {
+				daemon.InitLevel = e.Name()
+			}
+		}
+	}
+
+	daemon.Name = daemonName
+
+	return daemon, nil
+}
+
 func GetDaemon(daemonName string) (Daemon, error) {
 	initSystem, err := GetInitSystem()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	if err != nil {
 		return Daemon{}, err
 	}
 
-	daemonName = strings.TrimSpace(daemonName)
-	safetyChecker := regexp.MustCompile(`^[A-Za-z0-9_]+$`).MatchString
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	if safetyChecker(daemonName) {
+	daemonName = strings.TrimSpace(daemonName)
+	isSafe, _ := regexp.MatchString(`^[A-Za-z0-9_]+$`, daemonName)
+
+	if !isSafe {
 		return Daemon{}, errors.New("daemon name contains illegal character")
 	}
 
 	switch initSystem {
-	case SYSTEMD:
-		return getSystemdDaemon(ctx, daemonName)
+	//case SYSTEMD:
+	//	return getSystemdDaemon(ctx, daemonName)
 	case OPENRC:
 		return getOpenRCDaemon(ctx, daemonName)
 	case RUNIT:
-		return Daemon{}, err
+		return getRunitDaemon(ctx, daemonName)
 	default:
 		return Daemon{}, errors.New("unknown init system")
 	}
