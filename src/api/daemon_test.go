@@ -3,7 +3,7 @@ package api
 import "testing"
 
 func TestGetDaemon(t *testing.T) {
-	daemon, err := GetDaemon("ssh")
+	daemon, err := GetDaemon("dbus")
 
 	t.Log(daemon.IsActive)
 	t.Log(daemon.IsEnabled)
