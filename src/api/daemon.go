@@ -3,10 +3,10 @@ package api
 import (
 	"context"
 	"errors"
-	//"github.com/taigrr/systemctl"
-	"os/exec"
-	"os"
 	"fmt"
+	"github.com/taigrr/systemctl"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -19,27 +19,27 @@ type Daemon struct {
 	InitLevel string
 }
 
-//func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-//	opts := systemctl.Options{UserMode: false}
-//	unit := daemonName
-//
-//	isActive, err := systemctl.IsActive(ctx, unit, opts)
-//	if err != nil {
-//		return Daemon{}, err
-//	}
-//
-//	isEnabled, err := systemctl.IsEnabled(ctx, unit, opts)
-//	if err != nil {
-//		return Daemon{}, err
-//	}
-//
-//	return Daemon{
-//		Name:      daemonName,
-//		IsActive:  isActive,
-//		IsEnabled: isEnabled,
-//		InitLevel: "", // TODO
-//	}, nil
-//}
+func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
+	opts := systemctl.Options{UserMode: false}
+	unit := daemonName
+
+	isActive, err := systemctl.IsActive(ctx, unit, opts)
+	if err != nil {
+		return Daemon{}, err
+	}
+
+	isEnabled, err := systemctl.IsEnabled(ctx, unit, opts)
+	if err != nil {
+		return Daemon{}, err
+	}
+
+	return Daemon{
+		Name:      daemonName,
+		IsActive:  isActive,
+		IsEnabled: isEnabled,
+		InitLevel: "", // TODO
+	}, nil
+}
 
 func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	cmd := exec.CommandContext(ctx, "rc-service", daemonName, "status")
@@ -123,7 +123,7 @@ func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	}
 
 	for _, e := range entries {
-		if e.Name() == daemonName  {
+		if e.Name() == daemonName {
 			daemon.IsEnabled = true
 			break
 		}
@@ -133,7 +133,7 @@ func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 
 	runlevels, err := os.ReadDir(runsvdir)
 	if err != nil {
-		return Daemon{},err
+		return Daemon{}, err
 	}
 
 	for _, e := range runlevels {
@@ -172,8 +172,8 @@ func GetDaemon(daemonName string) (Daemon, error) {
 	}
 
 	switch initSystem {
-	//case SYSTEMD:
-	//	return getSystemdDaemon(ctx, daemonName)
+	case SYSTEMD:
+		return getSystemdDaemon(ctx, daemonName)
 	case OPENRC:
 		return getOpenRCDaemon(ctx, daemonName)
 	case RUNIT:
