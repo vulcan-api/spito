@@ -43,29 +43,22 @@ func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 
 func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	cmd := exec.CommandContext(ctx, "rc-service", daemonName, "status")
-	rawOutput, err := cmd.Output()
-	if err != nil {
-		return Daemon{}, err
-	}
+	rawOutput, _ := cmd.Output()
 
 	output := string(rawOutput)
 
 	daemon := Daemon{}
 
-	if strings.Contains(output, "started") {
+	if strings.Contains(output, "started") || strings.Contains(output, "is running"){
 		daemon.IsActive = true
-	} else if strings.Contains(output, "stopped") {
+	} else if strings.Contains(output, "stopped") || strings.Contains(output, "is not running"){
 		daemon.IsActive = false
 	} else {
 		return Daemon{}, errors.New(output)
 	}
 
 	cmd = exec.CommandContext(ctx, "rc-update", "-v", "show")
-	rawOutput, err = cmd.Output()
-
-	if err != nil {
-		return Daemon{}, err
-	}
+	rawOutput, _ = cmd.Output()
 
 	lines := strings.Split(string(rawOutput), "\n")
 

@@ -4,6 +4,7 @@ import (
 	"github.com/zcalusic/sysinfo"
 	"github.com/shirou/gopsutil/v3/process"
 	"strings"
+	"os/exec"
 )
 
 /* TYPES */
@@ -21,10 +22,20 @@ func (is InitSystem) String() string {
 		return "systemd"
 	case RUNIT:
 		return "runit"
-	case OPENRC:
-		return "init"
 	}
 	return ""
+}
+
+func isOpenRC() bool {
+	const rcCommand = "rc-status"
+	cmd := exec.Command(rcCommand)
+	_, err := cmd.Output()
+
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 /* CONSTANTS */
@@ -32,7 +43,8 @@ func (is InitSystem) String() string {
 const (
 	SYSTEMD InitSystem = "systemd"
 	RUNIT InitSystem = "runit"
-	OPENRC InitSystem = "init"
+	OPENRC InitSystem = "openrc"
+	SYSV InitSystem = "sysv"
 	UNKNOWN InitSystem = ""
 )
 
@@ -50,7 +62,7 @@ func GetInitSystem() (InitSystem, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	processName, err := initSystemProcess.Name()
 	if err != nil {
 		return "", err
@@ -62,8 +74,11 @@ func GetInitSystem() (InitSystem, error) {
 	if strings.Contains(processName, RUNIT.String()) {
 		return RUNIT, nil
 	}
-	if strings.Contains(processName, OPENRC.String()) {
-		return OPENRC, nil
+	if strings.Contains(processName, "init") {
+		if isOpenRC() {
+			return OPENRC, nil
+		}
+		return SYSV, nil
 	}
 
 	return UNKNOWN, nil
