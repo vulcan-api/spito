@@ -53,7 +53,6 @@ func (v *FsVRCT) InnerValidate() error {
 	return nil
 }
 
-// TODO: write test for following function
 func (v *FsVRCT) Apply() error {
 	if err := v.InnerValidate(); err != nil {
 		return err
@@ -71,7 +70,6 @@ func (v *FsVRCT) Apply() error {
 	return mergeToRealFs(mergeDir)
 }
 
-// TODO: check if it works
 func mergeToRealFs(mergeDirPath string) error {
 	splitMergePath := strings.Split(mergeDirPath, "/")[3:]
 	destPath := strings.Join(splitMergePath, "/")

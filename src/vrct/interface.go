@@ -1,9 +1,7 @@
 package vrct
 
-import "fmt"
-
 type VRCT interface {
-	InnerValidate() error // TODO change type into *ConflictError
+	InnerValidate() error
 	Apply() error
 
 	//TODO: implement soon
@@ -12,14 +10,4 @@ type VRCT interface {
 	// Currently unimportant
 	//Serialize() []byte
 	//Deserialize([]byte) (VRCT, error)
-}
-
-type ConflictError struct {
-	Err                error
-	Element            VRCT
-	ElementConflicting VRCT
-}
-
-func (c ConflictError) Error() string {
-	return fmt.Sprintf("element are in conflict!\n %v", c.Err)
 }
