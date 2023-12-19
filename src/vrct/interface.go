@@ -10,8 +10,6 @@ type VRCT interface {
 	//Revert() error
 
 	// Currently unimportant
-	//IsApplied() bool
-	//DoesMadeThisChange(VRCT) bool
 	//Serialize() []byte
 	//Deserialize([]byte) (VRCT, error)
 }

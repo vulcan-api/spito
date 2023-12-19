@@ -53,6 +53,7 @@ func (v *FsVRCT) InnerValidate() error {
 	return nil
 }
 
+// TODO: write test for following function
 func (v *FsVRCT) Apply() error {
 	if err := v.InnerValidate(); err != nil {
 		return err
@@ -63,16 +64,51 @@ func (v *FsVRCT) Apply() error {
 		return err
 	}
 
-	if err := v.mergeFsChanges(v.virtualFSPath, mergeDir); err != nil {
+	if err := mergePrototypes(v.virtualFSPath, mergeDir); err != nil {
 		return err
 	}
 
-	// TODO login after merge (this time merge to real fs)
+	return mergeToRealFs(mergeDir)
+}
+
+// TODO: check if it works
+func mergeToRealFs(mergeDirPath string) error {
+	splitMergePath := strings.Split(mergeDirPath, "/")[3:]
+	destPath := strings.Join(splitMergePath, "/")
+	if len(destPath) != 0 {
+		destPath = "/" + destPath
+	}
+
+	entries, err := os.ReadDir(mergeDirPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if err := os.MkdirAll(destPath+"/"+entry.Name(), os.ModePerm); err != nil {
+				return err
+			}
+			if err := mergeToRealFs(mergeDirPath + "/" + entry.Name()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		err := os.Remove(destPath + "/" + entry.Name())
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+
+		if err := os.Rename(mergeDirPath+"/"+entry.Name(), destPath+"/"+entry.Name()); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func (v *FsVRCT) mergeFsChanges(prototypesDirPath, destPath string) error {
+func mergePrototypes(prototypesDirPath, destPath string) error {
 	dirs, err := os.ReadDir(prototypesDirPath)
 	if err != nil {
 		return err
@@ -84,7 +120,7 @@ func (v *FsVRCT) mergeFsChanges(prototypesDirPath, destPath string) error {
 			if err := os.MkdirAll(destPath+"/"+dirName, os.ModePerm); err != nil {
 				return err
 			}
-			if err := v.mergeFsChanges(prototypesDirPath+"/"+dirName, destPath+"/"+dirName); err != nil {
+			if err := mergePrototypes(prototypesDirPath+"/"+dirName, destPath+"/"+dirName); err != nil {
 				return err
 			}
 			continue
