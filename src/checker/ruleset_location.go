@@ -71,7 +71,6 @@ func (r *RuleSetLocation) New(identifier string) {
 }
 
 func (r *RuleSetLocation) CreateDir() error {
-	println(r.GetRuleSetPath())
 	err := os.MkdirAll(r.GetRuleSetPath(), 0700)
 	if errors.Is(err, fs.ErrExist) {
 		return nil
