@@ -16,4 +16,8 @@ func TestGetDaemon(t *testing.T) {
 	if daemon.Name == "" {
 		t.Fatalf("Daemon name is empty")
 	}
+
+	if daemon.RunLevel == "" {
+		t.Fatalf("Run level is empty")
+	}
 }

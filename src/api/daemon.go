@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taigrr/systemctl"
 	"gopkg.in/ini.v1"
 )
 
@@ -28,15 +27,29 @@ type Daemon struct {
 	RunLevel  string
 }
 
-func getDaemonDataFromFS(daemonName, path string) (bool, string, error) {
+func execute(ctx context.Context, name string, args ...string) (string, bool, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Env = append(cmd.Env, "LC_ALL=C")
+	rawOutput, err := cmd.Output()
+	output := string(rawOutput)
 
-	runlevels, err := os.ReadDir(path)
+	if _, ok := ctx.Deadline(); !ok {
+		return output, false, ctx.Err()
+	}
+
+	clearOutput := strings.TrimSpace(output)
+
+	return clearOutput, true, err
+}
+
+func getDaemonDataFromFS(daemonName, path string) (bool, string, error) {
+	runLevels, err := os.ReadDir(path)
 	if err != nil {
 		return false, "", ErrUnknownDirectory
 	}
 
 	runLevel := ""
-	for _, e := range runlevels {
+	for _, e := range runLevels {
 		daemonsInRL, err := os.ReadDir(path + e.Name())
 		if err != nil {
 			return runLevel != "", runLevel, err
@@ -52,31 +65,44 @@ func getDaemonDataFromFS(daemonName, path string) (bool, string, error) {
 	return runLevel != "", runLevel, nil
 }
 
-// TODO: amke it library independent
 func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	daemon := Daemon{}
+	daemon := Daemon{Name: daemonName}
 
-	opts := systemctl.Options{UserMode: false}
-	unit := daemonName
-
-	IsActive, err := systemctl.IsActive(ctx, unit, opts)
-	if err != nil {
+	output, ok, err := execute(ctx, "systemctl", "is-active", daemonName)
+	if !ok {
 		return daemon, err
 	}
-	daemon.IsActive = IsActive
+	if output == "active" {
+		daemon.IsActive = true
+	}
 
-	isEnabled, err := systemctl.IsEnabled(ctx, unit, opts)
-	if err != nil {
+	output, ok, err = execute(ctx, "systemctl", "is-enabled", daemonName)
+	if !ok {
 		return daemon, err
 	}
-	daemon.IsEnabled = isEnabled
+	if output == "enabled" || output == "static" || output == "indirect" {
+		daemon.IsEnabled = true
+	}
+
+	output, ok, err = execute(ctx, "systemctl", "get-default")
+	if !ok {
+		return daemon, err
+	}
+	daemon.RunLevel = output
+
+	return daemon, nil
+}
+
+func getSysvDaemon(ctx context.Context, daemonName string) (Daemon, error) {
+	daemon := Daemon{Name: daemonName}
+
+	// TODO
 
 	return daemon, nil
 }
 
 func getRootlessOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	daemon := Daemon{}
-	daemon.Name = daemonName
+	daemon := Daemon{Name: daemonName}
 
 	cmd := exec.CommandContext(ctx, "rc-status", "-f", "ini")
 	rawOutput, err := cmd.Output()
@@ -111,10 +137,8 @@ func getRootlessOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, er
 	return daemon, nil
 }
 
-// TODO: check it again and add error handling
 func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	daemon := Daemon{}
-	daemon.Name = daemonName
+	daemon := Daemon{Name: daemonName}
 
 	cmd := exec.CommandContext(ctx, "rc-service", daemonName, "status")
 	rawOutput, err := cmd.Output()
@@ -172,25 +196,22 @@ func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 }
 
 func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	daemon := Daemon{}
-	daemon.Name = daemonName
+	daemon := Daemon{Name: daemonName}
 
 	if os.Geteuid() != 0 {
 		return daemon, ErrRequiresRoot
 	}
 
-	cmd := exec.CommandContext(ctx, "sv", "status", daemonName)
-	rawOutput, err := cmd.Output()
+	output, ok, err := execute(ctx, "sv", "status", daemonName)
 
-	if _, ok := ctx.Deadline(); !ok {
-		return daemon, ctx.Err()
+	if !ok {
+		return daemon, err
 	}
 
 	if err != nil {
 		return Daemon{}, ErrDaemonDoesNotExist
 	}
 
-	output := string(rawOutput)
 	clearOut := strings.TrimSpace(output)
 
 	daemon.IsActive = false
@@ -250,6 +271,8 @@ func GetDaemon(daemonName string) (Daemon, error) {
 		return getOpenRCDaemon(ctx, daemonName)
 	case RUNIT:
 		return getRunitDaemon(ctx, daemonName)
+	case SYSV:
+		return getSysvDaemon(ctx, daemonName)
 	default:
 		return Daemon{}, ErrUnsupportedInit
 	}
