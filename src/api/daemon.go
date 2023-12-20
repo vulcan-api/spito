@@ -10,13 +10,15 @@ import (
 	"time"
 
 	"github.com/taigrr/systemctl"
+	"gopkg.in/ini.v1"
 )
 
 var (
-	ErrRequiresRoot       = errors.New("operation requires root")
-	ErrUnsupportedInit    = errors.New("unknown init system")
-	ErrDaemonDoesNotExist = errors.New("daemon does not exist")
-	ErrUnknownDirectory   = errors.New("init system uses unknown init scripts directory")
+	ErrRequiresRoot          = errors.New("operation requires root")
+	ErrUnsupportedInit       = errors.New("unknown init system")
+	ErrDaemonDoesNotExist    = errors.New("daemon does not exist")
+	ErrUnknownDirectory      = errors.New("init system uses unknown init scripts directory")
+	ErrUnsupportedInitOutput = errors.New("init system produced unknown output")
 )
 
 type Daemon struct {
@@ -72,13 +74,58 @@ func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	return daemon, nil
 }
 
+func getRootlessOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
+	daemon := Daemon{}
+	daemon.Name = daemonName
+
+	cmd := exec.CommandContext(ctx, "rc-status", "-f", "ini")
+	rawOutput, err := cmd.Output()
+
+	if _, ok := ctx.Deadline(); !ok {
+		return daemon, ctx.Err()
+	}
+
+	if err != nil {
+		return daemon, err
+	}
+
+	cfg, err := ini.Load(rawOutput)
+	if err != nil {
+		return daemon, err
+	}
+	runLevels := cfg.Sections()
+
+	for _, level := range runLevels {
+		if level.HasKey(daemonName) {
+			daemon.RunLevel = level.Name()
+			daemon.IsEnabled = true
+			daemon.IsActive = false
+			daemonInLevel := level.Key(daemonName)
+			isStarted := daemonInLevel.Value()
+			if isStarted == "started" {
+				daemon.IsActive = true
+			}
+		}
+	}
+
+	return daemon, nil
+}
+
 // TODO: check it again and add error handling
 func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	daemon := Daemon{}
 	daemon.Name = daemonName
 
 	cmd := exec.CommandContext(ctx, "rc-service", daemonName, "status")
-	rawOutput, _ := cmd.Output()
+	rawOutput, err := cmd.Output()
+
+	if _, ok := ctx.Deadline(); !ok {
+		return daemon, ctx.Err()
+	}
+
+	if err != nil {
+		return daemon, ErrDaemonDoesNotExist
+	}
 
 	output := string(rawOutput)
 
@@ -87,11 +134,19 @@ func getOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	} else if strings.Contains(output, "stopped") || strings.Contains(output, "is not running") {
 		daemon.IsActive = false
 	} else {
-		return daemon, errors.New(output)
+		return daemon, ErrUnsupportedInitOutput
 	}
 
 	cmd = exec.CommandContext(ctx, "rc-update", "-v", "show")
-	rawOutput, _ = cmd.Output()
+	rawOutput, err = cmd.Output()
+
+	if _, ok := ctx.Deadline(); !ok {
+		return daemon, ctx.Err()
+	}
+
+	if err != nil {
+		return daemon, err
+	}
 
 	lines := strings.Split(string(rawOutput), "\n")
 
@@ -126,6 +181,11 @@ func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 
 	cmd := exec.CommandContext(ctx, "sv", "status", daemonName)
 	rawOutput, err := cmd.Output()
+
+	if _, ok := ctx.Deadline(); !ok {
+		return daemon, ctx.Err()
+	}
+
 	if err != nil {
 		return Daemon{}, ErrDaemonDoesNotExist
 	}
