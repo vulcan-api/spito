@@ -1,4 +1,4 @@
-name: Artix - test
+name: Artix OpenRC
 
 on: 
    pull_request: 

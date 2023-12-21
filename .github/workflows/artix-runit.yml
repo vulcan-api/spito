@@ -1,4 +1,4 @@
-name: Artix - test
+name: Artix runit
 
 on: 
    pull_request: 

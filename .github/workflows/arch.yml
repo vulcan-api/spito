@@ -1,4 +1,4 @@
-name: Archlinux - test
+name: Arch Linux
 
 on: 
    pull_request: 
