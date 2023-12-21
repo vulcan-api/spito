@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
+
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/nasz-elektryk/spito/checker"
 	"github.com/nasz-elektryk/spito/cmd/cmdApi"
 	"github.com/spf13/cobra"
@@ -19,25 +20,17 @@ var newRulesetCommand = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		rulesetName := strings.ReplaceAll(args[0], " ", "")
-		gitCommand := exec.Command("git", "config", "--global", "--list")
 
-		gitCommandOutput, error := gitCommand.Output()
-		if error != nil {
-			printErrorAndExit(errors.New("Cannot find git command in your PATH. Please install git"))
+		if rulesetName == "" {
+			printErrorAndExit(errors.New("The ruleset name cannot be empty!"))
 		}
 
-		lines := strings.Split(string(gitCommandOutput), "\n")
-		var gitUsername string
-		for _, line := range lines {
-			tokens := strings.Split(line, "=")
-			if tokens[0] == "user.name" {
-				gitUsername = tokens[1]
-				break
-			}
-		}
+		gitConfig, err := config.LoadConfig(config.GlobalScope)
+		handleError(err)
 
+		gitUsername := gitConfig.User.Name;
 		if gitUsername == "" {
-			printErrorAndExit(errors.New("Cannot find your git username. Please set your username globally"))
+			printErrorAndExit(errors.New("Cannot find your git username. Please set it globally using git config"))
 		}
 		
 		newRulesetLocation := checker.RuleSetLocation{}
@@ -48,34 +41,34 @@ var newRulesetCommand = &cobra.Command{
 			printErrorAndExit(errors.New(fmt.Sprintf("Ruleset %s already exists!", rulesetIdentifier)))
 		}
 		
-		error = newRulesetLocation.CreateDir()
-		handleError(error)
+		err = newRulesetLocation.CreateDir()
+		handleError(err)
 
-		_, error = git.PlainInit(newRulesetLocation.GetRuleSetPath(), false)
-		handleError(error)
+		_, err = git.PlainInit(newRulesetLocation.GetRuleSetPath(), false)
+		handleError(err)
 
 		filesToBeCreated := []string{"README.md", checker.LOCK_FILENAME}
 		for _, fileName := range filesToBeCreated {
-			file, error := os.Create(newRulesetLocation.GetRuleSetPath() + "/" + fileName)
-			handleError(error)
+			file, err := os.Create(newRulesetLocation.GetRuleSetPath() + "/" + fileName)
+			handleError(err)
 			file.Close()
 		}
 
-		configFile, error := os.Create(newRulesetLocation.GetRuleSetPath() + "/" + checker.CONFIG_FILENAME)
-		handleError(error)
+		configFile, err := os.Create(newRulesetLocation.GetRuleSetPath() + "/" + checker.CONFIG_FILENAME)
+		handleError(err)
 		config := ConfigFileLayout{
 			Repo_url: newRulesetLocation.GetFullUrl(),
 			Git_prefix: checker.GetDefaultRepoPrefix(),
 			Identifier: rulesetIdentifier,
 			Rules: map[string]string{},
 		}
-		configFileContents, error := yaml.Marshal(config)
-		handleError(error)
+		configFileContents, err := yaml.Marshal(config)
+		handleError(err)
 		configFile.Write(configFileContents)
 		configFile.Close()
 
-		error = os.Mkdir(newRulesetLocation.GetRuleSetPath() + "/" + "rules", os.ModeDir)
-		handleError(error)
+		err = os.Mkdir(newRulesetLocation.GetRuleSetPath() + "/" + "rules", 0700)
+		handleError(err)
 
 		infoApi := cmdApi.InfoApi{}
 		infoApi.Log(fmt.Sprintf("Successfully created new ruleset '%s'", rulesetName))

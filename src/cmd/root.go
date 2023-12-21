@@ -51,7 +51,4 @@ func init() {
 
 	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
-	newRulesetCommand.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
-	generateRuleCommand.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
-	generateShortCommand.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 }
