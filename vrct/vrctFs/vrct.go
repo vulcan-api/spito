@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const virtualFSPathPrefix = "/tmp/spito-vrct/fs"
+const VIRTUAL_FS_PATH_PREFIX = "/tmp/spito-vrct/fs"
 
 type FsVRCT struct {
 	virtualFSPath  string
@@ -17,12 +17,12 @@ type FsVRCT struct {
 }
 
 func NewFsVRCT() (FsVRCT, error) {
-	err := os.MkdirAll(virtualFSPathPrefix, os.ModePerm)
+	err := os.MkdirAll(VIRTUAL_FS_PATH_PREFIX, os.ModePerm)
 	if err != nil {
 		return FsVRCT{}, err
 	}
 
-	dir, err := os.MkdirTemp(virtualFSPathPrefix, "")
+	dir, err := os.MkdirTemp(VIRTUAL_FS_PATH_PREFIX, "")
 	if err != nil {
 		return FsVRCT{}, err
 	}
