@@ -13,23 +13,30 @@ func TestCreatingFile(t *testing.T) {
 	}
 	fsVrct := &ruleVrct.Fs
 
-	err = fsVrct.CreateFile("/tmp/spito-test-2137/file.txt", []byte("test value"), false)
+	tmpPath, err := os.MkdirTemp("/tmp", "spito-test-")
 	if err != nil {
-		t.Fatal("Failed to create file /tmp/spito-test-2137/file.txt\n", err)
+		t.Fatal("Failed to create temporary test directory\n", err)
 	}
 
-	err = fsVrct.CreateFile("/tmp/spito-test-2137/file.txt", []byte("this should be overridden"), true)
+	testFilePath := tmpPath + "/new_dir/file.txt"
+
+	err = fsVrct.CreateFile(testFilePath, []byte("test value"), false)
 	if err != nil {
-		t.Fatal("Failed trying to override file /tmp/spito-test-2137/file.txt\n", err)
+		t.Fatal("Failed to create file "+testFilePath+"\n", err)
 	}
 
-	file, err := fsVrct.ReadFile("/tmp/spito-test-2137/file.txt")
+	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), true)
 	if err != nil {
-		t.Fatal("Failed to read file /tmp/spito-test-2137/file.txt\n", err)
+		t.Fatal("Failed trying to override file "+testFilePath+"\n", err)
+	}
+
+	file, err := fsVrct.ReadFile(testFilePath)
+	if err != nil {
+		t.Fatal("Failed to read file "+testFilePath+"\n", err)
 	}
 
 	if string(file) != "test value" {
-		t.Fatal("Failed to properly simulate /tmp/spito-test-2137 file content")
+		t.Fatal("Failed to properly simulate " + testFilePath + " file content")
 	}
 
 	err = fsVrct.Apply()
@@ -37,15 +44,15 @@ func TestCreatingFile(t *testing.T) {
 		t.Fatal("Failed to apply VRCT\n", err)
 	}
 
-	file, err = os.ReadFile("/tmp/spito-test-2137/file.txt")
+	file, err = os.ReadFile(testFilePath)
 	if err != nil {
-		t.Fatal("Failed to read from real fs file /tmp/spito-test-2137/file.txt\n", err)
+		t.Fatal("Failed to read from real fs file "+testFilePath+"\n", err)
 	}
 
 	if string(file) != "test value" {
-		t.Fatal("Failed to properly merge /tmp/spito-test-2137 file content")
+		t.Fatal("Failed to properly merge " + testFilePath + " file content")
 	}
 
 	// cleanup
-	_ = os.RemoveAll("/tmp/spito-test-2137")
+	_ = os.RemoveAll(tmpPath)
 }
