@@ -3,7 +3,7 @@ FROM archlinux
 RUN pacman -Sy go --noconfirm
 
 WORKDIR /app
-COPY ./src/ .
+COPY . .
 
 RUN go build
 

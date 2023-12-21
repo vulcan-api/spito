@@ -11,6 +11,7 @@ require (
 	github.com/taigrr/systemctl v1.0.1
 	github.com/yuin/gopher-lua v1.1.0
 	github.com/zcalusic/sysinfo v1.0.1
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v3 v3.0.1
 	layeh.com/gopher-luar v1.0.11
 )

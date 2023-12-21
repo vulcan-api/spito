@@ -2,9 +2,16 @@ package checker
 
 import (
 	"errors"
-	"github.com/nasz-elektryk/spito/api"
 	"fmt"
+	"github.com/nasz-elektryk/spito/shared"
+	"os"
 )
+
+func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		return _internalCheckRule(importLoopData, identifier, ruleName), nil
+	})
+}
 
 type Rule struct {
 	url          string
@@ -47,20 +54,14 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %v", val)
 }
 
-func CheckRuleByIdentifier(importLoopData *ImportLoopData, identifier string, ruleName string) (bool, error) {
-	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName), nil
-	})
-}
-
-func CheckRuleScript(importLoopData *ImportLoopData, script string) (bool, error) {
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		return ExecuteLuaMain(script, importLoopData)
 	})
 }
 
 func checkAndProcessPanics(
-	importLoopData *ImportLoopData,
+	importLoopData *shared.ImportLoopData,
 	checkFunc func(errChan chan error) (bool, error),
 ) (bool, error) {
 
@@ -92,7 +93,7 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name string) bool {
+func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
@@ -117,9 +118,11 @@ func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name 
 	}
 
 	lockfilePath := ruleSetLocation.getRuleSetPath() + "/" + LOCK_FILENAME
-	if !api.FileExists(lockfilePath, false) {
-		_, error := ruleSetLocation.createLockfile(map[string]bool{})
-		if error != nil {
+	_, lockfileErr := os.ReadFile(lockfilePath)
+
+	if os.IsNotExist(lockfileErr) {
+		_, err := ruleSetLocation.createLockfile(map[string]bool{})
+		if err != nil {
 			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
 			panic(nil)
 		}
