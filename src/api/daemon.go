@@ -93,14 +93,6 @@ func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	return daemon, nil
 }
 
-func getSysvDaemon(ctx context.Context, daemonName string) (Daemon, error) {
-	daemon := Daemon{Name: daemonName}
-
-	// TODO
-
-	return daemon, nil
-}
-
 func getRootlessOpenRCDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	daemon := Daemon{Name: daemonName}
 
@@ -264,6 +256,7 @@ func GetDaemon(daemonName string) (Daemon, error) {
 		return Daemon{}, errors.New("daemon name contains illegal character")
 	}
 
+	// TODO: root handling
 	switch initSystem {
 	case SYSTEMD:
 		return getSystemdDaemon(ctx, daemonName)
@@ -271,8 +264,6 @@ func GetDaemon(daemonName string) (Daemon, error) {
 		return getOpenRCDaemon(ctx, daemonName)
 	case RUNIT:
 		return getRunitDaemon(ctx, daemonName)
-	case SYSV:
-		return getSysvDaemon(ctx, daemonName)
 	default:
 		return Daemon{}, ErrUnsupportedInit
 	}
