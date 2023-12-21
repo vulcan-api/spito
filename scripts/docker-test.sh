@@ -1,7 +1,7 @@
 #!/bin/bash
 
 parent_dir=$( cd "$(dirname "${BASH_SOURCE[0]}")"; cd ..; pwd -P )
-image_id=$(docker buildx build -q --load $parent_dir)
+image_id=$(docker buildx build -q --load $parent_dir -f "$1.Dockerfile")
 
 container_id=$(docker run --rm -d --privileged=true $image_id)
 

@@ -20,4 +20,12 @@ func TestGetDaemon(t *testing.T) {
 	if daemon.RunLevel == "" {
 		t.Fatalf("Run level is empty")
 	}
+
+	if !daemon.IsActive {
+		t.Fatalf("Daemon is inactive")
+	}
+
+	if !daemon.IsEnabled {
+		t.Fatalf("Daemon is not enabled")
+	}
 }

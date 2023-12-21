@@ -219,7 +219,7 @@ func getRunitDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 
 	entries, err := os.ReadDir("/var/service")
 	if err != nil {
-		entries, err = os.ReadDir("/etc/service")
+		entries, err = os.ReadDir("/run/runit/service")
 		if err != nil {
 			return Daemon{}, ErrUnknownDirectory
 		}

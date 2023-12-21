@@ -1,4 +1,4 @@
-name: test
+name: Artix - test
 
 on: 
    pull_request: 
@@ -7,7 +7,7 @@ on:
        - main
 
 jobs:
-  test:
+  artix-openrc-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,5 +20,5 @@ jobs:
         run: chmod +x -R scripts
       
       - name: Run docker tests
-        run: ./scripts/docker-test.sh
+        run: ./scripts/docker-test.sh artix-openrc
 
