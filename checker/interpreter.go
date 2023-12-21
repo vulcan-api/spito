@@ -1,11 +1,11 @@
 package checker
 
 import (
-	"github.com/nasz-elektryk/spito/api"
+	"github.com/nasz-elektryk/spito/shared"
 	"github.com/yuin/gopher-lua"
 )
 
-func ExecuteLuaMain(script string, importLoopData *ImportLoopData) (bool, error) {
+func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	defer L.Close()
 
@@ -28,7 +28,7 @@ func ExecuteLuaMain(script string, importLoopData *ImportLoopData) (bool, error)
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func attachRuleRequiring(importLoopData *ImportLoopData, L *lua.LState) {
+func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 	L.SetGlobal("require_rule", L.NewFunction(func(state *lua.LState) int {
 		ruleUrl := L.Get(1).String()
 		ruleName := L.Get(2).String()
@@ -38,10 +38,4 @@ func attachRuleRequiring(importLoopData *ImportLoopData, L *lua.LState) {
 
 		return 1
 	}))
-}
-
-type ImportLoopData struct {
-	InfoApi      api.InfoInterface
-	RulesHistory RulesHistory
-	ErrChan      chan error
 }

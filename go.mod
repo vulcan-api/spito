@@ -8,9 +8,10 @@ require (
 	github.com/oleiade/reflections v1.0.1
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/spf13/cobra v1.7.0
-	github.com/taigrr/systemctl v1.0.1
 	github.com/yuin/gopher-lua v1.1.0
 	github.com/zcalusic/sysinfo v1.0.1
+	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v3 v3.0.1
 	layeh.com/gopher-luar v1.0.11
 )
@@ -46,6 +47,5 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

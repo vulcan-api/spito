@@ -1,6 +1,17 @@
 package checker
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"github.com/nasz-elektryk/spito/shared"
+	"os"
+)
+
+func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		return _internalCheckRule(importLoopData, identifier, ruleName), nil
+	})
+}
 
 type Rule struct {
 	url          string
@@ -33,20 +44,24 @@ func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 	rule.isInProgress = isInProgress
 }
 
-func CheckRuleByIdentifier(importLoopData *ImportLoopData, identifier string, ruleName string) (bool, error) {
-	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName), nil
-	})
+func anyToError(val any) error {
+	if err, ok := val.(error); ok {
+		return err
+	}
+	if err, ok := val.(string); ok {
+		return errors.New(err)
+	}
+	return fmt.Errorf("panic: %v", val)
 }
 
-func CheckRuleScript(importLoopData *ImportLoopData, script string) (bool, error) {
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		return ExecuteLuaMain(script, importLoopData)
 	})
 }
 
 func checkAndProcessPanics(
-	importLoopData *ImportLoopData,
+	importLoopData *shared.ImportLoopData,
 	checkFunc func(errChan chan error) (bool, error),
 ) (bool, error) {
 
@@ -78,7 +93,7 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name string) bool {
+func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string, name string) bool {
 	ruleSetLocation := RuleSetLocation{}
 	ruleSetLocation.new(identifier)
 	simpleUrl := ruleSetLocation.simpleUrl
@@ -100,6 +115,17 @@ func _internalCheckRule(importLoopData *ImportLoopData, identifier string, name 
 	if err != nil {
 		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
 		panic(nil)
+	}
+
+	lockfilePath := ruleSetLocation.getRuleSetPath() + "/" + LOCK_FILENAME
+	_, lockfileErr := os.ReadFile(lockfilePath)
+
+	if os.IsNotExist(lockfileErr) {
+		_, err := ruleSetLocation.createLockfile(map[string]bool{})
+		if err != nil {
+			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.getFullUrl() + "\n" + err.Error())
+			panic(nil)
+		}
 	}
 
 	script, err := getScript(ruleSetLocation, name)

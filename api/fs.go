@@ -1,18 +1,23 @@
 package api
 
 import (
+	"github.com/nasz-elektryk/spito/vrct/vrctFs"
 	"os"
 	"regexp"
 	"strings"
 )
 
-func PathExists(path string) bool {
-	_, err := os.Stat(path)
+type FsApi struct {
+	FsVRCT *vrctFs.FsVRCT
+}
+
+func (f *FsApi) PathExists(path string) bool {
+	_, err := f.FsVRCT.Stat(path)
 	return !os.IsNotExist(err)
 }
 
-func FileExists(path string, isDirectory bool) bool {
-	info, err := os.Stat(path)
+func (f *FsApi) FileExists(path string, isDirectory bool) bool {
+	info, err := f.FsVRCT.Stat(path)
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -23,16 +28,17 @@ func FileExists(path string, isDirectory bool) bool {
 	return false
 }
 
-func ReadFile(path string) (string, error) {
-	file, err := os.ReadFile(path)
+func (f *FsApi) ReadFile(path string) (string, error) {
+	file, err := f.FsVRCT.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
+
 	return string(file), nil
 }
 
-func ReadDir(path string) ([]os.DirEntry, error) {
-	return os.ReadDir(path)
+func (f *FsApi) ReadDir(path string) ([]os.DirEntry, error) {
+	return f.FsVRCT.ReadDir(path)
 }
 
 func removeRanges(fileContent string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
@@ -63,7 +69,7 @@ func removeRanges(fileContent string, rangeStart string, rangeEnd string, remove
 	return cleanFile
 }
 
-func RemoveComments(fileContent string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
+func (*FsApi) RemoveComments(fileContent string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
 	cleanFile := fileContent
 	if singleLineComment != "" {
 		cleanFile = removeRanges(fileContent, singleLineComment, "\n", false)
@@ -75,11 +81,11 @@ func RemoveComments(fileContent string, singleLineComment string, multilineComme
 	return cleanFile
 }
 
-func FileContains(fileContent string, content string) bool {
+func (*FsApi) FileContains(fileContent string, content string) bool {
 	return strings.Contains(fileContent, content)
 }
 
-func Find(regex string, fileContent string) ([]int, error) {
+func (*FsApi) Find(regex string, fileContent string) ([]int, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
@@ -87,7 +93,7 @@ func Find(regex string, fileContent string) ([]int, error) {
 	return r.FindStringIndex(fileContent), nil
 }
 
-func FindAll(regex string, fileContent string) ([][]int, error) {
+func (*FsApi) FindAll(regex string, fileContent string) ([][]int, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
@@ -95,8 +101,8 @@ func FindAll(regex string, fileContent string) ([][]int, error) {
 	return r.FindAllStringIndex(fileContent, -1), nil
 }
 
-func GetProperLines(regex string, fileContent string) ([]string, error) {
-	indexesInLines, err := FindAll(regex, fileContent)
+func (f *FsApi) GetProperLines(regex string, fileContent string) ([]string, error) {
+	indexesInLines, err := f.FindAll(regex, fileContent)
 	if err != nil {
 		return nil, err
 	}
@@ -125,4 +131,12 @@ func GetProperLines(regex string, fileContent string) ([]string, error) {
 	}
 
 	return properLines, nil
+}
+
+type CreateFileOptions struct {
+	optional bool
+}
+
+func (f *FsApi) CreateFile(path, content string, options CreateFileOptions) error {
+	return f.FsVRCT.CreateFile(path, []byte(content), options.optional)
 }
