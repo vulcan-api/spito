@@ -1,4 +1,4 @@
-name: Artix OpenRC
+name: tests
 
 on: 
    pull_request: 
@@ -7,9 +7,11 @@ on:
        - main
 
 jobs:
-  artix-openrc-test:
+  test:
+    strategy:
+      matrix:
+        os: [arch, artix-openrc, artix-runit]
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -17,8 +19,8 @@ jobs:
         uses: docker/setup-buildx-action@v3.0.0
 
       - name: Add permissions to execute scripts
-        run: chmod +x -R scripts
-      
+        run: chmod +x -R tests
+
       - name: Run docker tests
-        run: ./scripts/docker-test.sh artix-openrc
+        run: ./tests/docker-test.sh ${{ matrix.os }}
 

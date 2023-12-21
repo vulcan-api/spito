@@ -5,10 +5,6 @@ import "testing"
 func TestGetDaemon(t *testing.T) {
 	daemon, err := GetDaemon("dbus")
 
-	t.Log(daemon.IsActive)
-	t.Log(daemon.IsEnabled)
-	t.Log(daemon.RunLevel)
-
 	if err != nil {
 		t.Fatalf("Error occured when obtaining daemon data: %s", err)
 	}
@@ -28,4 +24,9 @@ func TestGetDaemon(t *testing.T) {
 	if !daemon.IsEnabled {
 		t.Fatalf("Daemon is not enabled")
 	}
+
+	t.Logf("\nData obtained about '%s' daemon:", daemon.Name)
+	t.Logf("\nIs active: %t", daemon.IsActive)
+	t.Logf("\nIs enabled: %t", daemon.IsEnabled)
+	t.Logf("\nRun level: %s", daemon.RunLevel)
 }
