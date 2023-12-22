@@ -1,6 +1,6 @@
 # Spito
-**This project is in pre-alpha and none of 
-the features described below work!**
+**This project is in pre-alpha and most of 
+the features described below does not work!**
 
 Spito has been designed to allow users easily swap 
 and edit configuration files. It's user-friendly and

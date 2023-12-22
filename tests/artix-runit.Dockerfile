@@ -1,9 +1,9 @@
-FROM archlinux
+FROM artixlinux/runit
 
 RUN pacman -Sy go --noconfirm
 
 WORKDIR /app
-COPY ./src/ .
+COPY .. .
 
 RUN go build
 
