@@ -37,24 +37,20 @@ var newRulesetCommand = &cobra.Command{
 		rulesetIdentifier := gitUsername + "/" + rulesetName
 		newRulesetLocation.New(rulesetIdentifier)
 		
-		if newRulesetLocation.IsRuleSetDownloaded() {
-			printErrorAndExit(errors.New(fmt.Sprintf("Ruleset %s already exists!", rulesetIdentifier)))
-		}
-		
-		err = newRulesetLocation.CreateDir()
+		err = os.Mkdir(rulesetName, 0700)
 		handleError(err)
 
-		_, err = git.PlainInit(newRulesetLocation.GetRuleSetPath(), false)
+		_, err = git.PlainInit(rulesetName, false)
 		handleError(err)
 
 		filesToBeCreated := []string{"README.md", checker.LOCK_FILENAME}
 		for _, fileName := range filesToBeCreated {
-			file, err := os.Create(newRulesetLocation.GetRuleSetPath() + "/" + fileName)
+			file, err := os.Create(rulesetName + "/" + fileName)
 			handleError(err)
 			file.Close()
 		}
 
-		configFile, err := os.Create(newRulesetLocation.GetRuleSetPath() + "/" + checker.CONFIG_FILENAME)
+		configFile, err := os.Create(rulesetName + "/" + checker.CONFIG_FILENAME)
 		handleError(err)
 		config := ConfigFileLayout{
 			Repo_url: newRulesetLocation.GetFullUrl(),
@@ -67,7 +63,7 @@ var newRulesetCommand = &cobra.Command{
 		configFile.Write(configFileContents)
 		configFile.Close()
 
-		err = os.Mkdir(newRulesetLocation.GetRuleSetPath() + "/" + "rules", 0700)
+		err = os.Mkdir(rulesetName + "/" + "rules", 0700)
 		handleError(err)
 
 		infoApi := cmdApi.InfoApi{}
