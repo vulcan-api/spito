@@ -51,4 +51,5 @@ func init() {
 
 	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
+	newRulesetCommand.Flags().BoolP("non-interactive", "y", false, "If true assume default values for spito-rules.yaml")
 }
