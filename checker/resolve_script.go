@@ -29,10 +29,10 @@ func (s SpitoRulesYaml) getRulesStructVal(key string) (RuleConf, bool) {
 
 func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, error) {
 	// Support for both .yaml and .yml
-	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.getRuleSetPath() + "/spito-rules.yaml")
+	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.GetRuleSetPath() + "/spito-rules.yaml")
 	if errors.Is(err, fs.ErrNotExist) {
 		var _err error
-		spitoRulesDataBytes, _err = os.ReadFile(ruleSetLocation.getRuleSetPath() + "/spito-rules.yml")
+		spitoRulesDataBytes, _err = os.ReadFile(ruleSetLocation.GetRuleSetPath() + "/spito-rules.yml")
 		if _err != nil {
 			return "", _err
 		}
@@ -66,7 +66,7 @@ func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, erro
 		} else if path[0] != '/' {
 			path = "/" + path
 		}
-		path = ruleSetLocation.getRuleSetPath() + path
+		path = ruleSetLocation.GetRuleSetPath() + path
 
 		return path, nil
 	}
@@ -125,14 +125,14 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 }
 
 func FetchRuleSet(ruleSetLocation *RuleSetLocation) error {
-	err := ruleSetLocation.createDir()
+	err := ruleSetLocation.CreateDir()
 	if err != nil {
 		println(err.Error())
 		return err
 	}
 	
-	_, err = git.PlainClone(ruleSetLocation.getRuleSetPath(), false, &git.CloneOptions{
-		URL: ruleSetLocation.getFullUrl(),
+	_, err = git.PlainClone(ruleSetLocation.GetRuleSetPath(), false, &git.CloneOptions{
+		URL: ruleSetLocation.GetFullUrl(),
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {

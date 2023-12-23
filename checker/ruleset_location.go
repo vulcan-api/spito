@@ -32,7 +32,7 @@ func initRequiredTmpDirs() error {
 	return err
 }
 
-func getDefaultRepoPrefix() string {
+func GetDefaultRepoPrefix() string {
 	// TODO: implement logic for getting default repo prefix
 	return "github.com"
 }
@@ -46,10 +46,10 @@ type DependencyTreeLayout struct {
 }
 
 // e.g. from: https://github.com/Nasz-Elektryk/spito-ruleset.git to Nasz-Elektryk/spito-ruleset
-func (r *RuleSetLocation) new(identifier string) {
+func (r *RuleSetLocation) New(identifier string) {
 	// check if simpleUrl is url:
 	if !strings.Contains(identifier, ".") {
-		r.simpleUrl = getDefaultRepoPrefix() + "/" + identifier
+		r.simpleUrl = GetDefaultRepoPrefix() + "/" + identifier
 		return
 	}
 
@@ -70,20 +70,19 @@ func (r *RuleSetLocation) new(identifier string) {
 	r.simpleUrl = simpleUrl
 }
 
-func (r *RuleSetLocation) createDir() error {
-	println(r.getRuleSetPath())
-	err := os.MkdirAll(r.getRuleSetPath(), 0700)
+func (r *RuleSetLocation) CreateDir() error {
+	err := os.MkdirAll(r.GetRuleSetPath(), 0700)
 	if errors.Is(err, fs.ErrExist) {
 		return nil
 	}
 	return err
 }
 
-func (r *RuleSetLocation) getFullUrl() string {
+func (r *RuleSetLocation) GetFullUrl() string {
 	return "https://" + r.simpleUrl
 }
 
-func (r *RuleSetLocation) getRuleSetPath() string {
+func (r *RuleSetLocation) GetRuleSetPath() string {
 	dir, err := getRuleSetsDir()
 	if err != nil {
 		return ""
@@ -91,13 +90,13 @@ func (r *RuleSetLocation) getRuleSetPath() string {
 	return dir + "/" + r.simpleUrl
 }
 
-func (r *RuleSetLocation) isRuleSetDownloaded() bool {
-	_, err := os.ReadDir(r.getRuleSetPath())
+func (r *RuleSetLocation) IsRuleSetDownloaded() bool {
+	_, err := os.ReadDir(r.GetRuleSetPath())
 	return !errors.Is(err, fs.ErrNotExist)
 }
 
 func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
-	configPath := rulesetLocation.getRuleSetPath() + "/" + CONFIG_FILENAME
+	configPath := rulesetLocation.GetRuleSetPath() + "/" + CONFIG_FILENAME
 	configFileContents, error := os.ReadFile(configPath)
 	if error != nil {
 		return []string{}, error
@@ -117,7 +116,7 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 	firstDependencyLocation := RuleSetLocation{}
 	
 	if len(basicDependencyTree.Dependencies) > 0 {
-		firstDependencyLocation.new(strings.Split(basicDependencyTree.Dependencies[0], "@")[0])
+		firstDependencyLocation.New(strings.Split(basicDependencyTree.Dependencies[0], "@")[0])
 	}
 
 	var waitGroup sync.WaitGroup
@@ -127,8 +126,8 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 		go func(dependencyNameParameter string) {
 			defer waitGroup.Done()
 			dependencyLocation := RuleSetLocation{}
-			dependencyLocation.new(strings.Split(dependencyNameParameter, "@")[0])
-			if _, exists := rulesInProgress[dependencyNameParameter]; !exists && !dependencyLocation.isRuleSetDownloaded() {
+			dependencyLocation.New(strings.Split(dependencyNameParameter, "@")[0])
+			if _, exists := rulesInProgress[dependencyNameParameter]; !exists && !dependencyLocation.IsRuleSetDownloaded() {
 				rulesInProgress[dependencyNameParameter] = true
 				FetchRuleSet(&dependencyLocation)
 			}
@@ -144,7 +143,7 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 		outputDependencyTree.Dependencies = append(outputDependencyTree.Dependencies, toBeAppended...)
 	}
 
-	lockfilePath := rulesetLocation.getRuleSetPath() + "/" + LOCK_FILENAME
+	lockfilePath := rulesetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
 	lockfile, error := os.Create(lockfilePath)
 	
 	if error != nil {
