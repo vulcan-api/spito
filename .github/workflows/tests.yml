@@ -1,4 +1,4 @@
-name: tests
+name: test
 
 on: 
    pull_request: 
@@ -19,8 +19,8 @@ jobs:
         uses: docker/setup-buildx-action@v3.0.0
 
       - name: Add permissions to execute scripts
-        run: chmod +x -R tests
+        run: chmod +x -R test
 
-      - name: Run docker tests
-        run: ./tests/docker-test.sh ${{ matrix.os }}
+      - name: Run docker test
+        run: ./test/docker-test.sh ${{ matrix.os }}
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/nasz-elektryk/spito/internal/checker"
 	"net/url"
 	"os"
 	"regexp"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/nasz-elektryk/spito/checker"
 	"github.com/nasz-elektryk/spito/cmd/cmdApi"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -19,10 +19,10 @@ import (
 func getGitUsername() string {
 	gitConfig, err := config.LoadConfig(config.GlobalScope)
 	handleError(err)
-	gitUsername := gitConfig.User.Name;
+	gitUsername := gitConfig.User.Name
 	if gitUsername == "" {
 		printErrorAndExit(errors.New("Cannot find your git username. Please set it globally using git config"))
-	}	
+	}
 	return gitUsername
 }
 
@@ -47,7 +47,7 @@ var newRulesetCommand = &cobra.Command{
 		if err == nil {
 			printErrorAndExit(errors.New(fmt.Sprintf("Ruleset '%s' already exists!", rulesetName)))
 		}
-		
+
 		shouldAssumeDefaultValues, err := cmd.Flags().GetBool("non-interactive")
 		handleError(err)
 
@@ -63,7 +63,7 @@ var newRulesetCommand = &cobra.Command{
 		if !shouldAssumeDefaultValues {
 
 			var input string
-			
+
 			fmt.Printf("Enter your git service username (%s): ", gitUsername)
 			fmt.Scanf("%s", &input)
 			if input != "" {
@@ -89,21 +89,21 @@ var newRulesetCommand = &cobra.Command{
 			fmt.Printf("Enter repository URL (%s): ", repositoryUrl)
 			fmt.Scanf("%s", &input)
 			if input != "" {
-				repositoryUrlObject, err := url.ParseRequestURI(input);
+				repositoryUrlObject, err := url.ParseRequestURI(input)
 				for err != nil || !isRequestPathOK(*repositoryUrlObject) {
 					fmt.Print("Enter a valid URL: ")
 					fmt.Scanf("%s", &input)
-					repositoryUrlObject, err = url.ParseRequestURI(input);
-				}	
-				if input[len(repositoryUrl) - 1] == '/' {
-					input = strings.TrimRight(repositoryUrl, "/");
+					repositoryUrlObject, err = url.ParseRequestURI(input)
+				}
+				if input[len(repositoryUrl)-1] == '/' {
+					input = strings.TrimRight(repositoryUrl, "/")
 					repositoryUrlObject.Path = strings.TrimRight(repositoryUrlObject.Path, "/")
 				}
 				repositoryUrl = input
 			}
 			rulesetIdentifier = gitUsername + "/" + rulesetRepositoryName
 		}
-				
+
 		err = os.Mkdir(rulesetName, 0700)
 		handleError(err)
 
@@ -120,17 +120,17 @@ var newRulesetCommand = &cobra.Command{
 		configFile, err := os.Create(rulesetName + "/" + checker.CONFIG_FILENAME)
 		handleError(err)
 		config := ConfigFileLayout{
-			Repo_url: repositoryUrl,
+			Repo_url:   repositoryUrl,
 			Git_prefix: hostingProvider,
 			Identifier: rulesetIdentifier,
-			Rules: map[string]string{},
+			Rules:      map[string]string{},
 		}
 		configFileContents, err := yaml.Marshal(config)
 		handleError(err)
 		configFile.Write(configFileContents)
 		configFile.Close()
 
-		err = os.Mkdir(rulesetName + "/" + "rules", 0700)
+		err = os.Mkdir(rulesetName+"/"+"rules", 0700)
 		handleError(err)
 
 		infoApi := cmdApi.InfoApi{}

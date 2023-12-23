@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/godbus/dbus"
-	"github.com/nasz-elektryk/spito/checker"
 	cmdApi "github.com/nasz-elektryk/spito/cmd/cmdApi"
 	"github.com/nasz-elektryk/spito/cmd/guiApi"
-	"github.com/nasz-elektryk/spito/shared"
-	"github.com/nasz-elektryk/spito/vrct"
+	"github.com/nasz-elektryk/spito/internal/checker"
+	shared "github.com/nasz-elektryk/spito/internal/shared"
+	"github.com/nasz-elektryk/spito/pkg/vrct"
 	"github.com/spf13/cobra"
 	"os"
 )

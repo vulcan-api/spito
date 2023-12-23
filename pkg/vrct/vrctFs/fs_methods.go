@@ -97,7 +97,7 @@ func (v *FsVRCT) Stat(path string) (os.FileInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		return FileInfo{
 			name:     name,
 			size:     int64(len(content)),

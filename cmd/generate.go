@@ -3,12 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
-	"strings"
-	"github.com/nasz-elektryk/spito/checker"
 	"github.com/nasz-elektryk/spito/cmd/cmdApi"
+	"github.com/nasz-elektryk/spito/internal/checker"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+	"os"
+	"strings"
 )
 
 const exampleRuleContents = `function main()
@@ -38,7 +38,6 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 	rulesetLocation := checker.RuleSetLocation{}
 	rulesetLocation.New(config.Identifier)
 
-
 	err = os.Mkdir(RULES_DIRECTORY, 0700)
 	if err != nil && !os.IsExist(err) {
 		printErrorAndExit(err)
@@ -46,17 +45,17 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 
 	rulePathTokens := strings.Split(rulePath, "/")
 	if len(rulePathTokens) > 1 {
-		directoryPath := RULES_DIRECTORY + "/" + strings.Join(rulePathTokens[:len(rulePathTokens) - 1], "/")
+		directoryPath := RULES_DIRECTORY + "/" + strings.Join(rulePathTokens[:len(rulePathTokens)-1], "/")
 		err = os.MkdirAll(directoryPath, 0700)
 		handleError(err)
 	}
-	
+
 	ruleFile, err := os.Create(RULES_DIRECTORY + "/" + rulePath + ".lua")
 	handleError(err)
 	ruleFile.Write([]byte(exampleRuleContents))
 	ruleFile.Close()
 
-	config.Rules[rulePathTokens[len(rulePathTokens) - 1]] = "./rules/" + rulePath + ".lua"
+	config.Rules[rulePathTokens[len(rulePathTokens)-1]] = "./rules/" + rulePath + ".lua"
 
 	configFile, err := os.Create(checker.CONFIG_FILENAME)
 	defer configFile.Close()
@@ -73,12 +72,12 @@ var generateRuleCommand = &cobra.Command{
 	Use:   "generate {rule_path}",
 	Short: "Generate new rule",
 	Args:  cobra.ExactArgs(1),
-	Run: handleGenerate,
+	Run:   handleGenerate,
 }
 
 var generateShortCommand = &cobra.Command{
 	Use:   "g {rule_path}",
 	Short: "Generate new rule",
 	Args:  cobra.ExactArgs(1),
-	Run: handleGenerate,
+	Run:   handleGenerate,
 }

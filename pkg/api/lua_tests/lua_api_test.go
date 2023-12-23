@@ -2,10 +2,10 @@ package api_tests
 
 import (
 	"fmt"
-	"github.com/nasz-elektryk/spito/checker"
 	"github.com/nasz-elektryk/spito/cmd/cmdApi"
-	"github.com/nasz-elektryk/spito/shared"
-	"github.com/nasz-elektryk/spito/vrct"
+	"github.com/nasz-elektryk/spito/internal/checker"
+	shared2 "github.com/nasz-elektryk/spito/internal/shared"
+	"github.com/nasz-elektryk/spito/pkg/vrct"
 	"os"
 	"testing"
 )
@@ -30,9 +30,9 @@ func TestLuaApi(t *testing.T) {
 			t.Fatal("Failed to initialized rule VRCT", err)
 		}
 
-		runtimeData := shared.ImportLoopData{
+		runtimeData := shared2.ImportLoopData{
 			VRCT:         *ruleVRCT,
-			RulesHistory: shared.RulesHistory{},
+			RulesHistory: shared2.RulesHistory{},
 			ErrChan:      make(chan error),
 			InfoApi:      cmdApi.InfoApi{},
 		}

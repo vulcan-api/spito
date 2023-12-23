@@ -1,6 +1,8 @@
 package vrct
 
-import "github.com/nasz-elektryk/spito/vrct/vrctFs"
+import (
+	"github.com/nasz-elektryk/spito/pkg/vrct/vrctFs"
+)
 
 func NewRuleVRCT() (*RuleVRCT, error) {
 	fsVRCT, err := vrctFs.NewFsVRCT()

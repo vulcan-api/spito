@@ -2,11 +2,11 @@ package checker
 
 import (
 	"errors"
+	"gopkg.in/yaml.v3"
 	"io/fs"
 	"os"
 	"strings"
 	"sync"
-	"gopkg.in/yaml.v3"
 )
 
 const CONFIG_FILENAME = "spito-rules.yml"
@@ -114,7 +114,7 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 	copy(outputDependencyTree.Dependencies, basicDependencyTree.Dependencies)
 
 	firstDependencyLocation := RuleSetLocation{}
-	
+
 	if len(basicDependencyTree.Dependencies) > 0 {
 		firstDependencyLocation.New(strings.Split(basicDependencyTree.Dependencies[0], "@")[0])
 	}
@@ -145,7 +145,7 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 
 	lockfilePath := rulesetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
 	lockfile, error := os.Create(lockfilePath)
-	
+
 	if error != nil {
 		return []string{}, error
 	}

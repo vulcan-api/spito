@@ -1,8 +1,8 @@
 package checker
 
 import (
-	"github.com/nasz-elektryk/spito/api"
-	"github.com/nasz-elektryk/spito/shared"
+	"github.com/nasz-elektryk/spito/internal/shared"
+	api "github.com/nasz-elektryk/spito/pkg/api"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
 	"reflect"

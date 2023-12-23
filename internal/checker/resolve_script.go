@@ -46,7 +46,7 @@ func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, erro
 	}
 
 	fmt.Printf("%+v\n", spitoRulesYaml.Rules)
-	
+
 	for key := range spitoRulesYaml.Rules {
 		if key != ruleName {
 			continue
@@ -92,7 +92,7 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	_ = initRequiredTmpDirs() // Ignore error because it should potentially avoid errors, not cause
 	providerDirs, err := os.ReadDir(ruleSetsDir)
 	if err != nil {
@@ -130,7 +130,7 @@ func FetchRuleSet(ruleSetLocation *RuleSetLocation) error {
 		println(err.Error())
 		return err
 	}
-	
+
 	_, err = git.PlainClone(ruleSetLocation.GetRuleSetPath(), false, &git.CloneOptions{
 		URL: ruleSetLocation.GetFullUrl(),
 	})

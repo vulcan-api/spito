@@ -1,7 +1,7 @@
 package checker
 
 import (
-	"github.com/nasz-elektryk/spito/shared"
+	"github.com/nasz-elektryk/spito/internal/shared"
 	"github.com/yuin/gopher-lua"
 )
 
