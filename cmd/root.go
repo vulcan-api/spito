@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"github.com/nasz-elektryk/spito/cmd/cmdApi"
+	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 func handleError(errorToBePrinted error) {
@@ -16,16 +16,15 @@ func handleError(errorToBePrinted error) {
 func printErrorAndExit(errorToBePrinted error) {
 	var infoApi cmdApi.InfoApi
 	infoApi.Error(errorToBePrinted.Error())
-	os.Exit(1);
+	os.Exit(1)
 }
 
 type ConfigFileLayout struct {
-	Repo_url string
+	Repo_url   string
 	Git_prefix string
 	Identifier string
-	Rules map[string]string
+	Rules      map[string]string
 }
-
 
 var rootCmd = &cobra.Command{
 	Use:   "spito",

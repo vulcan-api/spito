@@ -1,6 +1,6 @@
 package main
 
-import "github.com/nasz-elektryk/spito/cmd"
+import "github.com/avorty/spito/cmd"
 
 func main() {
 	cmd.Execute()

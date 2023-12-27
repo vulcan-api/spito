@@ -1,4 +1,4 @@
-module github.com/nasz-elektryk/spito
+module github.com/avorty/spito
 
 go 1.21
 

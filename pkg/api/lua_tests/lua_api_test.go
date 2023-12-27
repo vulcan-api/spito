@@ -2,10 +2,10 @@ package api_tests
 
 import (
 	"fmt"
-	"github.com/nasz-elektryk/spito/checker"
-	"github.com/nasz-elektryk/spito/cmd/cmdApi"
-	"github.com/nasz-elektryk/spito/shared"
-	"github.com/nasz-elektryk/spito/vrct"
+	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/internal/checker"
+	shared "github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/vrct"
 	"os"
 	"testing"
 )
