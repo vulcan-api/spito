@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
-	shared2 "github.com/avorty/spito/pkg/shared"
+	shared "github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"os"
 	"testing"
@@ -30,9 +30,9 @@ func TestLuaApi(t *testing.T) {
 			t.Fatal("Failed to initialized rule VRCT", err)
 		}
 
-		runtimeData := shared2.ImportLoopData{
+		runtimeData := shared.ImportLoopData{
 			VRCT:         *ruleVRCT,
-			RulesHistory: shared2.RulesHistory{},
+			RulesHistory: shared.RulesHistory{},
 			ErrChan:      make(chan error),
 			InfoApi:      cmdApi.InfoApi{},
 		}

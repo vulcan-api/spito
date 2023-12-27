@@ -5,7 +5,7 @@ import (
 	cmdApi "github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
 	"github.com/avorty/spito/internal/checker"
-	shared2 "github.com/avorty/spito/pkg/shared"
+	shared "github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
@@ -54,13 +54,13 @@ var checkCmd = &cobra.Command{
 	},
 }
 
-func getInitialRuntimeData(cmd *cobra.Command) shared2.ImportLoopData {
+func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 	isExecutedByGui, err := cmd.Flags().GetBool("gui-child-mode")
 	if err != nil {
 		isExecutedByGui = true
 	}
 
-	var infoApi shared2.InfoInterface
+	var infoApi shared.InfoInterface
 
 	if isExecutedByGui {
 		conn, err := dbus.SessionBus()
@@ -81,9 +81,9 @@ func getInitialRuntimeData(cmd *cobra.Command) shared2.ImportLoopData {
 		panic(err)
 	}
 
-	return shared2.ImportLoopData{
+	return shared.ImportLoopData{
 		VRCT:         *ruleVRCT,
-		RulesHistory: shared2.RulesHistory{},
+		RulesHistory: shared.RulesHistory{},
 		ErrChan:      make(chan error),
 		InfoApi:      infoApi,
 	}
