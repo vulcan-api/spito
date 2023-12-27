@@ -3,15 +3,15 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/nasz-elektryk/spito/internal/checker"
+	"github.com/avorty/spito/internal/checker"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 
+	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/nasz-elektryk/spito/cmd/cmdApi"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

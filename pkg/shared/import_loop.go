@@ -1,7 +1,7 @@
 package shared
 
 import (
-	"github.com/nasz-elektryk/spito/pkg/vrct"
+	"github.com/avorty/spito/pkg/vrct"
 )
 
 type ImportLoopData struct {

@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"github.com/nasz-elektryk/spito/pkg/vrct"
+	"github.com/avorty/spito/pkg/vrct"
 	"os"
 	"testing"
 )

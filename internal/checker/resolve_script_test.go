@@ -9,7 +9,7 @@ import (
 
 func TestFetchRuleSet(t *testing.T) {
 	ruleSetLocation := RuleSetLocation{}
-	ruleSetLocation.New("https://github.com/Nasz-Elektryk/spito-ruleset/")
+	ruleSetLocation.New("https://github.com/avorty/spito-ruleset/")
 
 	err := ruleSetLocation.CreateDir()
 	if err != nil {

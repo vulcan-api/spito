@@ -3,7 +3,7 @@ package checker
 import (
 	"errors"
 	"fmt"
-	"github.com/nasz-elektryk/spito/internal/shared"
+	"github.com/avorty/spito/pkg/shared"
 	"os"
 )
 

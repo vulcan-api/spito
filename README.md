@@ -18,7 +18,7 @@ This rule allows samba guests to do almost everything. It's especially
 useful when using virtual machines without shared files support.
 
 Notice there is used official repository of samba rules stored on 
-[GitHub](https://github.com/nasz-elektryk/spito-ruleset/tree/main/samba).
+[GitHub](https://github.com/avorty/spito-ruleset/tree/main/samba).
 
 ```shell
 spito samba guests-are-god

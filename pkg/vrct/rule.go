@@ -1,7 +1,7 @@
 package vrct
 
 import (
-	"github.com/nasz-elektryk/spito/pkg/vrct/vrctFs"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 )
 
 func NewRuleVRCT() (*RuleVRCT, error) {

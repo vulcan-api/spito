@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/nasz-elektryk/spito/cmd/cmdApi"
-	"github.com/nasz-elektryk/spito/internal/checker"
+	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/internal/checker"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -16,18 +16,18 @@ const exampleRuleContents = `function main()
 end
 `
 
-const RULES_DIRECTORY = "rules"
+const rulesDirectory = "rules"
 
 func handleGenerate(cmd *cobra.Command, args []string) {
 	rulePath := strings.ReplaceAll(args[0], " ", "")
 
 	if rulePath == "" {
-		printErrorAndExit(errors.New("The rule path cannot be empty!"))
+		printErrorAndExit(errors.New("the rule path cannot be empty"))
 	}
 
 	configFileContents, err := os.ReadFile(checker.CONFIG_FILENAME)
 	if os.IsNotExist(err) {
-		printErrorAndExit(errors.New("Please run this commnd inside an actual spito ruleset directory!"))
+		printErrorAndExit(errors.New("please run this commnd inside an actual spito ruleset directory"))
 	}
 	handleError(err)
 
@@ -38,19 +38,19 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 	rulesetLocation := checker.RuleSetLocation{}
 	rulesetLocation.New(config.Identifier)
 
-	err = os.Mkdir(RULES_DIRECTORY, 0700)
+	err = os.Mkdir(rulesDirectory, 0700)
 	if err != nil && !os.IsExist(err) {
 		printErrorAndExit(err)
 	}
 
 	rulePathTokens := strings.Split(rulePath, "/")
 	if len(rulePathTokens) > 1 {
-		directoryPath := RULES_DIRECTORY + "/" + strings.Join(rulePathTokens[:len(rulePathTokens)-1], "/")
+		directoryPath := rulesDirectory + "/" + strings.Join(rulePathTokens[:len(rulePathTokens)-1], "/")
 		err = os.MkdirAll(directoryPath, 0700)
 		handleError(err)
 	}
 
-	ruleFile, err := os.Create(RULES_DIRECTORY + "/" + rulePath + ".lua")
+	ruleFile, err := os.Create(rulesDirectory + "/" + rulePath + ".lua")
 	handleError(err)
 	ruleFile.Write([]byte(exampleRuleContents))
 	ruleFile.Close()

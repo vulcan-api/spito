@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/nasz-elektryk/spito/pkg/vrct/vrctFs"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"regexp"
 	"strings"
