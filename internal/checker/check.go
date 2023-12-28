@@ -93,48 +93,50 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string, name string) bool {
-	ruleSetLocation := RuleSetLocation{}
-	ruleSetLocation.New(identifier)
-	simpleUrl := ruleSetLocation.simpleUrl
+func _internalCheckRule(importLoopData *shared.ImportLoopData, identifierOrPath string, name string) bool {
+	rulesetLocation := NewRulesetLocation(identifierOrPath)
+	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory
 	errChan := importLoopData.ErrChan
 
-	if rulesHistory.Contains(simpleUrl, name) {
-		if rulesHistory.IsRuleInProgress(simpleUrl, name) {
+	if rulesHistory.Contains(identifier, name) {
+		if rulesHistory.IsRuleInProgress(identifier, name) {
 			errChan <- errors.New("ERROR: Dependencies creates infinity loop")
 			panic(nil)
 		} else {
 			return true
 		}
 	}
-	rulesHistory.Push(simpleUrl, name, true)
+	rulesHistory.Push(identifier, name, true)
 
-	err := FetchRuleSet(&ruleSetLocation)
-	if err != nil {
-		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
-		panic(nil)
+	if !rulesetLocation.IsLocal() {
+		err := FetchRuleset(&rulesetLocation)
+		if err != nil {
+			errChan <- errors.New("Failed to fetch rules from: " + identifier + "\n" + err.Error())
+			panic(nil)
+		}
+
 	}
 
-	lockfilePath := ruleSetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
+	lockfilePath := rulesetLocation.GetRulesetPath() + "/" + LockFilename
 	_, lockfileErr := os.ReadFile(lockfilePath)
 
 	if os.IsNotExist(lockfileErr) {
-		_, err := ruleSetLocation.createLockfile(map[string]bool{})
+		_, err := rulesetLocation.createLockfile(map[string]bool{})
 		if err != nil {
-			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
+			errChan <- errors.New("Failed to create dependency tree for: " + identifier + "\n" + err.Error())
 			panic(nil)
 		}
 	}
 
-	script, err := getScript(ruleSetLocation, name)
+	script, err := getScript(rulesetLocation.GetRulesetPath(), name)
 	if err != nil {
-		errChan <- errors.New("Failed to read script called: " + name + " in git: " + ruleSetLocation.GetFullUrl())
+		errChan <- errors.New("Failed to read script called: " + name + " from " + identifier + "\n" + err.Error())
 		panic(nil)
 	}
 
-	rulesHistory.SetProgress(simpleUrl, name, false)
+	rulesHistory.SetProgress(identifier, name, false)
 	doesRulePass, err := ExecuteLuaMain(script, importLoopData)
 	if err != nil {
 		return false
