@@ -9,7 +9,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/spf13/cobra v1.7.0
 	github.com/yuin/gopher-lua v1.1.0
-	github.com/zcalusic/sysinfo v1.0.1
+	github.com/zcalusic/sysinfo v1.0.2
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v3 v3.0.1
@@ -27,6 +27,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
