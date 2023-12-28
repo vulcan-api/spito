@@ -37,7 +37,7 @@ func TestLuaApi(t *testing.T) {
 			InfoApi:      cmdApi.InfoApi{},
 		}
 
-		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file))
+		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
 		if err != nil {
 			t.Fatalf("Error occurred: %s", fmt.Sprint(err))
 		}

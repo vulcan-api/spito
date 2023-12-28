@@ -54,9 +54,9 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %v", val)
 }
 
-func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, rulesetPath string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return ExecuteLuaMain(script, importLoopData)
+		return ExecuteLuaMain(script, importLoopData, rulesetPath)
 	})
 }
 
@@ -135,7 +135,7 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string
 	}
 
 	rulesHistory.SetProgress(simpleUrl, name, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData)
+	doesRulePass, err := ExecuteLuaMain(script, importLoopData, ruleSetLocation.GetRuleSetPath())
 	if err != nil {
 		return false
 	}

@@ -2,6 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"slices"
+	"strings"
+	"path/filepath"
+
 	cmdApi "github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
 	"github.com/avorty/spito/internal/checker"
@@ -9,7 +14,6 @@ import (
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var checkFileCmd = &cobra.Command{
@@ -26,7 +30,30 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script))
+		path, err = filepath.Abs(path)
+		if err != nil {
+			infoApi := cmdApi.InfoApi{}
+			infoApi.Error("Error during conversion to absolute path!")
+			os.Exit(1)
+		}
+		
+		directories := strings.Split(path, "/")
+		rulesDirectoryIndex := slices.Index(directories, "rules")
+		
+		if len(directories) < 2 || rulesDirectoryIndex == -1 {
+			runtimeData.InfoApi.Error("Your rule must be correctly placed inside a ruleset!")
+			os.Exit(1)
+		}
+		
+		rulesetPath := strings.Join(directories[:len(directories)-2], "/")
+		_, err = os.Stat(rulesetPath + "/" + checker.CONFIG_FILENAME)
+
+		if os.IsNotExist(err) {
+			runtimeData.InfoApi.Error(fmt.Sprintf("There's no %s file in %s", checker.CONFIG_FILENAME, rulesetPath))
+			os.Exit(1)
+		}
+		
+		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), rulesetPath)
 		if err != nil {
 			panic(err)
 		}
