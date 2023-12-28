@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/oleiade/reflections v1.0.1
-	github.com/shirou/gopsutil/v3 v3.23.9
+	github.com/shirou/gopsutil/v3 v3.23.11
 	github.com/spf13/cobra v1.7.0
 	github.com/yuin/gopher-lua v1.1.0
 	github.com/zcalusic/sysinfo v1.0.1
