@@ -1,13 +1,25 @@
 package checker
 
 import (
+	"os"
+	"strings"
+
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/yuin/gopher-lua"
 )
 
+const rulesetDirConstantName = "@ruleset"
+
 func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	defer L.Close()
+
+	currentDirectory, err := os.Getwd()
+	if err != nil {
+		return false, err
+	}
+
+	script = strings.ReplaceAll(script, rulesetDirConstantName, currentDirectory)
 
 	attachApi(importLoopData, L)
 	attachRuleRequiring(importLoopData, L)
@@ -16,7 +28,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData) (bool,
 		return false, err
 	}
 
-	err := L.CallByParam(lua.P{
+	err = L.CallByParam(lua.P{
 		Fn:      L.GetGlobal("main"),
 		Protect: true,
 		NRet:    1,

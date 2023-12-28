@@ -13,11 +13,11 @@ import (
 )
 
 var checkFileCmd = &cobra.Command{
-	Use:   "check file {path}",
+	Use:   "file {path}",
 	Short: "Check local lua rule file",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		path := args[1]
+		path := args[0]
 
 		runtimeData := getInitialRuntimeData(cmd)
 		script, err := os.ReadFile(path)
@@ -31,7 +31,7 @@ var checkFileCmd = &cobra.Command{
 			panic(err)
 		}
 
-		communicateRuleResult(args[1], doesRulePass)
+		communicateRuleResult(path, doesRulePass)
 	},
 }
 
