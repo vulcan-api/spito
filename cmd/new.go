@@ -51,17 +51,16 @@ var newRulesetCommand = &cobra.Command{
 		shouldAssumeDefaultValues, err := cmd.Flags().GetBool("non-interactive")
 		handleError(err)
 
-		newRulesetLocation := checker.RuleSetLocation{}
 		gitUsername := getGitUsername()
 		rulesetIdentifier := gitUsername + "/" + rulesetName
-		newRulesetLocation.New(rulesetIdentifier)
+		newRulesetLocation := checker.NewRulesetLocation(rulesetIdentifier)
 
-		repositoryUrl := newRulesetLocation.GetFullUrl()
+		// Because we create RulesetLocation based on git identifier, we can be sure that full url is not nil
+		repositoryUrl := *newRulesetLocation.GetFullUrl()
 		rulesetRepositoryName := rulesetName
 		hostingProvider := checker.GetDefaultRepoPrefix()
 
 		if !shouldAssumeDefaultValues {
-
 			var input string
 
 			fmt.Printf("Enter your git service username (%s): ", gitUsername)
@@ -110,14 +109,14 @@ var newRulesetCommand = &cobra.Command{
 		_, err = git.PlainInit(rulesetName, false)
 		handleError(err)
 
-		filesToBeCreated := []string{"README.md", checker.LOCK_FILENAME}
+		filesToBeCreated := []string{"README.md", checker.LockFilename}
 		for _, fileName := range filesToBeCreated {
 			file, err := os.Create(rulesetName + "/" + fileName)
 			handleError(err)
 			file.Close()
 		}
 
-		configFile, err := os.Create(rulesetName + "/" + checker.CONFIG_FILENAME)
+		configFile, err := os.Create(rulesetName + "/" + checker.ConfigFilename)
 		handleError(err)
 		config := ConfigFileLayout{
 			Repo_url:   repositoryUrl,

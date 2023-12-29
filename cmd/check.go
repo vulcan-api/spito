@@ -10,6 +10,7 @@ import (
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 )
 
 var checkFileCmd = &cobra.Command{
@@ -36,15 +37,27 @@ var checkFileCmd = &cobra.Command{
 }
 
 var checkCmd = &cobra.Command{
-	Use:   "check {ruleset identifier} {rule}",
+	Use:   "check {ruleset identifier or path} {rule}",
 	Short: "Check whether your machine pass rule",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		runtimeData := getInitialRuntimeData(cmd)
-		identifier := args[0]
+		identifierOrPath := args[0]
 		ruleName := args[1]
 
-		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifier, ruleName)
+		if executionPath, err := os.Getwd(); err == nil {
+			localRulesetPath := identifierOrPath
+			if filepath.IsLocal(identifierOrPath) {
+				localRulesetPath = filepath.Join(executionPath, identifierOrPath)
+			}
+
+			pathExists, err := shared.DoesPathExist(localRulesetPath)
+			if err == nil && pathExists {
+				identifierOrPath = localRulesetPath
+			}
+		}
+
+		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "%s", err)
 			os.Exit(1)

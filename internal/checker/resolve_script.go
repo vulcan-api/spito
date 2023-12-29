@@ -27,12 +27,12 @@ func (s SpitoRulesYaml) getRulesStructVal(key string) (RuleConf, bool) {
 	return val, ok
 }
 
-func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, error) {
+func getRulePath(rulesetPath, ruleName string) (string, error) {
 	// Support for both .yaml and .yml
-	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.GetRuleSetPath() + "/spito-rules.yaml")
+	spitoRulesDataBytes, err := os.ReadFile(rulesetPath + "/spito-rules.yaml")
 	if errors.Is(err, fs.ErrNotExist) {
 		var _err error
-		spitoRulesDataBytes, _err = os.ReadFile(ruleSetLocation.GetRuleSetPath() + "/spito-rules.yml")
+		spitoRulesDataBytes, _err = os.ReadFile(rulesetPath + "/spito-rules.yml")
 		if _err != nil {
 			return "", _err
 		}
@@ -44,8 +44,6 @@ func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, erro
 	if err := yaml.Unmarshal(spitoRulesDataBytes, &spitoRulesYaml); err != nil {
 		return "", err
 	}
-
-	fmt.Printf("%+v\n", spitoRulesYaml.Rules)
 
 	for key := range spitoRulesYaml.Rules {
 		if key != ruleName {
@@ -66,7 +64,7 @@ func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, erro
 		} else if path[0] != '/' {
 			path = "/" + path
 		}
-		path = ruleSetLocation.GetRuleSetPath() + path
+		path = rulesetPath + path
 
 		return path, nil
 	}
@@ -74,8 +72,8 @@ func getRulePath(ruleSetLocation RuleSetLocation, ruleName string) (string, erro
 	return "", fmt.Errorf("NOT FOUND rule called: " + ruleName)
 }
 
-func getScript(ruleSetLocation RuleSetLocation, ruleName string) (string, error) {
-	scriptPath, err := getRulePath(ruleSetLocation, ruleName)
+func getScript(rulesetPath, ruleName string) (string, error) {
+	scriptPath, err := getRulePath(rulesetPath, ruleName)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +96,7 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ruleSets []string
+	var rulesets []string
 
 	for _, provider := range providerDirs {
 		providerName := provider.Name()
@@ -114,29 +112,28 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 			}
 			for _, ruleSet := range userDirs {
 				ruleSetName := ruleSet.Name()
-				ruleSets = append(ruleSets,
+				rulesets = append(rulesets,
 					fmt.Sprintf("%s/%s/%s", providerName, userName, ruleSetName),
 				)
 			}
 		}
 	}
 
-	return ruleSets, nil
+	return rulesets, nil
 }
 
-func FetchRuleSet(ruleSetLocation *RuleSetLocation) error {
-	err := ruleSetLocation.CreateDir()
+func FetchRuleset(rulesetLocation *RulesetLocation) error {
+	err := rulesetLocation.CreateDir()
 	if err != nil {
 		println(err.Error())
 		return err
 	}
 
-	_, err = git.PlainClone(ruleSetLocation.GetRuleSetPath(), false, &git.CloneOptions{
-		URL: ruleSetLocation.GetFullUrl(),
+	_, err = git.PlainClone(rulesetLocation.GetRulesetPath(), false, &git.CloneOptions{
+		URL: *rulesetLocation.GetFullUrl(),
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		println(err)
 		return nil
 	}
 	return err
