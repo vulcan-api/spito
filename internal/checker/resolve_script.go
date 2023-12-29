@@ -134,7 +134,6 @@ func FetchRuleset(rulesetLocation *RulesetLocation) error {
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		println(err)
 		return nil
 	}
 	return err

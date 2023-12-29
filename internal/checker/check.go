@@ -116,7 +116,6 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifierOrPath 
 			errChan <- errors.New("Failed to fetch rules from: " + identifier + "\n" + err.Error())
 			panic(nil)
 		}
-
 	}
 
 	lockfilePath := rulesetLocation.GetRulesetPath() + "/" + LockFilename
