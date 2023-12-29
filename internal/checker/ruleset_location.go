@@ -40,8 +40,8 @@ func GetDefaultRepoPrefix() string {
 
 // RulesetLocation represent enum with value, only one of fields must be set
 type RulesetLocation struct {
-	simpleUrl   *string
-	rulesetPath *string
+	simpleUrlOrPath string
+	IsPath          bool
 }
 
 type DependencyTreeLayout struct {
@@ -51,18 +51,20 @@ type DependencyTreeLayout struct {
 // e.g. from: https://github.com/avorty/spito-ruleset.git to avorty/spito-ruleset
 func NewRulesetLocation(identifierOrPath string) RulesetLocation {
 	r := RulesetLocation{}
+	r.IsPath = false
 
 	if filepath.IsAbs(identifierOrPath) {
-		r.rulesetPath = &identifierOrPath
+		r.IsPath = true
+		r.simpleUrlOrPath = identifierOrPath
 		return r
 	}
 
-	// check if simpleUrl is url:
+	// check if simpleUrlOrPath is url:
 	if !strings.Contains(identifierOrPath, ".") {
 		simpleUrl := GetDefaultRepoPrefix() + "/" + identifierOrPath
 		simpleUrl = strings.ToLower(simpleUrl)
 
-		r.simpleUrl = &simpleUrl
+		r.simpleUrlOrPath = simpleUrl
 		return r
 	}
 
@@ -80,28 +82,19 @@ func NewRulesetLocation(identifierOrPath string) RulesetLocation {
 		simpleUrl = simpleUrl[:urlLen-4]
 	}
 
-	simpleUrl = strings.ToLower(simpleUrl)
-	r.simpleUrl = &simpleUrl
+	r.simpleUrlOrPath = strings.ToLower(simpleUrl)
 	return r
 }
 
-// IsLocal returns true if ruleset location is other than default
-func (r *RulesetLocation) IsLocal() bool {
-	return r.rulesetPath != nil
-}
-
 func (r *RulesetLocation) GetIdentifier() string {
-	if r.simpleUrl != nil {
-		return *r.simpleUrl
-	}
-	return *r.rulesetPath
+	return r.simpleUrlOrPath
 }
 
 func (r *RulesetLocation) GetFullUrl() *string {
-	if r.IsLocal() {
+	if r.IsPath {
 		return nil
 	}
-	fullUrl := "https://" + *r.simpleUrl
+	fullUrl := "https://" + r.simpleUrlOrPath
 	return &fullUrl
 }
 
@@ -114,15 +107,15 @@ func (r *RulesetLocation) CreateDir() error {
 }
 
 func (r *RulesetLocation) GetRulesetPath() string {
-	if r.rulesetPath != nil {
-		return *r.rulesetPath
+	if r.IsPath {
+		return r.simpleUrlOrPath
 	}
 
 	dir, err := getRuleSetsDir()
 	if err != nil {
 		return ""
 	}
-	return dir + "/" + *r.simpleUrl
+	return dir + "/" + r.simpleUrlOrPath
 }
 
 func (r *RulesetLocation) IsRuleSetDownloaded() bool {
@@ -169,7 +162,7 @@ func (r *RulesetLocation) createLockfile(rulesInProgress map[string]bool) ([]str
 	}
 
 	waitGroup.Wait()
-	if firstDependencyLocation.simpleUrl != nil {
+	if firstDependencyLocation.simpleUrlOrPath != "" && !firstDependencyLocation.IsPath {
 		toBeAppended, err := firstDependencyLocation.createLockfile(rulesInProgress)
 		if err != nil {
 			return nil, err

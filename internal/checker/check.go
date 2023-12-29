@@ -110,7 +110,7 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifierOrPath 
 	}
 	rulesHistory.Push(identifier, name, true)
 
-	if !rulesetLocation.IsLocal() {
+	if !rulesetLocation.IsPath {
 		err := FetchRuleset(&rulesetLocation)
 		if err != nil {
 			errChan <- errors.New("Failed to fetch rules from: " + identifier + "\n" + err.Error())

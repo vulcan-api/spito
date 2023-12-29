@@ -130,7 +130,7 @@ func FetchRuleset(rulesetLocation *RulesetLocation) error {
 	}
 
 	_, err = git.PlainClone(rulesetLocation.GetRulesetPath(), false, &git.CloneOptions{
-		URL: "https://" + *rulesetLocation.simpleUrl,
+		URL: *rulesetLocation.GetFullUrl(),
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
