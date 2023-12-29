@@ -45,8 +45,6 @@ func getRulePath(rulesetPath, ruleName string) (string, error) {
 		return "", err
 	}
 
-	fmt.Printf("%+v\n", spitoRulesYaml.Rules)
-
 	for key := range spitoRulesYaml.Rules {
 		if key != ruleName {
 			continue
