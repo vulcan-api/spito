@@ -8,41 +8,43 @@ import (
 	"strings"
 )
 
-func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool) error {
+// CreateFile TODO: check for conflict out of the box
+func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fileType int) error {
+	// TODO: allow non-absolute paths
 	filePath, err := pathMustBeAbsolute(filePath)
 	if err != nil {
 		return err
 	}
 	dirPath := filepath.Dir(filePath)
-	prototypeFilePath := fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, filePath)
 	randFileName := randomLetters(5)
 
-	var contentPath *string = nil
+	var contentPath string
 	if content != nil {
 		newContentPath := fmt.Sprintf("%s%s/%s", v.virtualFSPath, dirPath, randFileName)
-		contentPath = &newContentPath
+		contentPath = newContentPath
 
 		err := os.MkdirAll(fmt.Sprintf("%s%s", v.virtualFSPath, dirPath), os.ModePerm)
 		if err != nil {
 			return err
 		}
 
-		if err := os.WriteFile(*contentPath, content, os.ModePerm); err != nil {
+		if err := os.WriteFile(contentPath, content, os.ModePerm); err != nil {
 			return err
 		}
+
 	}
 
-	filePrototype := FilePrototype{}
-	err = filePrototype.Read(prototypeFilePath)
+	filePrototype := FilePrototype{
+		FileType: fileType,
+	}
+	err = filePrototype.Read(v.virtualFSPath, filePath)
 	if err != nil {
 		return err
 	}
 
 	newLayer := PrototypeLayer{
-		ContentPath:   contentPath,
-		IsOptional:    isOptional,
-		ConfigOptions: nil,
-		ConfigType:    nil,
+		ContentPath: contentPath,
+		IsOptional:  isOptional,
 	}
 
 	return filePrototype.AddNewLayer(newLayer)
@@ -55,7 +57,7 @@ func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
 	}
 
 	filePrototype := FilePrototype{}
-	err = filePrototype.Read(fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, filePath))
+	err = filePrototype.Read(v.virtualFSPath, filePath)
 	if err != nil {
 		file, err := os.ReadFile(filePath)
 		if err != nil {
@@ -90,7 +92,7 @@ func (v *FsVRCT) Stat(path string) (os.FileInfo, error) {
 		}
 	} else {
 		filePrototype := FilePrototype{}
-		if err := filePrototype.Read(prototypePath); err != nil {
+		if err := filePrototype.Read(v.virtualFSPath, path); err != nil {
 			return nil, err
 		}
 		content, err := filePrototype.SimulateFile()
