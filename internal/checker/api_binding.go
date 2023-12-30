@@ -77,7 +77,7 @@ func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.
 func getShNamespace(L *lua.LState) lua.LValue {
 	shellNamespace := newLuaNamespace()
 
-	// TODO: add shell functions here
+	shellNamespace.AddFn("Command", api.ShellCommand)
 
 	return shellNamespace.createTable(L)
 }
