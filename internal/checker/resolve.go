@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func getScript(ruleSetLocation RuleSetLocation, ruleName string) (string, error) {
+func getScript(ruleSetLocation *RulesetLocation, ruleName string) (string, error) {
 	rulesetConf, err := getRulesetConf(ruleSetLocation)
 	if err != nil {
 		return "", err
@@ -23,7 +23,7 @@ func getScript(ruleSetLocation RuleSetLocation, ruleName string) (string, error)
 	return string(script), nil
 }
 
-func FetchRuleset(ruleSetLocation *RuleSetLocation) error {
+func FetchRuleset(ruleSetLocation *RulesetLocation) error {
 	err := ruleSetLocation.CreateDir()
 	if err != nil {
 		println(err.Error())
@@ -31,11 +31,10 @@ func FetchRuleset(ruleSetLocation *RuleSetLocation) error {
 	}
 
 	_, err = git.PlainClone(ruleSetLocation.GetRulesetPath(), false, &git.CloneOptions{
-		URL: ruleSetLocation.GetFullUrl(),
+		URL: *ruleSetLocation.GetFullUrl(),
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		println(err)
 		return nil
 	}
 	return err

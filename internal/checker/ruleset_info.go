@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func getRulesetConf(ruleSetLocation RuleSetLocation) (RulesetConf, error) {
+func getRulesetConf(ruleSetLocation *RulesetLocation) (RulesetConf, error) {
 	// Support for both .yaml and .yml
 	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.GetRulesetPath() + "/spito-rules.yml")
 	if os.IsNotExist(err) {
@@ -113,7 +113,7 @@ func (s SpitoRulesetYaml) getRuleConf(ruleName string) (RuleConf, error) {
 
 	rulePath, ok := s.Rules[ruleName].(string)
 	if !ok {
-		return RuleConf{}, fmt.Errorf("rule %s in "+CONFIG_FILENAME+" is neither string nor RuleConfYaml", ruleName)
+		return RuleConf{}, fmt.Errorf("rule %s in "+ConfigFilename+" is neither string nor RuleConfYaml", ruleName)
 	}
 
 	return RuleConf{
