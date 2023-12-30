@@ -5,11 +5,11 @@ import (
 	"github.com/yuin/gopher-lua"
 )
 
-func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData) (bool, error) {
+func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	defer L.Close()
 
-	attachApi(importLoopData, L)
+	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
 	if err := L.DoString(script); err != nil {

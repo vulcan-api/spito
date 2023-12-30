@@ -71,7 +71,7 @@ func (r *RuleSetLocation) New(identifier string) {
 }
 
 func (r *RuleSetLocation) CreateDir() error {
-	err := os.MkdirAll(r.GetRuleSetPath(), 0700)
+	err := os.MkdirAll(r.GetRulesetPath(), 0700)
 	if errors.Is(err, fs.ErrExist) {
 		return nil
 	}
@@ -82,7 +82,7 @@ func (r *RuleSetLocation) GetFullUrl() string {
 	return "https://" + r.simpleUrl
 }
 
-func (r *RuleSetLocation) GetRuleSetPath() string {
+func (r *RuleSetLocation) GetRulesetPath() string {
 	dir, err := getRuleSetsDir()
 	if err != nil {
 		return ""
@@ -91,12 +91,12 @@ func (r *RuleSetLocation) GetRuleSetPath() string {
 }
 
 func (r *RuleSetLocation) IsRuleSetDownloaded() bool {
-	_, err := os.ReadDir(r.GetRuleSetPath())
+	_, err := os.ReadDir(r.GetRulesetPath())
 	return !errors.Is(err, fs.ErrNotExist)
 }
 
-func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
-	configPath := rulesetLocation.GetRuleSetPath() + "/" + CONFIG_FILENAME
+func (r *RuleSetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
+	configPath := r.GetRulesetPath() + "/" + CONFIG_FILENAME
 	configFileContents, err := os.ReadFile(configPath)
 	if err != nil {
 		return []string{}, err
@@ -129,7 +129,7 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 			dependencyLocation.New(strings.Split(dependencyNameParameter, "@")[0])
 			if _, exists := rulesInProgress[dependencyNameParameter]; !exists && !dependencyLocation.IsRuleSetDownloaded() {
 				rulesInProgress[dependencyNameParameter] = true
-				FetchRuleSet(&dependencyLocation)
+				FetchRuleset(&dependencyLocation)
 			}
 		}(dependencyName)
 	}
@@ -143,7 +143,7 @@ func (rulesetLocation *RuleSetLocation) createLockfile(rulesInProgress map[strin
 		outputDependencyTree.Dependencies = append(outputDependencyTree.Dependencies, toBeAppended...)
 	}
 
-	lockfilePath := rulesetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
+	lockfilePath := r.GetRulesetPath() + "/" + LOCK_FILENAME
 	lockfile, err := os.Create(lockfilePath)
 
 	if err != nil {

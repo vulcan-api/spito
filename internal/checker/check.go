@@ -7,12 +7,6 @@ import (
 	"os"
 )
 
-func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
-	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName), nil
-	})
-}
-
 type Rule struct {
 	url          string
 	name         string
@@ -54,9 +48,20 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %v", val)
 }
 
+func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		return _internalCheckRule(importLoopData, identifier, ruleName), nil
+	})
+}
+
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return ExecuteLuaMain(script, importLoopData)
+		// TODO: implement preprocessing instead of hard coding ruleConf
+		ruleConf := RuleConf{
+			Path:   "",
+			Unsafe: false,
+		}
+		return ExecuteLuaMain(script, importLoopData, &ruleConf)
 	})
 }
 
@@ -111,13 +116,13 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string
 	}
 	rulesHistory.Push(simpleUrl, name, true)
 
-	err := FetchRuleSet(&ruleSetLocation)
+	err := FetchRuleset(&ruleSetLocation)
 	if err != nil {
 		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
 		panic(nil)
 	}
 
-	lockfilePath := ruleSetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
+	lockfilePath := ruleSetLocation.GetRulesetPath() + "/" + LOCK_FILENAME
 	_, lockfileErr := os.ReadFile(lockfilePath)
 
 	if os.IsNotExist(lockfileErr) {
@@ -134,8 +139,16 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string
 		panic(nil)
 	}
 
+	rulesetConf, err := getRulesetConf(ruleSetLocation)
+	if err != nil {
+		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", CONFIG_FILENAME, ruleSetLocation.GetFullUrl(), err.Error())
+		panic(nil)
+	}
+
+	ruleConf := rulesetConf.Rules[name]
+
 	rulesHistory.SetProgress(simpleUrl, name, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData)
+	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf)
 	if err != nil {
 		return false
 	}

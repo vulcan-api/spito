@@ -9,13 +9,17 @@ import (
 )
 
 // Every cmdApi needs to be attached here in order to be available:
-func attachApi(importLoopData *shared.ImportLoopData, L *lua.LState) {
+func attachApi(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
 	apiNamespace.AddField("pkg", getPackageNamespace(L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
+
+	if ruleConf.Unsafe {
+		apiNamespace.AddField("sh", getShNamespace(L))
+	}
 
 	apiNamespace.setGlobal(L, "api")
 }
@@ -69,6 +73,13 @@ func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.
 	infoNamespace.AddFn("Important", infoApi.Important)
 
 	return infoNamespace.createTable(L)
+}
+func getShNamespace(L *lua.LState) lua.LValue {
+	shellNamespace := newLuaNamespace()
+
+	// TODO: add shell functions here
+
+	return shellNamespace.createTable(L)
 }
 
 type LuaNamespace struct {

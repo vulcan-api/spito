@@ -32,12 +32,12 @@ func TestFetchRuleSet(t *testing.T) {
 		t.SkipNow()
 	}
 
-	err = FetchRuleSet(&ruleSetLocation)
+	err = FetchRuleset(&ruleSetLocation)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = os.RemoveAll(ruleSetLocation.GetRuleSetPath())
+	err = os.RemoveAll(ruleSetLocation.GetRulesetPath())
 	if err != nil {
 		t.Fatal(err)
 	}
