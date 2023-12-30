@@ -50,7 +50,7 @@ func anyToError(val any) error {
 
 func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName), nil
+		return _internalCheckRule(importLoopData, identifier, ruleName, nil), nil
 	})
 }
 
@@ -98,22 +98,27 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(importLoopData *shared.ImportLoopData, identifierOrPath string, name string) bool {
+func _internalCheckRule(
+	importLoopData *shared.ImportLoopData,
+	identifierOrPath string,
+	ruleName string,
+	previousRuleConf *RuleConf,
+) bool {
 	rulesetLocation := NewRulesetLocation(identifierOrPath)
 	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory
 	errChan := importLoopData.ErrChan
 
-	if rulesHistory.Contains(identifier, name) {
-		if rulesHistory.IsRuleInProgress(identifier, name) {
+	if rulesHistory.Contains(identifier, ruleName) {
+		if rulesHistory.IsRuleInProgress(identifier, ruleName) {
 			errChan <- errors.New("ERROR: Dependencies creates infinity loop")
 			panic(nil)
 		} else {
 			return true
 		}
 	}
-	rulesHistory.Push(identifier, name, true)
+	rulesHistory.Push(identifier, ruleName, true)
 
 	if !rulesetLocation.IsPath {
 		err := FetchRuleset(&rulesetLocation)
@@ -134,9 +139,9 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifierOrPath 
 		}
 	}
 
-	script, err := getScript(&rulesetLocation, name)
+	script, err := getScript(&rulesetLocation, ruleName)
 	if err != nil {
-		errChan <- errors.New("Failed to read script called: " + name + " from " + identifier + "\n" + err.Error())
+		errChan <- errors.New("Failed to read script called: " + ruleName + " from " + identifier + "\n" + err.Error())
 		panic(nil)
 	}
 
@@ -146,9 +151,16 @@ func _internalCheckRule(importLoopData *shared.ImportLoopData, identifierOrPath 
 		panic(nil)
 	}
 
-	ruleConf := rulesetConf.Rules[name]
+	ruleConf := rulesetConf.Rules[ruleName]
+	
+	if previousRuleConf != nil {
+		if !previousRuleConf.Unsafe && ruleConf.Unsafe {
+			errChan <- errors.New("unsafe rule cannot be imported by safe rule")
+			panic(nil)
+		}
+	}
 
-	rulesHistory.SetProgress(identifier, name, false)
+	rulesHistory.SetProgress(identifier, ruleName, false)
 	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf)
 	if err != nil {
 		return false
