@@ -1,9 +1,11 @@
 package vrctFs
 
 import (
+	"errors"
 	"fmt"
 	"gopkg.in/mgo.v2/bson"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -282,6 +284,39 @@ func (p *FilePrototype) Save() error {
 	return os.WriteFile(p.getVirtualPath(), rawBson, os.ModePerm)
 }
 
+func (p *FilePrototype) CreateLayer(content []byte, isOptional bool) error {
+	if p.Path == "" {
+		return errors.New("file prototype hasn't been loaded yet")
+	}
+
+	// TODO: check if file with random name already exist
+	var contentPath string
+	if content != nil {
+
+		randFileName := randomLetters(5)
+		dir := filepath.Dir(p.Path)
+		contentPath = fmt.Sprintf("%s/%s", dir, randFileName)
+
+		// TODO: think about changing it (spito can be run as root (dangerous))
+		if err := os.WriteFile(contentPath, content, os.ModePerm); err != nil {
+			return err
+		}
+
+	}
+
+	newLayer := PrototypeLayer{
+		ContentPath: contentPath,
+		IsOptional:  isOptional,
+	}
+
+	err := p.AddNewLayer(newLayer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *FilePrototype) AddNewLayer(layer PrototypeLayer) error {
 	// TODO: merge first and check if new layers is addable
 	p.Layers = append(p.Layers, layer)
@@ -291,8 +326,6 @@ func (p *FilePrototype) AddNewLayer(layer PrototypeLayer) error {
 
 	return nil
 }
-
-// TODO: create function creating new layer :>
 
 func (layer *PrototypeLayer) GetContent() ([]byte, error) {
 	file, err := os.ReadFile(layer.ContentPath)

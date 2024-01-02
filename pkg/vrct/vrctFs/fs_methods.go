@@ -16,22 +16,10 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 		return err
 	}
 	dirPath := filepath.Dir(filePath)
-	randFileName := randomLetters(5)
 
-	var contentPath string
-	if content != nil {
-		newContentPath := fmt.Sprintf("%s%s/%s", v.virtualFSPath, dirPath, randFileName)
-		contentPath = newContentPath
-
-		err := os.MkdirAll(fmt.Sprintf("%s%s", v.virtualFSPath, dirPath), os.ModePerm)
-		if err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(contentPath, content, os.ModePerm); err != nil {
-			return err
-		}
-
+	err = os.MkdirAll(fmt.Sprintf("%s%s", v.virtualFSPath, dirPath), os.ModePerm)
+	if err != nil {
+		return err
 	}
 
 	filePrototype := FilePrototype{
@@ -42,12 +30,7 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 		return err
 	}
 
-	newLayer := PrototypeLayer{
-		ContentPath: contentPath,
-		IsOptional:  isOptional,
-	}
-
-	return filePrototype.AddNewLayer(newLayer)
+	return filePrototype.CreateLayer(content, isOptional)
 }
 
 func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
