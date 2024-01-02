@@ -12,11 +12,12 @@ import (
 
 func TestLuaApi(t *testing.T) {
 	scripts := []string{
-		"sysinfo_test.lua",
-		"fs_test.lua",
-		"rule_require_test.lua",
 		"daemon_test.lua",
+		"fs_test.lua",
 		"package_test.lua",
+		"rule_require_test.lua",
+		"sh_test.lua",
+		"sysinfo_test.lua",
 	}
 
 	for _, scriptName := range scripts {
