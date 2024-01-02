@@ -85,7 +85,7 @@ var checkCmd = &cobra.Command{
 
 		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%s", err)
+			_, _ = fmt.Fprintf(os.Stderr, "%s", err.Error())
 			os.Exit(1)
 		}
 
