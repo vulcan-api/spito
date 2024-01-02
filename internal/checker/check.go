@@ -61,6 +61,7 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool
 			Path:   "",
 			Unsafe: false,
 		}
+		script = processScript(script, &ruleConf)
 		return ExecuteLuaMain(script, importLoopData, &ruleConf)
 	})
 }
@@ -152,7 +153,8 @@ func _internalCheckRule(
 	}
 
 	ruleConf := rulesetConf.Rules[ruleName]
-	
+	script = processScript(script, &ruleConf)
+
 	if previousRuleConf != nil {
 		if !previousRuleConf.Unsafe && ruleConf.Unsafe {
 			errChan <- errors.New("unsafe rule cannot be imported by safe rule")

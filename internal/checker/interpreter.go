@@ -9,6 +9,9 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	defer L.Close()
 
+	// Standard libraries
+	lua.OpenString(L)
+
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, ruleConf, L)
 

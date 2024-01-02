@@ -41,44 +41,51 @@ func (f *FsApi) ReadDir(path string) ([]os.DirEntry, error) {
 	return f.FsVRCT.ReadDir(path)
 }
 
-func removeRanges(fileContent string, rangeStart string, rangeEnd string, removeRangeEnd bool) string {
-	cleanFile := ""
-	slice := fileContent
-	sliceLen := len(slice)
-	endLen := 0
-	if removeRangeEnd {
-		endLen = len(rangeEnd)
-	}
+func RemoveComments(fileContent, singleLineStart, multiLineStart, multiLineEnd string) string {
+	var result strings.Builder
+	isString := false
+	isCharEscaped := false
+	isMultilineComment := false
+	isSingleLineComment := false
 
-	commentPos := strings.Index(slice, rangeStart)
-	for commentPos != -1 {
-		cleanFile += slice[0:commentPos]
-		slice = slice[commentPos:sliceLen]
+	isSingleLineSupported := singleLineStart != ""
+	isMultiLineSupported := multiLineStart != ""
 
-		sliceLen = len(slice)
-		realEndPos := strings.Index(slice, rangeEnd) + endLen
-		if realEndPos == -1 {
-			realEndPos = len(slice)
+	for i := 0; i < len(fileContent); i++ {
+		if !isCharEscaped {
+			if strings.HasPrefix(fileContent[i:], multiLineStart) && !isString && !isSingleLineComment && isMultiLineSupported {
+				isMultilineComment = true
+			} else if strings.HasPrefix(fileContent[i:], singleLineStart) && !isString && !isMultilineComment && isSingleLineSupported {
+				isSingleLineComment = true
+			}
+
+			if isMultilineComment && strings.HasPrefix(fileContent[i:], multiLineEnd) && !isString {
+				i += 1
+				isMultilineComment = false
+				continue
+			}
+
+			switch fileContent[i] {
+			case '"':
+				isString = !isString
+				break
+			case '\\':
+				isCharEscaped = !isCharEscaped
+				break
+			case '\n':
+				isSingleLineComment = false
+				break
+			}
+		} else if fileContent[i] != '\\' {
+			isCharEscaped = false
 		}
 
-		slice = slice[realEndPos:sliceLen]
-		sliceLen = len(slice)
-		commentPos = strings.Index(slice, rangeStart)
-	}
-	cleanFile += slice[0:sliceLen]
-	return cleanFile
-}
-
-func (*FsApi) RemoveComments(fileContent string, singleLineComment string, multilineCommentStart string, multilineCommentEnd string) string {
-	cleanFile := fileContent
-	if singleLineComment != "" {
-		cleanFile = removeRanges(fileContent, singleLineComment, "\n", false)
-	}
-	if multilineCommentStart != "" && multilineCommentEnd != "" {
-		cleanFile = removeRanges(cleanFile, multilineCommentStart, multilineCommentEnd, true)
+		if !(isMultilineComment && isMultiLineSupported) && !(isSingleLineComment && isSingleLineSupported) {
+			result.WriteByte(fileContent[i])
+		}
 	}
 
-	return cleanFile
+	return result.String()
 }
 
 func (*FsApi) FileContains(fileContent string, content string) bool {

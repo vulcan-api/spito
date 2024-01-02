@@ -53,7 +53,7 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 	fsNamespace.AddFn("ReadFile", apiFs.ReadFile)
 	fsNamespace.AddFn("ReadDir", apiFs.ReadDir)
 	fsNamespace.AddFn("FileContains", apiFs.FileContains)
-	fsNamespace.AddFn("RemoveComments", apiFs.RemoveComments)
+	fsNamespace.AddFn("RemoveComments", api.RemoveComments)
 	fsNamespace.AddFn("Find", apiFs.Find)
 	fsNamespace.AddFn("FindAll", apiFs.FindAll)
 	fsNamespace.AddFn("GetProperLines", apiFs.GetProperLines)
