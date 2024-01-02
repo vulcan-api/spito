@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"slices"
-	"strings"
 	"path/filepath"
 
 	cmdApi "github.com/avorty/spito/cmd/cmdApi"
@@ -30,30 +28,13 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		path, err = filepath.Abs(path)
+		fileAbsolutePath, err := filepath.Abs(path)
 		if err != nil {
-			infoApi := cmdApi.InfoApi{}
-			infoApi.Error("Error during conversion to absolute path!")
+			runtimeData.InfoApi.Error("Cannot create the absolute path to the file!")
 			os.Exit(1)
 		}
 		
-		directories := strings.Split(path, "/")
-		rulesDirectoryIndex := slices.Index(directories, "rules")
-		
-		if len(directories) < 2 || rulesDirectoryIndex == -1 {
-			runtimeData.InfoApi.Error("Your rule must be correctly placed inside a ruleset!")
-			os.Exit(1)
-		}
-		
-		rulesetPath := strings.Join(directories[:len(directories)-2], "/")
-		_, err = os.Stat(rulesetPath + "/" + checker.ConfigFilename)
-
-		if os.IsNotExist(err) {
-			runtimeData.InfoApi.Error(fmt.Sprintf("There's no %s file in %s", checker.ConfigFilename, rulesetPath))
-			os.Exit(1)
-		}
-		
-		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), rulesetPath)
+		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
 		}

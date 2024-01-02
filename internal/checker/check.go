@@ -55,14 +55,14 @@ func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier str
 	})
 }
 
-func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, rulesetPath string) (bool, error) {
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := RuleConf{
 			Path:   "",
 			Unsafe: false,
 		}
-		script = processScript(script, &ruleConf, rulesetPath)
+		script = processScript(script, &ruleConf, scriptDirectory)
 		return ExecuteLuaMain(script, importLoopData, &ruleConf)
 	})
 }
