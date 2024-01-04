@@ -62,8 +62,8 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scrip
 			Path:   "",
 			Unsafe: false,
 		}
-		script = processScript(script, &ruleConf, scriptDirectory)
-		return ExecuteLuaMain(script, importLoopData, &ruleConf)
+		script = processScript(script, &ruleConf)
+		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
 	})
 }
 
@@ -155,7 +155,7 @@ func _internalCheckRule(
 	}
 
 	ruleConf := rulesetConf.Rules[ruleName]
-	script = processScript(script, &ruleConf, rulesetLocation.GetRulesetPath())
+	script = processScript(script, &ruleConf)
 
 	if previousRuleConf != nil {
 		if !previousRuleConf.Unsafe && ruleConf.Unsafe {
@@ -165,7 +165,7 @@ func _internalCheckRule(
 	}
 
 	rulesHistory.SetProgress(identifier, ruleName, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf)
+	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
 		return false
 	}

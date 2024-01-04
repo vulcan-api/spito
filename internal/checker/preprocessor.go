@@ -7,12 +7,9 @@ import (
 	"unicode"
 )
 
-const rulesetDirConstantName = "@ruleset"
 
-func processScript(script string, ruleConf *RuleConf, rulesetPath string) string {
+func processScript(script string, ruleConf *RuleConf) string {
 	newScript, decorators := getDecorators(script)
-
-	newScript = strings.ReplaceAll(newScript, rulesetDirConstantName,  rulesetPath)
 
 	for _, decorator := range decorators {
 		if strings.ToLower(decorator) == "unsafe" {

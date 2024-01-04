@@ -5,14 +5,16 @@ import (
 	"github.com/yuin/gopher-lua"
 )
 
+const rulesetDirConstantName = "RULESET"
 
-func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf) (bool, error) {
+func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf, rulesetPath string) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	defer L.Close()
 
 	// Standard libraries
 	lua.OpenString(L)
 
+	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, ruleConf, L)
 
