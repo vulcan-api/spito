@@ -74,11 +74,10 @@ func checkAndProcessPanics(
 
 	errChan := importLoopData.ErrChan
 	doesRulePassChan := make(chan bool)
-
 	go func() {
 		defer func() {
 			r := recover()
-			if errChan != nil {
+			if errChan != nil && r != nil {
 				errChan <- anyToError(r)
 			}
 		}()

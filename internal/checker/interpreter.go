@@ -1,6 +1,9 @@
 package checker
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/yuin/gopher-lua"
 )
@@ -35,12 +38,33 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 }
 
 func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua.LState) {
-	L.SetGlobal("require_rule", L.NewFunction(func(state *lua.LState) int {
-		ruleUrl := L.Get(1).String()
+	L.SetGlobal("require_remote", L.NewFunction(func(state *lua.LState) int {
+		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		result := _internalCheckRule(importLoopData, ruleUrl, ruleName, ruleConf)
+		result := _internalCheckRule(importLoopData, rulesetIdentifier, ruleName, ruleConf)
 		L.Push(lua.LBool(result))
+
+		return 1
+	}))
+
+	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
+		rulesetPath := L.Get(1).String()
+
+		scriptContents, err := os.ReadFile(rulesetPath)
+		if err != nil {
+			importLoopData.InfoApi.Error(err.Error())
+			os.Exit(1)
+		}
+
+		rulesetPath, err = filepath.Abs(rulesetPath)
+		if err != nil {
+			importLoopData.InfoApi.Error("Cannot file path to the absolute path!")
+			os.Exit(1)
+		}
+
+		doesRulePass, _ := CheckRuleScript(importLoopData, string(scriptContents), filepath.Dir(rulesetPath))
+		L.Push(lua.LBool(doesRulePass))
 
 		return 1
 	}))
