@@ -1,8 +1,10 @@
 package vrct
 
 import (
+	"errors"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -39,26 +41,32 @@ func TestVRCTFs(t *testing.T) {
 		t.Fatal("Failed to properly simulate " + testFilePath + " file content")
 	}
 
-	//testConfigPath := tmpPath + "/new_dir/config.json"
+	testConfigPath := tmpPath + "/new_dir/config.json"
 
-	//err = fsVrct.CreateFile(testConfigPath, []byte(`{"name":"john"}`), false, vrctFs.JsonConfig)
-	//if err != nil {
-	//	t.Fatal("Failed to create file "+testConfigPath+"\n", err)
-	//}
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"subObject": {"key": "value"}}`), false, vrctFs.JsonConfig)
+	if err != nil {
+		t.Fatal("Failed to create file "+testConfigPath+"\n", err)
+	}
 
-	//err = fsVrct.CreateFile(testConfigPath, []byte(`"lastname":"mcqueen"`), true, vrctFs.JsonConfig)
-	//if err != nil {
-	//	t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
-	//}
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value", "subObject" : {"nextKey": "value"}}`), false, vrctFs.JsonConfig)
+	if err != nil {
+		t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
+	}
 
-	//config, err := fsVrct.ReadFile(testConfigPath)
-	//if err != nil {
-	//	t.Fatal("Failed to read file "+testConfigPath+"\n", err)
-	//}
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value"}`), false, vrctFs.JsonConfig)
+	if !errors.Is(err, vrctFs.ErrConfigsCannotBeMerged) {
+		t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
+	}
 
-	//if strings.TrimSpace(string(config)) != `{"name":"john","lastname":"mcqueen"}` {
-	//	t.Fatal("Failed to properly simulate " + testConfigPath + " file content")
-	//}
+	// TODO: fix broken reading
+	config, err := fsVrct.ReadFile(testConfigPath)
+	if err != nil {
+		t.Fatal("Failed to read file "+testConfigPath+"\n", err)
+	}
+
+	if strings.TrimSpace(string(config)) != `{"name":"john","lastname":"mcqueen"}` {
+		t.Fatal("Failed to properly simulate " + testConfigPath + " file content")
+	}
 
 	err = fsVrct.Apply()
 	if err != nil {

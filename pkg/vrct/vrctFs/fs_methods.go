@@ -17,11 +17,13 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 	}
 	dirPath := filepath.Dir(filePath)
 
+	// TODO: consider pushing almost everything below in filePrototype.LoadOrCreate
 	err = os.MkdirAll(fmt.Sprintf("%s%s", v.virtualFSPath, dirPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
+	// TODO: create function that allows to merge json and xml configs
 	filePrototype := FilePrototype{
 		FileType: fileType,
 	}
@@ -30,7 +32,13 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 		return err
 	}
 
-	return filePrototype.CreateLayer(content, isOptional)
+	prototypeLayer, err := filePrototype.CreateLayer(content, isOptional)
+	if err != nil {
+		return err
+	}
+
+	err = filePrototype.AddNewLayer(prototypeLayer)
+	return err
 }
 
 func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {

@@ -4,6 +4,7 @@ const (
 	TextFile = iota
 	JsonConfig
 	YamlConfig
+	XmlConfig
 	TomlConfig
 	IniConfig
 )
