@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	cmdApi "github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
 	"github.com/avorty/spito/internal/checker"
@@ -9,16 +12,14 @@ import (
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 var checkFileCmd = &cobra.Command{
-	Use:   "check file {path}",
+	Use:   "file {path}",
 	Short: "Check local lua rule file",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		path := args[1]
+		path := args[0]
 
 		runtimeData := getInitialRuntimeData(cmd)
 		script, err := os.ReadFile(path)
@@ -27,12 +28,18 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script))
+		fileAbsolutePath, err := filepath.Abs(path)
+		if err != nil {
+			runtimeData.InfoApi.Error("Cannot create the absolute path to the file!")
+			os.Exit(1)
+		}
+		
+		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
 		}
 
-		communicateRuleResult(args[1], doesRulePass)
+		communicateRuleResult(path, doesRulePass)
 	},
 }
 
