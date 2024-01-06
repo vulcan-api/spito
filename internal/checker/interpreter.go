@@ -59,7 +59,7 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleCo
 
 		rulesetPath, err = filepath.Abs(rulesetPath)
 		if err != nil {
-			importLoopData.InfoApi.Error("Cannot file path to the absolute path!")
+			importLoopData.InfoApi.Error("Cannot convert file path to the absolute path!")
 			os.Exit(1)
 		}
 
