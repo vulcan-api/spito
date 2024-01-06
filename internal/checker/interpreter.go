@@ -8,7 +8,7 @@ import (
 	"github.com/yuin/gopher-lua"
 )
 
-const rulesetDirConstantName = "RULESET"
+const rulesetDirConstantName = "RULESET_DIR"
 
 func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf, rulesetPath string) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
