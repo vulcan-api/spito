@@ -1,7 +1,7 @@
 package checker
 
 import (
-	"os"
+	"fmt"
 	"path/filepath"
 
 	"github.com/avorty/spito/pkg/shared"
@@ -42,30 +42,26 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleCo
 		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		result := _internalCheckRule(importLoopData, rulesetIdentifier, ruleName, ruleConf)
-		L.Push(lua.LBool(result))
+		rulesetLocation := NewRulesetLocation(rulesetIdentifier)
+		if !rulesetLocation.IsRuleSetDownloaded() {
+			err := FetchRuleset(&rulesetLocation)
+			handleErrorAndPanic(importLoopData.ErrChan, err)
+		}
 
-		return 1
+	        err := L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
+		handleErrorAndPanic(importLoopData.ErrChan, err)
+		return 0
 	}))
 
 	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
-		rulesetPath := L.Get(1).String()
-
-		scriptContents, err := os.ReadFile(rulesetPath)
-		if err != nil {
-			importLoopData.InfoApi.Error(err.Error())
-			os.Exit(1)
+		rulePath := L.Get(1).String()
+		shared.ExpandTilde(&rulePath)
+		
+		if err := L.DoFile(rulePath); err != nil {
+			importLoopData.ErrChan <- err
+			panic(nil)
 		}
 
-		rulesetPath, err = filepath.Abs(rulesetPath)
-		if err != nil {
-			importLoopData.InfoApi.Error("Cannot convert file path to the absolute path!")
-			os.Exit(1)
-		}
-
-		doesRulePass, _ := CheckRuleScript(importLoopData, string(scriptContents), filepath.Dir(rulesetPath))
-		L.Push(lua.LBool(doesRulePass))
-
-		return 1
+		return 0
 	}))
 }
