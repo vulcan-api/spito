@@ -8,17 +8,15 @@ import (
 	"strings"
 )
 
-// CreateFile TODO: check for conflict out of the box
 func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fileType int) error {
-	// TODO: allow non-absolute paths
-	filePath, err := pathMustBeAbsolute(filePath)
+	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return err
 	}
 	dirPath := filepath.Dir(filePath)
 
 	// TODO: consider pushing almost everything below in filePrototype.LoadOrCreate
-	err = os.MkdirAll(fmt.Sprintf("%s%s", v.virtualFSPath, dirPath), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(v.virtualFSPath, dirPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -37,6 +35,7 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 		return err
 	}
 
+	// TODO: check for conflict out of the box
 	err = filePrototype.AddNewLayer(prototypeLayer)
 	return err
 }

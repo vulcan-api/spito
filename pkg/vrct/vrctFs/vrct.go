@@ -316,11 +316,10 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
 	prototypeFilePath := vrctPrefix + realPath
 
-	pathEnd := strings.LastIndex(prototypeFilePath, "/") + 1
-	path := prototypeFilePath[0:pathEnd]
-	name := prototypeFilePath[pathEnd:]
+	path := filepath.Dir(prototypeFilePath)
+	name := filepath.Base(prototypeFilePath)
 
-	p.Path = path
+	p.Path = path + "/"
 	p.Name = name
 	file, err := os.ReadFile(p.getVirtualPath())
 
@@ -357,7 +356,7 @@ func (p *FilePrototype) CreateLayer(content []byte, isOptional bool) (PrototypeL
 
 	randFileName := randomLetters(5)
 	dir := filepath.Dir(p.Path)
-	contentPath = fmt.Sprintf("%s/%s", dir, randFileName)
+	contentPath = filepath.Join(dir, randFileName)
 
 	var tempConvertedContent map[string]interface{}
 	var err error
