@@ -43,12 +43,10 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleCo
 		ruleName := L.Get(2).String()
 
 		rulesetLocation := NewRulesetLocation(rulesetIdentifier)
-		if !rulesetLocation.IsRuleSetDownloaded() {
-			err := FetchRuleset(&rulesetLocation)
-			handleErrorAndPanic(importLoopData.ErrChan, err)
-		}
+		err := FetchRuleset(&rulesetLocation)
+		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-	        err := L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
+	        err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 		return 0
 	}))
