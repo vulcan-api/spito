@@ -2,8 +2,8 @@ package vrct
 
 import (
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
+	"github.com/nsf/jsondiff"
 	"os"
-	"strings"
 	"testing"
 )
 
@@ -21,14 +21,14 @@ func TestVRCTFs(t *testing.T) {
 
 	testFilePath := tmpPath + "/new_dir/file.txt"
 
-	err = fsVrct.CreateFile(testFilePath, []byte("test value"), false, vrctFs.TextFile)
-	if err != nil {
-		t.Fatal("Failed to create file "+testFilePath+"\n", err)
-	}
-
 	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), true, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed trying to override file "+testFilePath+"\n", err)
+	}
+
+	err = fsVrct.CreateFile(testFilePath, []byte("test value"), false, vrctFs.TextFile)
+	if err != nil {
+		t.Fatal("Failed to create file "+testFilePath+"\n", err)
 	}
 
 	file, err := fsVrct.ReadFile(testFilePath)
@@ -52,18 +52,23 @@ func TestVRCTFs(t *testing.T) {
 		t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
 	}
 
-	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value"}`), false, vrctFs.JsonConfig)
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value", "subObject" : {"nextKey": "value"}}`), true, vrctFs.JsonConfig)
+	if err != nil {
+		t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
+	}
+
+	//err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value"}`), false, vrctFs.JsonConfig)
 	//if !errors.Is(err, vrctFs.ErrConfigsCannotBeMerged) {
 	//	t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
 	//}
 
-	// TODO: fix broken reading
 	config, err := fsVrct.ReadFile(testConfigPath)
 	if err != nil {
 		t.Fatal("Failed to read file "+testConfigPath+"\n", err)
 	}
 
-	if strings.TrimSpace(string(config)) != `{"name":"john","lastname":"mcqueen"}` {
+	res, _ := jsondiff.Compare([]byte(`{"key": "value", "subObject": {"nextKey":"value", "key": "value"}}`), config, &jsondiff.Options{})
+	if res != jsondiff.FullMatch {
 		t.Fatal("Failed to properly simulate " + testConfigPath + " file content")
 	}
 
@@ -79,6 +84,16 @@ func TestVRCTFs(t *testing.T) {
 
 	if string(file) != "test value" {
 		t.Fatal("Failed to properly merge " + testFilePath + " file content")
+	}
+
+	config, err = os.ReadFile(testConfigPath)
+	if err != nil {
+		t.Fatal("Failed to read from real fs file "+testConfigPath+"\n", err)
+	}
+
+	res, _ = jsondiff.Compare([]byte(`{"key": "value", "subObject": {"nextKey":"value", "key": "value"}}`), config, &jsondiff.Options{})
+	if res != jsondiff.FullMatch {
+		t.Fatal("Failed to properly simulate " + testConfigPath + " file content")
 	}
 
 	// cleanup

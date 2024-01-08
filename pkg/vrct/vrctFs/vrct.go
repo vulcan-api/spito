@@ -252,7 +252,13 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 		}
 	}
 
-	return finalLayer, nil
+	marshalledContent, err := bson.Marshal(finalLayerContent)
+	if err != nil {
+		return finalLayer, err
+	}
+	err = finalLayer.SetContent(marshalledContent)
+
+	return finalLayer, err
 }
 
 func mergeConfigs(merger map[string]interface{}, toMerge map[string]interface{}, isOptional bool) (map[string]interface{}, error) {
@@ -269,7 +275,6 @@ func mergeConfigs(merger map[string]interface{}, toMerge map[string]interface{},
 					return merger, err
 				}
 			} else if !isOptional {
-				fmt.Printf("%s = '%s' %t", key, mergerVal, ok)
 				return merger, ErrConfigsCannotBeMerged
 			}
 		} else {
@@ -309,7 +314,21 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 		return nil, err
 	}
 
-	return file, nil
+	switch p.FileType {
+	case TextFile:
+		return file, nil
+	case JsonConfig:
+		var tempContentInterface map[string]interface{}
+		err = bson.Unmarshal(file, &tempContentInterface)
+		if err != nil {
+			return file, err
+		}
+
+		jsonContent, err := json.Marshal(tempContentInterface)
+		return jsonContent, err
+	default:
+		return file, nil
+	}
 }
 
 // TODO: think of splitting it up into to functions (read and load)
@@ -317,9 +336,10 @@ func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
 	prototypeFilePath := vrctPrefix + realPath
 
 	path := filepath.Dir(prototypeFilePath)
+	path += "/"
 	name := filepath.Base(prototypeFilePath)
 
-	p.Path = path + "/"
+	p.Path = path
 	p.Name = name
 	file, err := os.ReadFile(p.getVirtualPath())
 
@@ -421,4 +441,12 @@ func (layer *PrototypeLayer) GetContent() ([]byte, error) {
 	}
 
 	return file, nil
+}
+func (layer *PrototypeLayer) SetContent(content []byte) error {
+	err := os.WriteFile(layer.ContentPath, content, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
