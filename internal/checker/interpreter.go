@@ -1,6 +1,9 @@
 package checker
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/yuin/gopher-lua"
 )
@@ -35,13 +38,28 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 }
 
 func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua.LState) {
-	L.SetGlobal("require_rule", L.NewFunction(func(state *lua.LState) int {
-		ruleUrl := L.Get(1).String()
+	L.SetGlobal("require_remote", L.NewFunction(func(state *lua.LState) int {
+		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		result := _internalCheckRule(importLoopData, ruleUrl, ruleName, ruleConf)
-		L.Push(lua.LBool(result))
+		rulesetLocation := NewRulesetLocation(rulesetIdentifier)
+		err := FetchRuleset(&rulesetLocation)
+		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-		return 1
+	        err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
+		handleErrorAndPanic(importLoopData.ErrChan, err)
+		return 0
+	}))
+
+	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
+		rulePath := L.Get(1).String()
+		shared.ExpandTilde(&rulePath)
+		
+		if err := L.DoFile(rulePath); err != nil {
+			importLoopData.ErrChan <- err
+			panic(nil)
+		}
+
+		return 0
 	}))
 }

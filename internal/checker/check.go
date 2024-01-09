@@ -67,6 +67,13 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scrip
 	})
 }
 
+func handleErrorAndPanic(errChan chan error, err error) {
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+}
+
 func checkAndProcessPanics(
 	importLoopData *shared.ImportLoopData,
 	checkFunc func(errChan chan error) (bool, error),
@@ -74,11 +81,10 @@ func checkAndProcessPanics(
 
 	errChan := importLoopData.ErrChan
 	doesRulePassChan := make(chan bool)
-
 	go func() {
 		defer func() {
 			r := recover()
-			if errChan != nil {
+			if errChan != nil && r != nil {
 				errChan <- anyToError(r)
 			}
 		}()
