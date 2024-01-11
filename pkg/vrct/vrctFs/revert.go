@@ -80,11 +80,12 @@ func (r *RevertSteps) BackupOldContent(path string) error {
 		return err
 	}
 
-	contentPath := r.revertTempDir + "/" + tempContentFile.Name()
+	oldContentPath := tempContentFile.Name()
+
 	r.steps = append(r.steps, RevertStep{
 		path:           path,
 		action:         replaceContent,
-		oldContentPath: &contentPath,
+		oldContentPath: &oldContentPath,
 	})
 	return nil
 }

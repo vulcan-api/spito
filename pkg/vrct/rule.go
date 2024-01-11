@@ -30,3 +30,7 @@ func (v RuleVRCT) InnerValidate() error {
 func (v RuleVRCT) Apply() error {
 	return v.Fs.Apply()
 }
+
+func (v RuleVRCT) Revert() error {
+	return v.Revert()
+}

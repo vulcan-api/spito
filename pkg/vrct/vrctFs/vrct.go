@@ -13,10 +13,16 @@ const VirtualFsPathPrefix = "/tmp/spito-vrct/fs"
 type FsVRCT struct {
 	virtualFSPath  string
 	fsRequirements []FsRequirement
+	revertSteps    *RevertSteps
 }
 
 func NewFsVRCT() (FsVRCT, error) {
-	err := os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
+	revertSteps, err := NewRevertSteps()
+	if err != nil {
+		return FsVRCT{}, nil
+	}
+
+	err = os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
 	if err != nil {
 		return FsVRCT{}, err
 	}
@@ -29,6 +35,7 @@ func NewFsVRCT() (FsVRCT, error) {
 	return FsVRCT{
 		virtualFSPath:  dir,
 		fsRequirements: make([]FsRequirement, 0),
+		revertSteps:    &revertSteps,
 	}, nil
 }
 
@@ -70,12 +77,7 @@ func (v *FsVRCT) Apply() error {
 		return err
 	}
 
-	revertSteps, err := NewRevertSteps()
-	if err != nil {
-		return err
-	}
-
-	if err := v.mergeToRealFs(mergeDir, &revertSteps); err != nil {
+	if err := v.mergeToRealFs(mergeDir); err != nil {
 		return err
 	}
 
@@ -83,11 +85,10 @@ func (v *FsVRCT) Apply() error {
 }
 
 func (v *FsVRCT) Revert() error {
-	// TODO: finish this one
-	return nil
+	return v.revertSteps.Apply()
 }
 
-func (v *FsVRCT) mergeToRealFs(mergeDirPath string, revertSteps *RevertSteps) error {
+func (v *FsVRCT) mergeToRealFs(mergeDirPath string) error {
 	splitMergePath := strings.Split(mergeDirPath, "/")[3:]
 	destPath := strings.Join(splitMergePath, "/")
 	if len(destPath) != 0 {
@@ -112,12 +113,12 @@ func (v *FsVRCT) mergeToRealFs(mergeDirPath string, revertSteps *RevertSteps) er
 
 			// If originally dir does not exist, then revert should delete it
 			if os.IsNotExist(err) {
-				revertSteps.RemoveDirAll(realFsEntryPath)
+				v.revertSteps.RemoveDirAll(realFsEntryPath)
 			}
 			if err := os.MkdirAll(realFsEntryPath, os.ModePerm); err != nil {
 				return err
 			}
-			if err := v.mergeToRealFs(mergeDirEntryPath, revertSteps); err != nil {
+			if err := v.mergeToRealFs(mergeDirEntryPath); err != nil {
 				return err
 			}
 			continue
@@ -129,8 +130,7 @@ func (v *FsVRCT) mergeToRealFs(mergeDirPath string, revertSteps *RevertSteps) er
 			return err
 		}
 
-		// TODO: add revert step here
-		if err := revertSteps.BackupOldContent(realFsEntryPath); err != nil {
+		if err := v.revertSteps.BackupOldContent(realFsEntryPath); err != nil {
 			return err
 		}
 
