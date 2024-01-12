@@ -143,7 +143,6 @@ func (v *FsVRCT) mergeToRealFs(mergeDirPath string) error {
 			return err
 		}
 
-		filePrototype.IsApplied = true
 		if err := filePrototype.Save(); err != nil {
 			return err
 		}

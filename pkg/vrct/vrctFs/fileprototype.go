@@ -7,12 +7,10 @@ import (
 )
 
 type FilePrototype struct {
-	Layers          []PrototypeLayer
-	RealFileExists  bool
-	FileType        *int
-	OriginalContent []byte
-	IsApplied       bool
-	SelfPath        string `bson:"-"`
+	Layers         []PrototypeLayer
+	RealFileExists bool
+	FileType       *int
+	SelfPath       string `bson:"-"`
 }
 
 func (p *FilePrototype) getDestinationPath() string {
@@ -71,14 +69,13 @@ func (p *FilePrototype) Read(prototypePath string, destPath string) error {
 	file, err := os.ReadFile(prototypePath)
 
 	if os.IsNotExist(err) {
-		file, err := os.ReadFile(destPath)
+		_, err := os.Stat(destPath)
 		if os.IsNotExist(err) {
 			p.RealFileExists = false
 		} else {
 			p.RealFileExists = true
 			// TODO: optimize it by copying original file and storing only path to copied file,
 			//  because storing entire file content in structure is not efficient
-			p.OriginalContent = file
 		}
 		return p.Save()
 	} else if err != nil {
