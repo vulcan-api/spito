@@ -6,5 +6,5 @@ const (
 	YamlConfig
 	XmlConfig
 	TomlConfig
-	IniConfig
+	IniConfig // TODO: add support (complex feature)
 )

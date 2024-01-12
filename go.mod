@@ -6,6 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/oleiade/reflections v1.0.1
+	github.com/pelletier/go-toml/v2 v2.1.1
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/spf13/cobra v1.7.0
 	github.com/yuin/gopher-lua v1.1.0
@@ -31,7 +32,6 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect

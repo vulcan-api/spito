@@ -2,9 +2,12 @@ package vrctFs
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/mgo.v2/bson"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -325,13 +328,13 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			isToMergeKeyOpt = toMergeOption.(bool)
 		}
 
-		if isMergerKeyOpt && !isToMergeKeyOpt {
+		if isMergerKeyOpt {
 			merger[key] = toMergeVal
 			if mergerOptions == nil {
 				mergerOptions = make(map[string]interface{})
 			}
 			mergerOptions[key] = false
-		} else if !isMergerKeyOpt && !isToMergeKeyOpt {
+		} else if !isMergerKeyOpt && !isToMergeKeyOpt && mergerVal != toMergeVal {
 			return merger, toMergeOptions, fmt.Errorf("passed key '%s' is unmergable (both merger and to merge are required)", key)
 		}
 	}
@@ -368,21 +371,28 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 		return nil, err
 	}
 
-	switch p.FileType {
-	case TextFile:
-		return file, nil
-	case JsonConfig:
-		var tempContentInterface map[string]interface{}
+	var tempContentInterface map[string]interface{}
+	if p.FileType != TextFile {
 		err = bson.Unmarshal(file, &tempContentInterface)
 		if err != nil {
 			return file, err
 		}
+	}
 
-		jsonContent, err := json.Marshal(tempContentInterface)
-		return jsonContent, err
+	var fileContent []byte
+	switch p.FileType {
+	case JsonConfig:
+		fileContent, err = json.Marshal(tempContentInterface)
+	case YamlConfig:
+		fileContent, err = yaml.Marshal(tempContentInterface)
+	case XmlConfig:
+		fileContent, err = xml.Marshal(tempContentInterface)
+	case TomlConfig:
+		fileContent, err = toml.Marshal(tempContentInterface)
 	default:
 		return file, nil
 	}
+	return fileContent, err
 }
 
 // TODO: think of splitting it up into to functions (read and load)
@@ -435,32 +445,7 @@ func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional b
 	randOptsName := randomLetters(5)
 	optionsPath := filepath.Join(dir, randOptsName)
 
-	var tempConvertedContent map[string]interface{}
-	var err error
-
-	switch p.FileType {
-	case JsonConfig:
-
-		// TODO: throw error instead of creating empty file
-		if content == nil {
-			content = []byte("{}")
-		}
-		err = json.Unmarshal(content, &tempConvertedContent)
-		if err != nil {
-			return PrototypeLayer{}, err
-		}
-
-		//case YamlConfig:
-		//	content, err = yaml.Marshal(content)
-		//	if err != nil {
-		//		return PrototypeLayer{}, err
-		//	}
-		break
-	case TextFile:
-		break
-	default:
-		return PrototypeLayer{}, fmt.Errorf("unsupported config type (FileType argument), passed '%d'", p.FileType)
-	}
+	tempConvertedContent, err := GetMapFromBytes(content, p.FileType)
 
 	if p.FileType != TextFile && tempConvertedContent != nil {
 		content, err = bson.Marshal(tempConvertedContent)
@@ -543,4 +528,43 @@ func (layer *PrototypeLayer) SetContent(content []byte) error {
 	}
 
 	return nil
+}
+
+func GetMapFromBytes(content []byte, configType int) (map[string]interface{}, error) {
+	var err error
+	var resultMap map[string]interface{}
+	switch configType {
+	case TextFile:
+		break
+	case JsonConfig:
+		if content == nil {
+			content = []byte("{}")
+		}
+		err = json.Unmarshal(content, &resultMap)
+		break
+	case YamlConfig:
+		err = yaml.Unmarshal(content, &resultMap)
+		break
+	case XmlConfig:
+		if content == nil {
+			content = []byte("<></>")
+		}
+		err = xml.Unmarshal(content, &resultMap)
+		break
+	case TomlConfig:
+		err = toml.Unmarshal(content, &resultMap)
+		break
+	default:
+		return resultMap, fmt.Errorf("unsupported config type (FileType argument), passed '%d'", configType)
+	}
+
+	if err != nil {
+		return resultMap, fmt.Errorf("could not obtain map from given array of bytes: %s", err)
+	}
+
+	if len(resultMap) == 0 {
+		resultMap = make(map[string]interface{})
+	}
+
+	return resultMap, err
 }
