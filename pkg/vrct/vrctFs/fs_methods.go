@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fileType int) error {
+func (v *FsVRCT) CreateFile(filePath string, content []byte, optionalKeys []byte, isOptional bool, fileType int) error {
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 		return err
 	}
 
-	// TODO: create function that allows to merge json and xml configs
+	// TODO: create function that allows to merge json and xml configs (and first think if it is useful in any way)
 	filePrototype := FilePrototype{
 		FileType: fileType,
 	}
@@ -30,7 +30,7 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool, fi
 		return err
 	}
 
-	prototypeLayer, err := filePrototype.CreateLayer(content, isOptional)
+	prototypeLayer, err := filePrototype.CreateLayer(content, optionalKeys, isOptional)
 	if err != nil {
 		return err
 	}

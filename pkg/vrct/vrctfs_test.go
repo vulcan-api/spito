@@ -21,12 +21,12 @@ func TestVRCTFs(t *testing.T) {
 
 	testFilePath := tmpPath + "/new_dir/file.txt"
 
-	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), true, vrctFs.TextFile)
+	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), nil, true, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed trying to override file "+testFilePath+"\n", err)
 	}
 
-	err = fsVrct.CreateFile(testFilePath, []byte("test value"), false, vrctFs.TextFile)
+	err = fsVrct.CreateFile(testFilePath, []byte("test value"), nil, false, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed to create file "+testFilePath+"\n", err)
 	}
@@ -42,20 +42,21 @@ func TestVRCTFs(t *testing.T) {
 
 	testConfigPath := tmpPath + "/new_dir/config.json"
 
-	err = fsVrct.CreateFile(testConfigPath, []byte(`{"subObject": {"key": "value"}}`), false, vrctFs.JsonConfig)
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"subObject": {"key": "value"}}`), nil, false, vrctFs.JsonConfig)
 	if err != nil {
 		t.Fatal("Failed to create file "+testConfigPath+"\n", err)
 	}
 
-	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value", "subObject" : {"nextKey": "value"}}`), false, vrctFs.JsonConfig)
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value", "subObject" : {"nextKey": "value"}}`), []byte(`{"key": true}`), false, vrctFs.JsonConfig)
 	if err != nil {
 		t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
 	}
 
-	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value", "subObject" : {"nextKey": "value"}}`), true, vrctFs.JsonConfig)
+	err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value", "nextKey": "nextValue"}`), nil, false, vrctFs.JsonConfig)
 	if err != nil {
 		t.Fatal("Failed trying to override file "+testConfigPath+"\n", err)
 	}
+	// TODO: better tests
 
 	//err = fsVrct.CreateFile(testConfigPath, []byte(`{"key":"value"}`), false, vrctFs.JsonConfig)
 	//if !errors.Is(err, vrctFs.ErrConfigsCannotBeMerged) {
@@ -67,7 +68,7 @@ func TestVRCTFs(t *testing.T) {
 		t.Fatal("Failed to read file "+testConfigPath+"\n", err)
 	}
 
-	res, _ := jsondiff.Compare([]byte(`{"key": "value", "subObject": {"nextKey":"value", "key": "value"}}`), config, &jsondiff.Options{})
+	res, _ := jsondiff.Compare([]byte(`{"key": "value", "subObject": {"nextKey":"value", "key": "value"}, "nextKey": "nextValue"}`), config, &jsondiff.Options{})
 	if res != jsondiff.FullMatch {
 		t.Fatal("Failed to properly simulate " + testConfigPath + " file content")
 	}
@@ -91,7 +92,7 @@ func TestVRCTFs(t *testing.T) {
 		t.Fatal("Failed to read from real fs file "+testConfigPath+"\n", err)
 	}
 
-	res, _ = jsondiff.Compare([]byte(`{"key": "value", "subObject": {"nextKey":"value", "key": "value"}}`), config, &jsondiff.Options{})
+	res, _ = jsondiff.Compare([]byte(`{"key": "value", "subObject": {"nextKey":"value", "key": "value"}, "nextKey": "nextValue"}`), config, &jsondiff.Options{})
 	if res != jsondiff.FullMatch {
 		t.Fatal("Failed to properly simulate " + testConfigPath + " file content")
 	}

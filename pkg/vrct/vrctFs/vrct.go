@@ -15,10 +15,6 @@ import (
 const VirtualFsPathPrefix = "/tmp/spito-vrct/fs"
 const VirtualFilePostfix = ".prototype.bson"
 
-var (
-	ErrConfigsCannotBeMerged = errors.New("configuration layers cannot be merged")
-)
-
 type FsVRCT struct {
 	virtualFSPath  string
 	fsRequirements []FsRequirement
@@ -44,6 +40,7 @@ type PrototypeLayer struct {
 	// If content path is specified and file exists in real fs, real file will be later overridden by this content
 	// (We don't store content as string in order to make bson lightweight and fast accessible)
 	ContentPath string `bson:",omitempty"`
+	OptionsPath string `bson:",omitempty"`
 	IsOptional  bool
 	// TODO: stack trace
 }
@@ -173,7 +170,6 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 			}
 			continue
 		}
-		//fmt.Printf("[WARNING] Unrecognized file %s in %s\n", prototypeName, prototypesDirPath)
 	}
 
 	return nil
@@ -214,17 +210,17 @@ func (p *FilePrototype) mergeTextLayers() (PrototypeLayer, error) {
 
 func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	// create new layer first
-	finalLayer, err := p.CreateLayer(nil, false)
-	if err != nil {
-		return finalLayer, err
-	}
-	finalLayerRawContent, err := finalLayer.GetContent()
+	finalLayer, err := p.CreateLayer(nil, nil, false)
 	if err != nil {
 		return finalLayer, err
 	}
 
-	var finalLayerContent map[string]interface{}
-	err = bson.Unmarshal(finalLayerRawContent, &finalLayerContent)
+	finalLayerContent, err := GetBsonMap(finalLayer.ContentPath)
+	if err != nil {
+		return finalLayer, err
+	}
+
+	finalLayerOptions, err := GetBsonMap(finalLayer.OptionsPath)
 	if err != nil {
 		return finalLayer, err
 	}
@@ -234,19 +230,17 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	})
 
 	for _, layer := range p.Layers {
-		// TODO: check if contents differ
-		currentLayerRawContent, err := layer.GetContent()
+		currentLayerContent, err := GetBsonMap(layer.ContentPath)
 		if err != nil {
 			return finalLayer, err
 		}
 
-		var currentLayerContent map[string]interface{}
-		err = bson.Unmarshal(currentLayerRawContent, &currentLayerContent)
+		currentLayerOptions, err := GetBsonMap(layer.OptionsPath)
 		if err != nil {
 			return finalLayer, err
 		}
 
-		finalLayerContent, err = mergeConfigs(finalLayerContent, currentLayerContent, layer.IsOptional)
+		finalLayerContent, finalLayerOptions, err = mergeConfigs(finalLayerContent, finalLayerOptions, currentLayerContent, currentLayerOptions, layer.IsOptional)
 		if err != nil {
 			return finalLayer, err
 		}
@@ -261,30 +255,90 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	return finalLayer, err
 }
 
-func mergeConfigs(merger map[string]interface{}, toMerge map[string]interface{}, isOptional bool) (map[string]interface{}, error) {
+func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interface{}, toMerge map[string]interface{}, toMergeOptions map[string]interface{}, isOptional bool) (map[string]interface{}, map[string]interface{}, error) {
 	var err error
 	for key, toMergeVal := range toMerge {
-		// TODO: obtain which keys should be overridden and think of good priority and merging system
-		if mergerVal, ok := merger[key]; ok == true {
-			if reflect.ValueOf(toMergeVal).Kind() == reflect.Map {
-				toMergeMapVal := toMergeVal.(map[string]interface{})
-				mergerMapVal := mergerVal.(map[string]interface{})
+		mergerOption, mergerOptOk := mergerOptions[key]
+		toMergeOption, toMergeOptOk := toMergeOptions[key]
 
-				merger[key], err = mergeConfigs(toMergeMapVal, mergerMapVal, isOptional)
-				if err != nil {
-					return merger, err
-				}
-			} else if !isOptional {
-				return merger, ErrConfigsCannotBeMerged
-			}
-		} else {
+		mergerVal, ok := merger[key]
+		if !ok {
 			merger[key] = toMergeVal
+			if toMergeOptOk {
+				if mergerOptions == nil {
+					mergerOptions = make(map[string]interface{})
+				}
+				mergerOptions[key] = toMergeOption
+			}
+			continue
+		}
+
+		if reflect.ValueOf(toMergeVal).Kind() == reflect.Map {
+			if mergerValKind := reflect.ValueOf(mergerVal).Kind(); mergerValKind != reflect.Map {
+				return merger, mergerOptions, fmt.Errorf("incompatibile structures: merger is not a map (it's '%s') while to merge is", mergerValKind)
+			}
+
+			var mergerOptsMapVal map[string]interface{}
+			if mergerOptOk {
+				if mergerOptsValKind := reflect.ValueOf(mergerOption).Kind(); mergerOptsValKind != reflect.Map {
+					return merger, mergerOptions,
+						fmt.Errorf("incompatible structures: options value behind key '%s' is not a map (it's '%s') while to merge's is", key, mergerOptsValKind)
+				}
+
+				mergerOptsMapVal = mergerOptions[key].(map[string]interface{})
+			}
+
+			var toMergeOptsMapVal map[string]interface{}
+			if toMergeOptOk {
+				if toMergeOptsValKind := reflect.ValueOf(toMergeOption).Kind(); toMergeOptOk && toMergeOptsValKind != reflect.Map {
+					return merger, mergerOptions,
+						fmt.Errorf("incompatible structures: options value behind key '%s' is not a map (it's '%s') while to merge's is", key, toMergeOptsValKind)
+				}
+
+				toMergeOptsMapVal = toMergeOptions[key].(map[string]interface{})
+			}
+			mergerMapVal := mergerVal.(map[string]interface{})
+			toMergeMapVal := toMergeVal.(map[string]interface{})
+
+			merger[key], _, err = mergeConfigs(toMergeMapVal, mergerOptsMapVal, mergerMapVal, toMergeOptsMapVal, isOptional)
+			if err != nil {
+				return merger, nil, err
+			}
+			continue
+		}
+
+		isMergerKeyOpt := true
+		mergerOptKind := reflect.ValueOf(mergerOption).Kind()
+		if mergerOptOk {
+			if mergerOptKind != reflect.Bool {
+				return merger, mergerOptions, fmt.Errorf("passed key '%s' in merger options is not of type bool ('%s' passed)", key, mergerOptKind)
+			}
+			isMergerKeyOpt = mergerOption.(bool)
+		}
+
+		isToMergeKeyOpt := isOptional
+		toMergeOptKind := reflect.ValueOf(toMergeOption).Kind()
+		if toMergeOptOk {
+			if toMergeOptKind != reflect.Bool {
+				return merger, mergerOptions, fmt.Errorf("passed key '%s' in to merge options is not of type bool ('%s' passed)", key, toMergeOptKind)
+			}
+			isToMergeKeyOpt = toMergeOption.(bool)
+		}
+
+		if isMergerKeyOpt && !isToMergeKeyOpt {
+			merger[key] = toMergeVal
+			if mergerOptions == nil {
+				mergerOptions = make(map[string]interface{})
+			}
+			mergerOptions[key] = false
+		} else if !isMergerKeyOpt && !isToMergeKeyOpt {
+			return merger, toMergeOptions, fmt.Errorf("passed key '%s' is unmergable (both merger and to merge are required)", key)
 		}
 	}
-	return merger, nil
+	return merger, mergerOptions, nil
 }
 
-// TODO: fix this bro (it does nothing) and rename it to getRealParh
+// TODO: fix this bro (it does nothing) and rename it to getRealPath
 func (p *FilePrototype) getDestinationPath() string {
 	splitPath := strings.Split(p.getVirtualPath(), "/")
 	return strings.Join(splitPath[:len(splitPath)-1], "/")
@@ -335,6 +389,7 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
 	prototypeFilePath := vrctPrefix + realPath
 
+	// TODO: instead of adding slash, use filepath.Join in appropriate lines
 	path := filepath.Dir(prototypeFilePath)
 	path += "/"
 	name := filepath.Base(prototypeFilePath)
@@ -366,17 +421,19 @@ func (p *FilePrototype) Save() error {
 	return os.WriteFile(p.getVirtualPath(), rawBson, os.ModePerm)
 }
 
-func (p *FilePrototype) CreateLayer(content []byte, isOptional bool) (PrototypeLayer, error) {
+func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional bool) (PrototypeLayer, error) {
 	if p.Path == "" {
 		return PrototypeLayer{}, errors.New("file prototype hasn't been loaded yet")
 	}
 
 	// TODO: check if file with random name already exist
-	var contentPath string
+	dir := filepath.Dir(p.Path)
 
 	randFileName := randomLetters(5)
-	dir := filepath.Dir(p.Path)
-	contentPath = filepath.Join(dir, randFileName)
+	contentPath := filepath.Join(dir, randFileName)
+
+	randOptsName := randomLetters(5)
+	optionsPath := filepath.Join(dir, randOptsName)
 
 	var tempConvertedContent map[string]interface{}
 	var err error
@@ -384,6 +441,7 @@ func (p *FilePrototype) CreateLayer(content []byte, isOptional bool) (PrototypeL
 	switch p.FileType {
 	case JsonConfig:
 
+		// TODO: throw error instead of creating empty file
 		if content == nil {
 			content = []byte("{}")
 		}
@@ -416,8 +474,28 @@ func (p *FilePrototype) CreateLayer(content []byte, isOptional bool) (PrototypeL
 		return PrototypeLayer{}, err
 	}
 
+	if options == nil {
+		options = []byte("{}")
+	}
+
+	var tempOptionalKeysMap map[string]interface{}
+	err = json.Unmarshal(options, &tempOptionalKeysMap)
+	if err != nil {
+		return PrototypeLayer{}, err
+	}
+
+	optionalKeysBson, err := bson.Marshal(tempOptionalKeysMap)
+	if err != nil {
+		return PrototypeLayer{}, err
+	}
+
+	if err = os.WriteFile(optionsPath, optionalKeysBson, os.ModePerm); err != nil {
+		return PrototypeLayer{}, err
+	}
+
 	newLayer := PrototypeLayer{
 		ContentPath: contentPath,
+		OptionsPath: optionsPath,
 		IsOptional:  isOptional,
 	}
 
@@ -442,6 +520,22 @@ func (layer *PrototypeLayer) GetContent() ([]byte, error) {
 
 	return file, nil
 }
+
+func GetBsonMap(pathToFile string) (map[string]interface{}, error) {
+	file, err := os.ReadFile(pathToFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var bsonMap map[string]interface{}
+	err = bson.Unmarshal(file, &bsonMap)
+	if err != nil {
+		return bsonMap, err
+	}
+
+	return bsonMap, nil
+}
+
 func (layer *PrototypeLayer) SetContent(content []byte) error {
 	err := os.WriteFile(layer.ContentPath, content, os.ModePerm)
 	if err != nil {
