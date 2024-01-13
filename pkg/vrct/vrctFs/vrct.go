@@ -259,9 +259,54 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	return finalLayer, err
 }
 
+func getBoolMap(value interface{}, option interface{}) (map[string]interface{}, map[string]interface{}, error) {
+	valueKind := reflect.ValueOf(value).Kind()
+	optionKind := reflect.ValueOf(option).Kind()
+
+	if valueKind != reflect.Map {
+		return nil, nil, fmt.Errorf("trying to map interface that is not map")
+	}
+
+	mappedValue := value.(map[string]interface{})
+
+	var mappedOption map[string]interface{}
+	if optionKind == reflect.Map {
+		mappedOption = option.(map[string]interface{})
+	} else if option == reflect.Bool {
+		for key := range mappedValue {
+			mappedOption[key] = option.(bool)
+		}
+	} else {
+		return nil, nil, fmt.Errorf("types conflict")
+	}
+
+	return mappedValue, mappedOption, nil
+}
+
+func getBoolArray(value interface{}, option interface{}) ([]any, []any, error) {
+	valueKind := reflect.ValueOf(value).Kind()
+	optionKind := reflect.ValueOf(option).Kind()
+
+	if valueKind != reflect.Slice {
+		return nil, nil, fmt.Errorf("trying to map interface that is not map")
+	}
+	arrayedValue := value.([]any)
+
+	var arrayedOption []any
+	if optionKind == reflect.Slice {
+		arrayedOption = option.([]any)
+	} else if optionKind == reflect.Bool {
+		for range arrayedValue {
+			arrayedOption = append(arrayedOption, option.(bool))
+		}
+	} else {
+		return arrayedValue, nil, fmt.Errorf("options structure does not match config's one: types conflict '%s' and '%s'", valueKind, optionKind)
+	}
+
+	return arrayedValue, arrayedOption, nil
+}
+
 func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interface{}, toMerge map[string]interface{}, toMergeOptions map[string]interface{}, isOptional bool) (map[string]interface{}, map[string]interface{}, error) {
-	var err error
-	// TODO: add merging arrays
 	for key, toMergeVal := range toMerge {
 		mergerVal, ok := merger[key]
 
@@ -271,9 +316,6 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 		// TODO: check for structure conflicts
 		if !ok {
 			merger[key] = toMergeVal
-			if mergerOptions == nil {
-				mergerOptions = make(map[string]interface{})
-			}
 			if toMergeOptOk {
 				mergerOptions[key] = toMergeOption
 			} else {
@@ -283,31 +325,15 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 		}
 
 		if reflect.ValueOf(toMergeVal).Kind() == reflect.Map {
-			if mergerValKind := reflect.ValueOf(mergerVal).Kind(); mergerValKind != reflect.Map {
-				return merger, mergerOptions, fmt.Errorf("incompatibile structures: merger is not a map (it's '%s') while to merge is", mergerValKind)
+			mergerMapVal, mergerOptsMapVal, err := getBoolMap(mergerVal, mergerOption)
+			if err != nil {
+				return merger, mergerOptions, err
 			}
 
-			var mergerOptsMapVal map[string]interface{}
-			if mergerOptOk {
-				if mergerOptsValKind := reflect.ValueOf(mergerOption).Kind(); mergerOptsValKind != reflect.Map {
-					return merger, mergerOptions,
-						fmt.Errorf("incompatible structures: options value behind key '%s' is not a map (it's '%s') while to merge's is", key, mergerOptsValKind)
-				}
-
-				mergerOptsMapVal = mergerOptions[key].(map[string]interface{})
+			toMergeMapVal, toMergeOptsMapVal, err := getBoolMap(mergerVal, mergerOption)
+			if err != nil {
+				return merger, mergerOptions, err
 			}
-
-			var toMergeOptsMapVal map[string]interface{}
-			if toMergeOptOk {
-				if toMergeOptsValKind := reflect.ValueOf(toMergeOption).Kind(); toMergeOptOk && toMergeOptsValKind != reflect.Map {
-					return merger, mergerOptions,
-						fmt.Errorf("incompatible structures: options value behind key '%s' is not a map (it's '%s') while to merge's is", key, toMergeOptsValKind)
-				}
-
-				toMergeOptsMapVal = toMergeOptions[key].(map[string]interface{})
-			}
-			mergerMapVal := mergerVal.(map[string]interface{})
-			toMergeMapVal := toMergeVal.(map[string]interface{})
 
 			merger[key], mergerOptions[key], err = mergeConfigs(toMergeMapVal, mergerOptsMapVal, mergerMapVal, toMergeOptsMapVal, isOptional)
 			if err != nil {
@@ -315,6 +341,28 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			}
 			continue
 		}
+
+		// TODO: good system needed
+		//if reflect.ValueOf(toMergeVal).Kind() == reflect.Slice {
+		//	mergerValueAsArray, mergerOptionAsArray, err := getBoolArray(mergerVal, mergerOption)
+		//	if err != nil {
+		//		return merger, mergerOptions, err
+		//	}
+
+		//	toMergeValueAsArray, toMergeOptionAsArray, err := getBoolArray(mergerVal, mergerOption)
+		//	if err != nil {
+		//		return merger, mergerOptions, err
+		//	}
+
+		//	merger[key] = append(mergerValueAsArray, toMergeValueAsArray...)
+		//	mergerOptions[key] = append(mergerOptionAsArray, toMergeOptionAsArray...)
+
+		//	if err != nil {
+		//		return merger, mergerOptions, err
+		//	}
+
+		//	continue
+		//}
 
 		isMergerKeyOpt := true
 		mergerOptKind := reflect.ValueOf(mergerOption).Kind()
@@ -332,10 +380,6 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 				return merger, mergerOptions, fmt.Errorf("passed key '%s' in to merge options is not of type bool ('%s' passed)", key, toMergeOptKind)
 			}
 			isToMergeKeyOpt = toMergeOption.(bool)
-		}
-
-		if mergerOptions == nil {
-			mergerOptions = make(map[string]interface{})
 		}
 
 		if isMergerKeyOpt && isToMergeKeyOpt {
