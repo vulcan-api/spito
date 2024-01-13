@@ -117,3 +117,7 @@ func (r *RevertSteps) Apply() error {
 	}
 	return nil
 }
+
+func (r *RevertSteps) DeleteRuntimeTemp() error {
+	return os.RemoveAll(r.revertTempDir)
+}

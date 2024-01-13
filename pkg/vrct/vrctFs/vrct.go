@@ -40,6 +40,9 @@ func NewFsVRCT() (FsVRCT, error) {
 }
 
 func (v *FsVRCT) DeleteRuntimeTemp() error {
+	if err := v.revertSteps.DeleteRuntimeTemp(); err != nil {
+		return err
+	}
 	return os.RemoveAll(v.virtualFSPath)
 }
 
