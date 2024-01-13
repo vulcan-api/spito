@@ -9,11 +9,17 @@ import (
 	"testing"
 )
 
-type Configs struct {
-	paths           []string
+type ConfigsSetup struct {
+	configs         []Config
 	resultPath      string
 	destinationPath string
 	configType      int
+}
+
+type Config struct {
+	path        string
+	optionsPath string
+	isOptional  bool
 }
 
 func TestConfigsMatrix(t *testing.T) {
@@ -28,10 +34,38 @@ func TestConfigsMatrix(t *testing.T) {
 		t.Fatal("Failed to create temporary test directory\n", err)
 	}
 
-	configs := []Configs{
+	configs := []ConfigsSetup{
 		{
-			paths:           []string{"yaml/empty-extrepo.yaml", "yaml/full-extrepo.yaml"},
-			resultPath:      "yaml/full-extrepo.yaml",
+			configs: []Config{
+				{
+					path:        "json/eslint-default.json",
+					optionsPath: "json/default-options.json",
+					isOptional:  false,
+				},
+				{
+					path:        "json/eslint-prettier.json",
+					optionsPath: "json/prettier-options.json",
+					isOptional:  true,
+				},
+			},
+			resultPath:      "json/eslint-merged.json",
+			destinationPath: tmpPath + "/new_dir/eslint.json",
+			configType:      vrctFs.JsonConfig,
+		},
+		{
+			configs: []Config{
+				{
+					path:        "yaml/extrepo-default.yaml",
+					optionsPath: "yaml/default-options.json",
+					isOptional:  false,
+				},
+				{
+					path:        "yaml/extrepo-full.yaml",
+					optionsPath: "yaml/full-options.json",
+					isOptional:  false,
+				},
+			},
+			resultPath:      "yaml/extrepo-full.yaml",
 			destinationPath: tmpPath + "/new_dir/extrepo.yaml",
 			configType:      vrctFs.YamlConfig,
 		},
@@ -45,33 +79,40 @@ func TestConfigsMatrix(t *testing.T) {
 	_ = os.RemoveAll(tmpPath)
 }
 
-func testConfigs(t *testing.T, vrct *vrctFs.FsVRCT, configs Configs) {
+func testConfigs(t *testing.T, vrct *vrctFs.FsVRCT, setup ConfigsSetup) {
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to obtain working directory: '%s'", wd)
 	}
 	wd = filepath.Join(wd, "config_data")
-	for _, path := range configs.paths {
-		workingPath := filepath.Join(wd, path)
+
+	for _, config := range setup.configs {
+		workingPath := filepath.Join(wd, config.path)
 		configTestData, err := os.ReadFile(workingPath)
 		if err != nil {
 			t.Fatalf("Failed to open test data '%s': %s", workingPath, err)
 		}
 
-		err = vrct.CreateFile(configs.destinationPath, configTestData, nil, false, configs.configType)
+		workingOptionsPath := filepath.Join(wd, config.optionsPath)
+		options, err := os.ReadFile(workingOptionsPath)
 		if err != nil {
-			t.Fatal("Failed trying to override file "+configs.destinationPath+"\n", err)
+			t.Fatalf("Failed to open result data '%s': %s", workingOptionsPath, err)
+		}
+
+		err = vrct.CreateFile(setup.destinationPath, configTestData, options, config.isOptional, setup.configType)
+		if err != nil {
+			t.Fatal("Failed trying to override file "+setup.destinationPath+"\n", err)
 		}
 	}
-	workingResPath := filepath.Join(wd, configs.resultPath)
+	workingResPath := filepath.Join(wd, setup.resultPath)
 	desiredRawResult, err := os.ReadFile(workingResPath)
 	if err != nil {
 		t.Fatalf("Failed to open result data '%s': %s", workingResPath, err)
 	}
 
-	obtainedRawResult, err := vrct.ReadFile(configs.destinationPath)
+	obtainedRawResult, err := vrct.ReadFile(setup.destinationPath)
 	if err != nil {
-		t.Fatalf("Failed to read file destinationPath %s: %s\n", configs.destinationPath, err)
+		t.Fatalf("Failed to read file destinationPath %s: %s\n", setup.destinationPath, err)
 	}
 
 	err = vrct.Apply()
@@ -79,33 +120,33 @@ func testConfigs(t *testing.T, vrct *vrctFs.FsVRCT, configs Configs) {
 		t.Fatal("Failed to apply VRCT\n", err)
 	}
 
-	obtainedRealRawResult, err := os.ReadFile(configs.destinationPath)
+	obtainedRealRawResult, err := os.ReadFile(setup.destinationPath)
 	if err != nil {
-		t.Fatal("Failed to read from real fs file "+configs.destinationPath+"\n", err)
+		t.Fatal("Failed to read from real fs file "+setup.destinationPath+"\n", err)
 	}
 
-	desiredResult, err := vrctFs.GetMapFromBytes(desiredRawResult, configs.configType)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	obtainedResult, err := vrctFs.GetMapFromBytes(obtainedRawResult, configs.configType)
+	desiredResult, err := vrctFs.GetMapFromBytes(desiredRawResult, setup.configType)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	obtainedRealResult, err := vrctFs.GetMapFromBytes(obtainedRealRawResult, configs.configType)
+	obtainedResult, err := vrctFs.GetMapFromBytes(obtainedRawResult, setup.configType)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	obtainedRealResult, err := vrctFs.GetMapFromBytes(obtainedRealRawResult, setup.configType)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	eq := reflect.DeepEqual(desiredResult, obtainedResult)
 	if !eq {
-		t.Fatal("Failed to properly simulate " + configs.destinationPath + " file content")
+		t.Fatal("Failed to properly simulate " + setup.destinationPath + " file content")
 	}
 
 	eq = reflect.DeepEqual(desiredResult, obtainedRealResult)
 	if !eq {
-		t.Fatal("Failed to properly simulate " + configs.destinationPath + " file content")
+		t.Fatal("Failed to properly simulate " + setup.destinationPath + " file content")
 	}
 }

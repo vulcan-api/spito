@@ -213,7 +213,7 @@ func (p *FilePrototype) mergeTextLayers() (PrototypeLayer, error) {
 
 func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	// create new layer first
-	finalLayer, err := p.CreateLayer(nil, nil, false)
+	finalLayer, err := p.CreateLayer(nil, nil, true)
 	if err != nil {
 		return finalLayer, err
 	}
@@ -232,6 +232,7 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 		return !p.Layers[i].IsOptional && p.Layers[j].IsOptional
 	})
 
+	//fmt.Printf("%+v\n", finalLayerOptions)
 	for _, layer := range p.Layers {
 		currentLayerContent, err := GetBsonMap(layer.ContentPath)
 		if err != nil {
@@ -248,6 +249,7 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 			return finalLayer, err
 		}
 	}
+	//fmt.Printf("%+v\n\n\n", finalLayerOptions)
 
 	marshalledContent, err := bson.Marshal(finalLayerContent)
 	if err != nil {
@@ -255,23 +257,30 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	}
 	err = finalLayer.SetContent(marshalledContent)
 
+	err = SaveBsonMap(finalLayerOptions, finalLayer.OptionsPath)
+
 	return finalLayer, err
 }
 
 func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interface{}, toMerge map[string]interface{}, toMergeOptions map[string]interface{}, isOptional bool) (map[string]interface{}, map[string]interface{}, error) {
 	var err error
+	// TODO: add merging arrays
 	for key, toMergeVal := range toMerge {
+		mergerVal, ok := merger[key]
+
 		mergerOption, mergerOptOk := mergerOptions[key]
 		toMergeOption, toMergeOptOk := toMergeOptions[key]
 
-		mergerVal, ok := merger[key]
+		// TODO: check for structure conflicts
 		if !ok {
 			merger[key] = toMergeVal
+			if mergerOptions == nil {
+				mergerOptions = make(map[string]interface{})
+			}
 			if toMergeOptOk {
-				if mergerOptions == nil {
-					mergerOptions = make(map[string]interface{})
-				}
 				mergerOptions[key] = toMergeOption
+			} else {
+				mergerOptions[key] = isOptional
 			}
 			continue
 		}
@@ -303,12 +312,14 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			mergerMapVal := mergerVal.(map[string]interface{})
 			toMergeMapVal := toMergeVal.(map[string]interface{})
 
-			merger[key], _, err = mergeConfigs(toMergeMapVal, mergerOptsMapVal, mergerMapVal, toMergeOptsMapVal, isOptional)
+			merger[key], mergerOptions[key], err = mergeConfigs(toMergeMapVal, mergerOptsMapVal, mergerMapVal, toMergeOptsMapVal, isOptional)
 			if err != nil {
-				return merger, nil, err
+				return merger, mergerOptions, err
 			}
 			continue
 		}
+
+		//fmt.Printf("\n merger: %+v\n options: %+v \n\n toMerge: %+v\n options: %+v\n\n", merger, mergerOptions, toMerge, toMergeOptions)
 
 		isMergerKeyOpt := true
 		mergerOptKind := reflect.ValueOf(mergerOption).Kind()
@@ -328,16 +339,27 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			isToMergeKeyOpt = toMergeOption.(bool)
 		}
 
-		if isMergerKeyOpt {
+		//fmt.Printf("\n\n%s: %t vs %t\n", key, isMergerKeyOpt, isToMergeKeyOpt)
+
+		if mergerOptions == nil {
+			mergerOptions = make(map[string]interface{})
+		}
+
+		if isMergerKeyOpt && isToMergeKeyOpt {
 			merger[key] = toMergeVal
-			if mergerOptions == nil {
-				mergerOptions = make(map[string]interface{})
-			}
+			mergerOptions[key] = true
+		} else if isMergerKeyOpt {
+			merger[key] = toMergeVal
 			mergerOptions[key] = false
-		} else if !isMergerKeyOpt && !isToMergeKeyOpt && mergerVal != toMergeVal {
+		} else if isToMergeKeyOpt {
+			mergerOptions[key] = false
+		} else if mergerVal != toMergeVal {
 			return merger, toMergeOptions, fmt.Errorf("passed key '%s' is unmergable (both merger and to merge are required)", key)
 		}
+
+		//fmt.Printf("%s: %t \n", key, mergerOptions[key])
 	}
+
 	return merger, mergerOptions, nil
 }
 
@@ -506,6 +528,15 @@ func (layer *PrototypeLayer) GetContent() ([]byte, error) {
 	return file, nil
 }
 
+func (layer *PrototypeLayer) SetContent(content []byte) error {
+	err := os.WriteFile(layer.ContentPath, content, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetBsonMap(pathToFile string) (map[string]interface{}, error) {
 	file, err := os.ReadFile(pathToFile)
 	if err != nil {
@@ -521,8 +552,13 @@ func GetBsonMap(pathToFile string) (map[string]interface{}, error) {
 	return bsonMap, nil
 }
 
-func (layer *PrototypeLayer) SetContent(content []byte) error {
-	err := os.WriteFile(layer.ContentPath, content, os.ModePerm)
+func SaveBsonMap(toSave map[string]interface{}, pathToFile string) error {
+	content, err := bson.Marshal(toSave)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(pathToFile, content, os.ModePerm)
 	if err != nil {
 		return err
 	}
