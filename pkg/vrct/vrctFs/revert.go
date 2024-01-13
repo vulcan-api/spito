@@ -17,7 +17,7 @@ type RevertStep struct {
 	path   string
 	action int
 	// oldContentPath field is optional
-	oldContentPath *string
+	oldContentPath string
 }
 
 type RevertSteps struct {
@@ -80,12 +80,10 @@ func (r *RevertSteps) BackupOldContent(path string) error {
 		return err
 	}
 
-	oldContentPath := tempContentFile.Name()
-
 	r.steps = append(r.steps, RevertStep{
 		path:           path,
 		action:         replaceContent,
-		oldContentPath: &oldContentPath,
+		oldContentPath: tempContentFile.Name(),
 	})
 	return nil
 }
@@ -97,7 +95,7 @@ func (r *RevertStep) Apply() error {
 	case removeDirAll:
 		return os.RemoveAll(r.path)
 	case replaceContent:
-		if r.oldContentPath == nil {
+		if r.oldContentPath == "" {
 			return fmt.Errorf("oldContentPath cannot be null if RevertStep action is: \"replaceContent\"\n")
 		}
 		err := os.RemoveAll(r.path)
@@ -105,7 +103,7 @@ func (r *RevertStep) Apply() error {
 			return err
 		}
 
-		return os.Rename(*r.oldContentPath, r.path)
+		return os.Rename(r.oldContentPath, r.path)
 	default:
 		return fmt.Errorf("unknown RevertStep action: %d\n", r.action)
 	}

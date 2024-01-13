@@ -25,8 +25,8 @@ var checkFileCmd = &cobra.Command{
 			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
 				fmt.Printf("Failed to remove temporary VRCT files"+
 					"\n You should remove them manually in /tmp or reboot your device \n%s", err.Error())
+				os.Exit(1)
 			}
-			os.Exit(1)
 		}()
 
 		script, err := os.ReadFile(path)
@@ -57,8 +57,8 @@ var checkCmd = &cobra.Command{
 			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
 				fmt.Printf("Failed to remove temporary VRCT files"+
 					"\n You should remove them manually in /tmp or reboot your device \n%s", err.Error())
+				os.Exit(1)
 			}
-			os.Exit(1)
 		}()
 
 		if executionPath, err := os.Getwd(); err == nil {

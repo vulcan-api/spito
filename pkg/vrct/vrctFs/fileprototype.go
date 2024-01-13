@@ -70,13 +70,8 @@ func (p *FilePrototype) Read(prototypePath string, destPath string) error {
 
 	if os.IsNotExist(err) {
 		_, err := os.Stat(destPath)
-		if os.IsNotExist(err) {
-			p.RealFileExists = false
-		} else {
-			p.RealFileExists = true
-			// TODO: optimize it by copying original file and storing only path to copied file,
-			//  because storing entire file content in structure is not efficient
-		}
+		p.RealFileExists = !os.IsNotExist(err)
+
 		return p.Save()
 	} else if err != nil {
 		return err
