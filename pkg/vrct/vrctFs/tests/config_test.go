@@ -69,6 +69,21 @@ func TestConfigsMatrix(t *testing.T) {
 			destinationPath: tmpPath + "/new_dir/extrepo.yaml",
 			configType:      vrctFs.YamlConfig,
 		},
+		{
+			configs: []Config{
+				{
+					path:       "toml/hugo-default.toml",
+					isOptional: false,
+				},
+				{
+					path:       "toml/hugo-customized.toml",
+					isOptional: true,
+				},
+			},
+			resultPath:      "toml/hugo-merged.toml",
+			destinationPath: tmpPath + "/new_dir/hugo.toml",
+			configType:      vrctFs.TomlConfig,
+		},
 	}
 
 	for _, config := range configs {
@@ -94,9 +109,13 @@ func testConfigs(t *testing.T, vrct *vrctFs.FsVRCT, setup ConfigsSetup) {
 		}
 
 		workingOptionsPath := filepath.Join(wd, config.optionsPath)
-		options, err := os.ReadFile(workingOptionsPath)
-		if err != nil {
-			t.Fatalf("Failed to open result data '%s': %s", workingOptionsPath, err)
+
+		var options []byte
+		if config.optionsPath != "" {
+			options, err = os.ReadFile(workingOptionsPath)
+			if err != nil {
+				t.Fatalf("Failed to open result data '%s': %s", workingOptionsPath, err)
+			}
 		}
 
 		err = vrct.CreateFile(setup.destinationPath, configTestData, options, config.isOptional, setup.configType)

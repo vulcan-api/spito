@@ -4,7 +4,7 @@ const (
 	TextFile = iota
 	JsonConfig
 	YamlConfig
-	XmlConfig
 	TomlConfig
 	IniConfig // TODO: add support (complex feature)
+	XmlConfig // TODO: maybe add support (requires custom algorithm)
 )

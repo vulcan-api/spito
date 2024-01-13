@@ -2,7 +2,6 @@ package vrctFs
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"github.com/pelletier/go-toml/v2"
@@ -232,7 +231,6 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 		return !p.Layers[i].IsOptional && p.Layers[j].IsOptional
 	})
 
-	//fmt.Printf("%+v\n", finalLayerOptions)
 	for _, layer := range p.Layers {
 		currentLayerContent, err := GetBsonMap(layer.ContentPath)
 		if err != nil {
@@ -249,7 +247,6 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 			return finalLayer, err
 		}
 	}
-	//fmt.Printf("%+v\n\n\n", finalLayerOptions)
 
 	marshalledContent, err := bson.Marshal(finalLayerContent)
 	if err != nil {
@@ -319,8 +316,6 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			continue
 		}
 
-		//fmt.Printf("\n merger: %+v\n options: %+v \n\n toMerge: %+v\n options: %+v\n\n", merger, mergerOptions, toMerge, toMergeOptions)
-
 		isMergerKeyOpt := true
 		mergerOptKind := reflect.ValueOf(mergerOption).Kind()
 		if mergerOptOk {
@@ -339,8 +334,6 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			isToMergeKeyOpt = toMergeOption.(bool)
 		}
 
-		//fmt.Printf("\n\n%s: %t vs %t\n", key, isMergerKeyOpt, isToMergeKeyOpt)
-
 		if mergerOptions == nil {
 			mergerOptions = make(map[string]interface{})
 		}
@@ -356,8 +349,6 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 		} else if mergerVal != toMergeVal {
 			return merger, toMergeOptions, fmt.Errorf("passed key '%s' is unmergable (both merger and to merge are required)", key)
 		}
-
-		//fmt.Printf("%s: %t \n", key, mergerOptions[key])
 	}
 
 	return merger, mergerOptions, nil
@@ -405,12 +396,13 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 	switch p.FileType {
 	case JsonConfig:
 		fileContent, err = json.Marshal(tempContentInterface)
+		break
 	case YamlConfig:
 		fileContent, err = yaml.Marshal(tempContentInterface)
-	case XmlConfig:
-		fileContent, err = xml.Marshal(tempContentInterface)
+		break
 	case TomlConfig:
 		fileContent, err = toml.Marshal(tempContentInterface)
+		break
 	default:
 		return file, nil
 	}
@@ -469,7 +461,7 @@ func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional b
 
 	tempConvertedContent, err := GetMapFromBytes(content, p.FileType)
 
-	if p.FileType != TextFile && tempConvertedContent != nil {
+	if p.FileType != TextFile {
 		content, err = bson.Marshal(tempConvertedContent)
 		if err != nil {
 			return PrototypeLayer{}, err
@@ -580,12 +572,6 @@ func GetMapFromBytes(content []byte, configType int) (map[string]interface{}, er
 		break
 	case YamlConfig:
 		err = yaml.Unmarshal(content, &resultMap)
-		break
-	case XmlConfig:
-		if content == nil {
-			content = []byte("<></>")
-		}
-		err = xml.Unmarshal(content, &resultMap)
 		break
 	case TomlConfig:
 		err = toml.Unmarshal(content, &resultMap)
