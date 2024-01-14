@@ -33,7 +33,7 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, isOptional bool) er
 	}
 
 	filePrototype := FilePrototype{}
-	err = filePrototype.Read(prototypeFilePath)
+	err = filePrototype.Read(prototypeFilePath, filePath)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
 	}
 
 	filePrototype := FilePrototype{}
-	err = filePrototype.Read(fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, filePath))
+	err = filePrototype.Read(fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, filePath), filePath)
 	if err != nil {
 		file, err := os.ReadFile(filePath)
 		if err != nil {
@@ -90,7 +90,7 @@ func (v *FsVRCT) Stat(path string) (os.FileInfo, error) {
 		}
 	} else {
 		filePrototype := FilePrototype{}
-		if err := filePrototype.Read(prototypePath); err != nil {
+		if err := filePrototype.Read(prototypePath, path); err != nil {
 			return nil, err
 		}
 		content, err := filePrototype.SimulateFile()

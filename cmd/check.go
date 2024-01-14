@@ -22,6 +22,14 @@ var checkFileCmd = &cobra.Command{
 		path := args[0]
 
 		runtimeData := getInitialRuntimeData(cmd)
+		defer func() {
+			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
+				fmt.Printf("Failed to remove temporary VRCT files"+
+					"\n You should remove them manually in /tmp or reboot your device \n%s", err.Error())
+				os.Exit(1)
+			}
+		}()
+
 		script, err := os.ReadFile(path)
 		if err != nil {
 			fmt.Printf("Failed to read file %s\n", path)
@@ -51,6 +59,14 @@ var checkCmd = &cobra.Command{
 		runtimeData := getInitialRuntimeData(cmd)
 		identifierOrPath := args[0]
 		ruleName := args[1]
+
+		defer func() {
+			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
+				fmt.Printf("Failed to remove temporary VRCT files"+
+					"\n You should remove them manually in /tmp or reboot your device \n%s", err.Error())
+				os.Exit(1)
+			}
+		}()
 
 		if executionPath, err := os.Getwd(); err == nil {
 			localRulesetPath := identifierOrPath
