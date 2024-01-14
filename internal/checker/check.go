@@ -48,13 +48,14 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %v", val)
 }
 
+
 func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		return _internalCheckRule(importLoopData, identifier, ruleName, nil), nil
 	})
 }
 
-func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := RuleConf{
@@ -62,8 +63,15 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool
 			Unsafe: false,
 		}
 		script = processScript(script, &ruleConf)
-		return ExecuteLuaMain(script, importLoopData, &ruleConf)
+		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
 	})
+}
+
+func handleErrorAndPanic(errChan chan error, err error) {
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
 }
 
 func checkAndProcessPanics(
@@ -73,11 +81,10 @@ func checkAndProcessPanics(
 
 	errChan := importLoopData.ErrChan
 	doesRulePassChan := make(chan bool)
-
 	go func() {
 		defer func() {
 			r := recover()
-			if errChan != nil {
+			if errChan != nil && r != nil {
 				errChan <- anyToError(r)
 			}
 		}()
@@ -146,6 +153,7 @@ func _internalCheckRule(
 		panic(nil)
 	}
 
+
 	rulesetConf, err := getRulesetConf(&rulesetLocation)
 	if err != nil {
 		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
@@ -163,7 +171,7 @@ func _internalCheckRule(
 	}
 
 	rulesHistory.SetProgress(identifier, ruleName, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf)
+	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
 		return false
 	}
