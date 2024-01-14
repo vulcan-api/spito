@@ -9,7 +9,7 @@ import (
 
 
 func processScript(script string, ruleConf *RuleConf) string {
-	newScript, decorators := getDecorators(script)
+	newScript, decorators := GetDecorators(script)
 
 	for _, decorator := range decorators {
 		if strings.ToLower(decorator) == "unsafe" {
@@ -21,7 +21,7 @@ func processScript(script string, ruleConf *RuleConf) string {
 }
 
 // Returns script without decorators and array of decorator values
-func getDecorators(script string) (string, []string) {
+func GetDecorators(script string) (string, []string) {
 	var fileScopeDecorators []string
 
 	fileScopeRegex := regexp.MustCompile(`#!\[[^]]+]`)

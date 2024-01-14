@@ -18,11 +18,17 @@ func printErrorAndExit(errorToBePrinted error) {
 	os.Exit(1)
 }
 
+type Rule struct {
+	Path string `yaml:"path"`
+	Description string `yaml:"description"`
+}
+
 type ConfigFileLayout struct {
 	Repo_url   string
 	Git_prefix string
 	Identifier string
-	Rules      map[string]string
+	Rules      map[string]Rule
+	Description string
 }
 
 var rootCmd = &cobra.Command{
@@ -48,6 +54,8 @@ func init() {
 	rootCmd.AddCommand(newRulesetCommand)
 	rootCmd.AddCommand(generateRuleCommand)
 	rootCmd.AddCommand(generateShortCommand)
+	rootCmd.AddCommand(loginCommand)
+	rootCmd.AddCommand(publishCommand)
 
 	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")

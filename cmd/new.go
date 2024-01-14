@@ -122,7 +122,7 @@ var newRulesetCommand = &cobra.Command{
 			Repo_url:   repositoryUrl,
 			Git_prefix: hostingProvider,
 			Identifier: rulesetIdentifier,
-			Rules:      map[string]string{},
+			Rules:      map[string]Rule{},
 		}
 		configFileContents, err := yaml.Marshal(config)
 		handleError(err)
