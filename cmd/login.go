@@ -15,40 +15,38 @@ import (
 )
 
 const (
-	spitoStoreURL = "http://localhost:5000" /* It must be changed after we deploy our backend somewhere */
 	tokenVerificationRoute = "token/verify"
-	secretDirectoryName = "secret"
-	secretDirectoryPath = "~/.local/state/spito/" + secretDirectoryName
-	tokenStorageFilename = "user-token"
+	secretDirectoryName    = "secret"
+	secretDirectoryPath    = "~/.local/state/spito/" + secretDirectoryName
+	tokenStorageFilename   = "user-token"
 )
 
 var loginCommand = &cobra.Command{
 	Use:   "login [-l|--local] {token}",
 	Short: "Login into the spito store",
-	Args: cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
 		isLoggingInLocally, err := cmd.Flags().GetBool("local")
 		handleError(err)
 
-		if (args[0] == "") {
+		if args[0] == "" {
 			printErrorAndExit(errors.New("The token cannot be empty!"))
 		}
-		
+
 		if areWeInSpitoRuleset, _ := shared.DoesPathExist(checker.ConfigFilename); !areWeInSpitoRuleset && isLoggingInLocally {
 			printErrorAndExit(errors.New("You must be inside a spito ruleset to log in locally!"))
 		}
-		
+
 		workingDirectory, err := os.Getwd()
 		handleError(err)
-		
+
 		if exists, _ := shared.DoesPathExist(filepath.Join(workingDirectory, checker.ConfigFilename)); isLoggingInLocally && !exists {
 			printErrorAndExit(errors.New("Please run this command inside a spito ruleset!"))
 		}
-		
-		tokenRequestPath, err := url.JoinPath(spitoStoreURL, tokenVerificationRoute, args[0])
+
+		tokenRequestPath, err := url.JoinPath(os.Getenv("BACKEND_URL"), tokenVerificationRoute, args[0])
 		handleError(err)
-		
+
 		httpResponse, err := http.Get(tokenRequestPath)
 		handleError(err)
 		defer httpResponse.Body.Close()
@@ -56,7 +54,7 @@ var loginCommand = &cobra.Command{
 		var responseData map[string]interface{}
 		json.NewDecoder(httpResponse.Body).Decode(&responseData)
 
-		isTokenValid, isResponseOK := responseData["valid"]; 
+		isTokenValid, isResponseOK := responseData["valid"]
 
 		if !isResponseOK {
 			httpResponse.Body.Close()
@@ -71,7 +69,7 @@ var loginCommand = &cobra.Command{
 			httpResponse.Body.Close()
 			printErrorAndExit(errors.New("Your token is invalid. Please check if the token really belongs to your account"))
 		}
-		
+
 		var secretDirectory string
 		if isLoggingInLocally {
 			secretDirectory = secretDirectoryName

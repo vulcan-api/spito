@@ -23,25 +23,25 @@ const (
 )
 
 type RuleForRequest struct {
-	Name string `json:"name"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
-	Path string `json:"path"`
-	Unsafe bool `json:"unsafe"`
+	Path        string `json:"path"`
+	Unsafe      bool   `json:"unsafe"`
 }
 
 type PublishRequestBody struct {
-	Url string `json:"url"`
+	Url   string           `json:"url"`
 	Rules []RuleForRequest `json:"rules"`
 }
 
 var publishCommand = &cobra.Command{
 	Use:   "publish [-l|--local] [ruleset_path]",
 	Short: "Publish a ruleset to spito store",
-	Args: cobra.MaximumNArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var rulesetPath string
 		var err error
-		
+
 		if len(args) > 0 && args[0] != "" {
 			rulesetPath = args[0]
 		} else {
@@ -60,15 +60,15 @@ var publishCommand = &cobra.Command{
 		err = yaml.Unmarshal(configFileContents, &configFileValues)
 		handleError(err)
 
-		requestBody := PublishRequestBody {
-			Url:  configFileValues.Repo_url,
+		requestBody := PublishRequestBody{
+			Url: configFileValues.Repo_url,
 		}
 		for ruleName, rule := range configFileValues.Rules {
 			currentRuleForRequest := RuleForRequest{
-				Name: ruleName,
-				Path: rule.Path,
+				Name:        ruleName,
+				Path:        rule.Path,
 				Description: rule.Description,
-				Unsafe: rule.Unsafe,
+				Unsafe:      rule.Unsafe,
 			}
 
 			ruleScript, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path))
@@ -94,25 +94,25 @@ var publishCommand = &cobra.Command{
 					if len(tokens) < 2 {
 						printErrorAndExit(errors.New("Incorrect \"Description\" decorator syntax inside rule: " + ruleName))
 					}
-					descriptionBytes, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path, "..", tokens[1][1:len(tokens[1]) - 1]))
+					descriptionBytes, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path, "..", tokens[1][1:len(tokens[1])-1]))
 					handleError(err)
 
 					currentRuleForRequest.Description = string(descriptionBytes)
 				} else if strings.HasSuffix(argument, "\"") && strings.HasPrefix(argument, "\"") {
-					currentRuleForRequest.Description = argument[1:len(argument) - 1]
+					currentRuleForRequest.Description = argument[1 : len(argument)-1]
 				} else {
 					printErrorAndExit(errors.New("Incorrect \"Description\" decorator syntax inside rule: " + ruleName))
 				}
 				break
 			}
-			
+
 			requestBody.Rules = append(requestBody.Rules, currentRuleForRequest)
 		}
 
 		var tokenFilenamePath string
 		isTokenStoredLocally, err := cmd.Flags().GetBool("local")
 		handleError(err)
-		
+
 		if isTokenStoredLocally {
 			tokenFilenamePath = filepath.Join(rulesetPath, secretDirectoryName, tokenStorageFilename)
 		} else {
@@ -126,13 +126,13 @@ var publishCommand = &cobra.Command{
 		jsonBody, err := json.Marshal(requestBody)
 		handleError(err)
 
-		requestUrl, err := url.JoinPath(spitoStoreURL, publishRulesetRoute)
+		requestUrl, err := url.JoinPath(os.Getenv("BACKEND_URL"), publishRulesetRoute)
 		handleError(err)
-		
+
 		httpRequest, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(jsonBody))
 		handleError(err)
 
-		httpRequest.Header.Add("Authorization", "Token " + string(token))
+		httpRequest.Header.Add("Authorization", "Token "+string(token))
 		httpRequest.Header.Add("Content-Type", "application/json")
 
 		httpClient := http.Client{}
