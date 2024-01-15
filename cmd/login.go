@@ -30,18 +30,18 @@ var loginCommand = &cobra.Command{
 		handleError(err)
 
 		if args[0] == "" {
-			printErrorAndExit(errors.New("The token cannot be empty!"))
+			printErrorAndExit(errors.New("the token cannot be empty"))
 		}
 
 		if areWeInSpitoRuleset, _ := shared.DoesPathExist(checker.ConfigFilename); !areWeInSpitoRuleset && isLoggingInLocally {
-			printErrorAndExit(errors.New("You must be inside a spito ruleset to log in locally!"))
+			printErrorAndExit(errors.New("you must be inside a spito ruleset to log in locally"))
 		}
 
 		workingDirectory, err := os.Getwd()
 		handleError(err)
 
 		if exists, _ := shared.DoesPathExist(filepath.Join(workingDirectory, checker.ConfigFilename)); isLoggingInLocally && !exists {
-			printErrorAndExit(errors.New("Please run this command inside a spito ruleset!"))
+			printErrorAndExit(errors.New("please run this command inside a spito ruleset"))
 		}
 
 		tokenRequestPath, err := url.JoinPath(os.Getenv("BACKEND_URL"), tokenVerificationRoute, args[0])
@@ -58,7 +58,7 @@ var loginCommand = &cobra.Command{
 
 		if !isResponseOK {
 			httpResponse.Body.Close()
-			printErrorAndExit(errors.New("The error has occured on the server side while validating the token"))
+			printErrorAndExit(errors.New("the error has occured on the server side while validating the token"))
 		}
 
 		if !isTokenValid.(bool) && responseData["expiresAt"] != nil {
@@ -67,7 +67,7 @@ var loginCommand = &cobra.Command{
 			os.Exit(1)
 		} else if !isTokenValid.(bool) {
 			httpResponse.Body.Close()
-			printErrorAndExit(errors.New("Your token is invalid. Please check if the token really belongs to your account"))
+			printErrorAndExit(errors.New("your token is invalid. Please check if the token really belongs to your account"))
 		}
 
 		var secretDirectory string
@@ -81,7 +81,7 @@ var loginCommand = &cobra.Command{
 		err = os.MkdirAll(secretDirectory, 0755)
 		if err != nil && !os.IsExist(err) {
 			httpResponse.Body.Close()
-			printErrorAndExit(errors.New("Cannot create the directory for secrets!"))
+			printErrorAndExit(errors.New("cannot create the directory for secrets"))
 		}
 
 		err = os.WriteFile(filepath.Join(secretDirectory, tokenStorageFilename), []byte(args[0]), 0644)

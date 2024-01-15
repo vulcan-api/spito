@@ -51,7 +51,7 @@ var publishCommand = &cobra.Command{
 
 		configFileContents, err := os.ReadFile(filepath.Join(rulesetPath, checker.ConfigFilename))
 		if os.IsNotExist(err) {
-			printErrorAndExit(errors.New("Please point this command to an actual spito ruleset!"))
+			printErrorAndExit(errors.New("please point this command to an actual spito ruleset"))
 		} else {
 			handleError(err)
 		}
@@ -145,9 +145,9 @@ var publishCommand = &cobra.Command{
 		json.NewDecoder(httpResponse.Body).Decode(&responseBody)
 
 		if statusCode, codeExists := responseBody["statusCode"]; codeExists && statusCode.(float64) == 404 {
-			printErrorAndExit(errors.New("It seems that your ruleset doesn't exist in the spito store. Please create it in the spito GUI first"))
+			printErrorAndExit(errors.New("it seems that your ruleset doesn't exist in the spito store. Please create it in the spito GUI first"))
 		} else if codeExists && statusCode.(float64) != 200 {
-			printErrorAndExit(errors.New("Error during publishing!"))
+			printErrorAndExit(errors.New("error during publishing"))
 		}
 
 		cmdApi.InfoApi{}.Log("Successfully published the ruleset!")
