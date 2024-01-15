@@ -1,123 +1,83 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 const (
-	spitoStoreURL = "http://localhost:5000"
-	loginRoute = "auth/login"
-	tokenCreationRoute = "token"
-	secretDirectoryName = ".secret"
+	spitoStoreURL = "http://localhost:5000" /* It must be changed after we deploy our backend somewhere */
+	tokenVerificationRoute = "token/verify"
+	secretDirectoryName = "secret"
+	secretDirectoryPath = "~/.local/state/spito/" + secretDirectoryName
 	tokenStorageFilename = "user-token"
 )
 
 var loginCommand = &cobra.Command{
-	Use:   "login",
+	Use:   "login [-l|--local] {token}",
 	Short: "Login into the spito store",
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
+		isLoggingInLocally, err := cmd.Flags().GetBool("local")
+		handleError(err)
+		
+		if (args[0] == "") {
+			printErrorAndExit(errors.New("The token cannot be empty!"))
+		}
+		
 		workingDirectory, err := os.Getwd()
 		handleError(err)
 		
-		if exists, _ := shared.DoesPathExist(filepath.Join(workingDirectory, checker.ConfigFilename)); !exists {
+		if exists, _ := shared.DoesPathExist(filepath.Join(workingDirectory, checker.ConfigFilename)); isLoggingInLocally && !exists {
 			printErrorAndExit(errors.New("Please run this command inside a spito ruleset!"))
 		}
 		
-		var email string
-		for {
-			fmt.Printf("Enter your email address: ")
-			fmt.Scanf("%s", &email)
-			if email != "" {
-				break
-			}
-			fmt.Println("Email address cannot be empty!")
-		}
-
-		var password []byte
-		for {
-			fmt.Printf("Enter your password: ")
-			password, err = term.ReadPassword(int(os.Stdin.Fd()))
-			handleError(err)
-			if string(password) != "" {
-				fmt.Println()
-				break
-			}
-			fmt.Println("Password cannot be empty!")
-		}
-		loginRequestPath, err := url.JoinPath(spitoStoreURL, loginRoute)
+		tokenRequestPath, err := url.JoinPath(spitoStoreURL, tokenVerificationRoute, args[0])
 		handleError(err)
 		
-		body := map[string]string {
-			"email": email,
-			"password": string(password),
-		}
-
-		jsonBody, err := json.Marshal(body)
-		handleError(err)
-		
-		httpResponse, err := http.Post(loginRequestPath, "application/json", bytes.NewBuffer(jsonBody))
-		handleError(err)
-
-		var responseData map[string]string
-
-		json.NewDecoder(httpResponse.Body).Decode(&responseData)
-		if _, doesTokenExist := responseData["token"]; !doesTokenExist {
-			httpResponse.Body.Close()
-			printErrorAndExit(errors.New("Login has failed. Please provide correct credentials"))
-		}
-		httpResponse.Body.Close()
-
-		tokenRequestPath, err := url.JoinPath(spitoStoreURL, tokenCreationRoute)
-		handleError(err)
-		
-		expirationTime := time.Now()
-		expirationTime = expirationTime.AddDate(0, 0, 7)
-		
-		body = map[string]string {
-			"expiresAt": expirationTime.Format(time.RFC3339),
-		}
-		jsonBody, err = json.Marshal(body)
-		handleError(err)
-		
-		httpRequest, err := http.NewRequest("POST", tokenRequestPath, bytes.NewReader(jsonBody))
-		handleError(err)
-		httpRequest.Header.Add("Authorization", fmt.Sprintf("Bearer %s", responseData["token"]))
-		httpRequest.Header.Add("Content-Type", "application/json")
-		
-		httpClient := http.Client{}
-		httpResponse, err = httpClient.Do(httpRequest)
+		httpResponse, err := http.Get(tokenRequestPath)
 		handleError(err)
 		defer httpResponse.Body.Close()
-		
-		responseData = make(map[string]string)
+
+		var responseData map[string]interface{}
 		json.NewDecoder(httpResponse.Body).Decode(&responseData)
-		if _, isResponseOK := responseData["token"]; !isResponseOK {
+
+		isTokenValid, isResponseOK := responseData["valid"]; 
+
+		if !isResponseOK {
 			httpResponse.Body.Close()
-			printErrorAndExit(errors.New("Couldn't generate the token"))
+			printErrorAndExit(errors.New("The error has occured on the server side while validating the token"))
 		}
 
-		err = os.Mkdir(secretDirectoryName, 0700)
+		if !isTokenValid.(bool) && responseData["expiresAt"] != nil {
+			httpResponse.Body.Close()
+			cmdApi.InfoApi{}.Warn("Your token has expired. Please generate a new token and run this command again")
+			os.Exit(1)
+		} else if !isTokenValid.(bool) {
+			httpResponse.Body.Close()
+			printErrorAndExit(errors.New("Your token is invalid. Please check if the token really belongs to your account"))
+		}
+
+		secretDirectoryPathCopy := secretDirectoryPath
+		shared.ExpandTilde(&secretDirectoryPathCopy)
+
+		err = os.MkdirAll(secretDirectoryPathCopy, 0755)
 		if err != nil && !os.IsExist(err) {
 			httpResponse.Body.Close()
 			printErrorAndExit(errors.New("Cannot create the directory for secrets!"))
 		}
 
-		err = os.WriteFile(filepath.Join(secretDirectoryName, tokenStorageFilename), []byte(responseData["token"]), 0644)
+		err = os.WriteFile(filepath.Join(secretDirectoryPathCopy, tokenStorageFilename), []byte(args[0]), 0644)
 		handleError(err)
 
 		cmdApi.InfoApi{}.Log("Successfully logged into the spito store!")

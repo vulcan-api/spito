@@ -60,4 +60,6 @@ func init() {
 	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	newRulesetCommand.Flags().BoolP("non-interactive", "y", false, "If true assume default values for spito-rules.yaml")
+	loginCommand.Flags().BoolP("local", "l", false, "If true, save login credentials inside a spito ruleset")
+	publishCommand.Flags().BoolP("local", "l", false, "If true, get login token from a local ruleset")
 }

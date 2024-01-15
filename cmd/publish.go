@@ -13,6 +13,7 @@ import (
 
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -33,7 +34,7 @@ type PublishRequestBody struct {
 }
 
 var publishCommand = &cobra.Command{
-	Use:   "publish [ruleset_path]",
+	Use:   "publish [-l|--local] [ruleset_path]",
 	Short: "Publish a ruleset to spito store",
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -49,7 +50,7 @@ var publishCommand = &cobra.Command{
 
 		configFileContents, err := os.ReadFile(filepath.Join(rulesetPath, checker.ConfigFilename))
 		if os.IsNotExist(err) {
-			printErrorAndExit(errors.New("Please run this command inside an actual spito ruleset!"))
+			printErrorAndExit(errors.New("Please point this command to an actual spito ruleset!"))
 		} else {
 			handleError(err)
 		}
@@ -93,6 +94,7 @@ var publishCommand = &cobra.Command{
 					}
 					descriptionBytes, err := os.ReadFile(filepath.Join(rule.Path, tokens[1][1:len(tokens[1]) - 1]))
 					handleError(err)
+
 					currentRuleForRequest.Description = string(descriptionBytes)
 				} else if strings.HasSuffix(argument, "\"") && strings.HasPrefix(argument, "\"") {
 					currentRuleForRequest.Description = argument[1:len(argument) - 1]
@@ -105,7 +107,18 @@ var publishCommand = &cobra.Command{
 			requestBody.Rules = append(requestBody.Rules, currentRuleForRequest)
 		}
 
-		token, err := os.ReadFile(filepath.Join(rulesetPath, secretDirectoryName, tokenStorageFilename))
+		var tokenFilenamePath string
+		isTokenStoredLocally, err := cmd.Flags().GetBool("local")
+		handleError(err)
+		
+		if isTokenStoredLocally {
+			tokenFilenamePath = filepath.Join(rulesetPath, secretDirectoryName, tokenStorageFilename)
+		} else {
+			tokenFilenamePath = filepath.Join(secretDirectoryPath, tokenStorageFilename)
+			shared.ExpandTilde(&tokenFilenamePath)
+		}
+
+		token, err := os.ReadFile(tokenFilenamePath)
 		handleError(err)
 
 		jsonBody, err := json.Marshal(requestBody)
