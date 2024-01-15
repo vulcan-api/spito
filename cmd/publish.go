@@ -87,12 +87,12 @@ var publishCommand = &cobra.Command{
 				argument = strings.TrimPrefix(argument, "(")
 				argument = strings.TrimSuffix(argument, ")")
 
-				if strings.HasSuffix(argument, "file=") {
+				if strings.HasPrefix(argument, "file=") {
 					tokens := strings.Split(argument, "=")
 					if len(tokens) < 2 {
 						printErrorAndExit(errors.New("Incorrect \"Description\" decorator syntax inside rule: " + ruleName))
 					}
-					descriptionBytes, err := os.ReadFile(filepath.Join(rule.Path, tokens[1][1:len(tokens[1]) - 1]))
+					descriptionBytes, err := os.ReadFile(filepath.Join(rule.Path,"..",tokens[1][1:len(tokens[1]) - 1]))
 					handleError(err)
 
 					currentRuleForRequest.Description = string(descriptionBytes)
