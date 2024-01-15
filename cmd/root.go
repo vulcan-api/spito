@@ -21,6 +21,7 @@ func printErrorAndExit(errorToBePrinted error) {
 type Rule struct {
 	Path string `yaml:"path"`
 	Description string `yaml:"description"`
+	Unsafe bool `yaml:"unsafe"`
 }
 
 type ConfigFileLayout struct {

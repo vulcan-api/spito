@@ -26,6 +26,7 @@ type RuleForRequest struct {
 	Name string `json:"name"`
 	Description string `json:"description"`
 	Path string `json:"path"`
+	Unsafe bool `json:"unsafe"`
 }
 
 type PublishRequestBody struct {
@@ -67,6 +68,7 @@ var publishCommand = &cobra.Command{
 				Name: ruleName,
 				Path: rule.Path,
 				Description: rule.Description,
+				Unsafe: rule.Unsafe,
 			}
 
 			ruleScript, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path))
@@ -92,7 +94,7 @@ var publishCommand = &cobra.Command{
 					if len(tokens) < 2 {
 						printErrorAndExit(errors.New("Incorrect \"Description\" decorator syntax inside rule: " + ruleName))
 					}
-					descriptionBytes, err := os.ReadFile(filepath.Join(rule.Path,"..",tokens[1][1:len(tokens[1]) - 1]))
+					descriptionBytes, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path, "..", tokens[1][1:len(tokens[1]) - 1]))
 					handleError(err)
 
 					currentRuleForRequest.Description = string(descriptionBytes)

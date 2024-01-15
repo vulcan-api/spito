@@ -30,9 +30,13 @@ var loginCommand = &cobra.Command{
 
 		isLoggingInLocally, err := cmd.Flags().GetBool("local")
 		handleError(err)
-		
+
 		if (args[0] == "") {
 			printErrorAndExit(errors.New("The token cannot be empty!"))
+		}
+		
+		if areWeInSpitoRuleset, _ := shared.DoesPathExist(checker.ConfigFilename); !areWeInSpitoRuleset && isLoggingInLocally {
+			printErrorAndExit(errors.New("You must be inside a spito ruleset to log in locally!"))
 		}
 		
 		workingDirectory, err := os.Getwd()
@@ -67,17 +71,22 @@ var loginCommand = &cobra.Command{
 			httpResponse.Body.Close()
 			printErrorAndExit(errors.New("Your token is invalid. Please check if the token really belongs to your account"))
 		}
+		
+		var secretDirectory string
+		if isLoggingInLocally {
+			secretDirectory = secretDirectoryName
+		} else {
+			secretDirectory = secretDirectoryPath
+			shared.ExpandTilde(&secretDirectory)
+		}
 
-		secretDirectoryPathCopy := secretDirectoryPath
-		shared.ExpandTilde(&secretDirectoryPathCopy)
-
-		err = os.MkdirAll(secretDirectoryPathCopy, 0755)
+		err = os.MkdirAll(secretDirectory, 0755)
 		if err != nil && !os.IsExist(err) {
 			httpResponse.Body.Close()
 			printErrorAndExit(errors.New("Cannot create the directory for secrets!"))
 		}
 
-		err = os.WriteFile(filepath.Join(secretDirectoryPathCopy, tokenStorageFilename), []byte(args[0]), 0644)
+		err = os.WriteFile(filepath.Join(secretDirectory, tokenStorageFilename), []byte(args[0]), 0644)
 		handleError(err)
 
 		cmdApi.InfoApi{}.Log("Successfully logged into the spito store!")
