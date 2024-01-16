@@ -145,7 +145,6 @@ type CreateFileOptions struct {
 	fileType int
 }
 
-// TODO: create end to end test in lua
 func (f *FsApi) CreateFile(path, content string, options CreateFileOptions) error {
 	return f.FsVRCT.CreateFile(path, []byte(content), nil, options.optional, options.fileType)
 }
