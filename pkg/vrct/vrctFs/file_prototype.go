@@ -32,7 +32,7 @@ func (p *FilePrototype) getDestinationPath() string {
 }
 
 func (p *FilePrototype) getVirtualPath() string {
-	return p.Path + p.Name + VirtualFilePostfix
+	return filepath.Join(p.Path, p.Name+VirtualFilePostfix)
 }
 
 func (p *FilePrototype) SimulateFile() ([]byte, error) {
@@ -82,11 +82,10 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 
 // TODO: think of splitting it up into to functions (read and load)
 func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
-	prototypeFilePath := vrctPrefix + realPath
+	prototypeFilePath := filepath.Join(vrctPrefix, realPath)
 
 	// TODO: instead of adding slash, use filepath.Join in appropriate lines
 	path := filepath.Dir(prototypeFilePath)
-	path += "/"
 	name := filepath.Base(prototypeFilePath)
 
 	p.Path = path

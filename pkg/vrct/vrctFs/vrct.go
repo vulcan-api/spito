@@ -2,6 +2,7 @@ package vrctFs
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -77,8 +78,8 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 	}
 
 	for _, entry := range entries {
-		realFsEntryPath := destPath + "/" + entry.Name()
-		mergeDirEntryPath := mergeDirPath + "/" + entry.Name()
+		realFsEntryPath := filepath.Join(destPath, entry.Name())
+		mergeDirEntryPath := filepath.Join(mergeDirPath, entry.Name())
 
 		if entry.IsDir() {
 			_, err := os.Stat(realFsEntryPath)
@@ -135,10 +136,10 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 	for _, dirEntry := range dirs {
 		if dirEntry.IsDir() {
 			dirName := dirEntry.Name()
-			if err := os.MkdirAll(destPath+"/"+dirName, os.ModePerm); err != nil {
+			if err := os.MkdirAll(filepath.Join(destPath, dirName), os.ModePerm); err != nil {
 				return err
 			}
-			if err := mergePrototypes(prototypesDirPath+"/"+dirName, destPath+"/"+dirName); err != nil {
+			if err := mergePrototypes(filepath.Join(prototypesDirPath, dirName), filepath.Join(destPath, dirName)); err != nil {
 				return err
 			}
 			continue
@@ -148,7 +149,7 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 			fileName := strings.ReplaceAll(prototypeName, ".prototype.bson", "")
 
 			prototype := FilePrototype{}
-			if err := prototype.Read(prototypesDirPath+"/", fileName); err != nil {
+			if err := prototype.Read(prototypesDirPath, fileName); err != nil {
 				return err
 			}
 			file, err := prototype.SimulateFile()
@@ -156,7 +157,7 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 				return err
 			}
 
-			if err := os.WriteFile(destPath+"/"+fileName, file, os.ModePerm); err != nil {
+			if err := os.WriteFile(filepath.Join(destPath, fileName), file, os.ModePerm); err != nil {
 				return err
 			}
 			continue

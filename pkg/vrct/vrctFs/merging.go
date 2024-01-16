@@ -89,6 +89,21 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 	return finalLayer, err
 }
 
+// mergeConfigs merges all prototype layers into one
+//
+// Arguments:
+//
+//	merger - old config to be merged
+//	mergerOptions - options of old config
+//	toMerge - new config
+//	toMergeOptions - options of new config
+//	isOptional - default option when unspecified in mergerOptions or toMergeOptions
+//
+// Output:
+//
+//	map[string]any - merged config
+//	map[string]any - merged options
+//	error - no predefined errors have been defined
 func mergeConfigs(merger map[string]any, mergerOptions map[string]any, toMerge map[string]any, toMergeOptions map[string]any, isOptional bool) (map[string]any, map[string]any, error) {
 	for key, toMergeVal := range toMerge {
 		mergerValue, ok := merger[key]

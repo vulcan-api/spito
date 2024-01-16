@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+// CreateFile function creating file
+//
+// Arguments:
+//
+//	filePath - path to file
+//	content - content of file
+//	optionalKeys - json or yaml document describing which key in config is optional
+//	isOptional - default option in configs / is able to merge in text files
+//	fileType - given 0 - text file, otherwise config specified in file_type.go
 func (v *VRCTFs) CreateFile(filePath string, content []byte, optionalKeys []byte, isOptional bool, fileType int) error {
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
