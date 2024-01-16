@@ -8,7 +8,7 @@ import (
 )
 
 type FsApi struct {
-	FsVRCT *vrctFs.FsVRCT
+	FsVRCT *vrctFs.VRCTFs
 }
 
 func (f *FsApi) PathExists(path string) bool {

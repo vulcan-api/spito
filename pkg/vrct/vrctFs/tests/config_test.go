@@ -93,7 +93,7 @@ func TestConfigsMatrix(t *testing.T) {
 	_ = os.RemoveAll(tmpPath)
 }
 
-func testConfigs(t *testing.T, vrct *vrctFs.FsVRCT, setup ConfigsSetup) {
+func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to obtain working directory: '%s'", wd)

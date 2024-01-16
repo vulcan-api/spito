@@ -184,21 +184,3 @@ func (p *FilePrototype) AddNewLayer(layer PrototypeLayer) error {
 
 	return nil
 }
-
-func (layer *PrototypeLayer) GetContent() ([]byte, error) {
-	file, err := os.ReadFile(layer.ContentPath)
-	if err != nil {
-		return file, err
-	}
-
-	return file, nil
-}
-
-func (layer *PrototypeLayer) SetContent(content []byte) error {
-	err := os.WriteFile(layer.ContentPath, content, os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

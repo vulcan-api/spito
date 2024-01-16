@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (v *FsVRCT) CreateFile(filePath string, content []byte, optionalKeys []byte, isOptional bool, fileType int) error {
+func (v *VRCTFs) CreateFile(filePath string, content []byte, optionalKeys []byte, isOptional bool, fileType int) error {
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (v *FsVRCT) CreateFile(filePath string, content []byte, optionalKeys []byte
 	return err
 }
 
-func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
+func (v *VRCTFs) ReadFile(filePath string) ([]byte, error) {
 	filePath, err := pathMustBeAbsolute(filePath)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (v *FsVRCT) ReadFile(filePath string) ([]byte, error) {
 	return filePrototype.SimulateFile()
 }
 
-func (v *FsVRCT) Stat(path string) (os.FileInfo, error) {
+func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 	path, err := pathMustBeAbsolute(path)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (v *FsVRCT) Stat(path string) (os.FileInfo, error) {
 	}, nil
 }
 
-func (v *FsVRCT) ReadDir(path string) ([]os.DirEntry, error) {
+func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 	dirEntries := make(map[string]os.DirEntry)
 	path, err := pathMustBeAbsolute(path)
 	if err != nil {
