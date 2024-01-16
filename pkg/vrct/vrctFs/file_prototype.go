@@ -122,20 +122,26 @@ func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional b
 
 	dir := filepath.Dir(p.Path)
 
-randomizeFile:
-	randFileName := randomLetters(5)
-	contentPath := filepath.Join(dir, randFileName)
-	_, err := os.Stat(contentPath)
-	if err == nil {
-		goto randomizeFile
+	fileNameOk := false
+	var contentPath string
+	for !fileNameOk {
+		randFileName := randomLetters(5)
+		contentPath = filepath.Join(dir, randFileName)
+		_, err := os.Stat(contentPath)
+		if err != nil {
+			fileNameOk = true
+		}
 	}
 
-randomizeOptions:
-	randOptsName := randomLetters(5)
-	optionsPath := filepath.Join(dir, randOptsName)
-	_, err = os.Stat(optionsPath)
-	if err == nil {
-		goto randomizeOptions
+	optionNameOk := false
+	var optionsPath string
+	for !optionNameOk {
+		randOptsName := randomLetters(5)
+		optionsPath = filepath.Join(dir, randOptsName)
+		_, err := os.Stat(optionsPath)
+		if err != nil {
+			optionNameOk = true
+		}
 	}
 
 	tempConvertedContent, err := GetMapFromBytes(content, p.FileType)
