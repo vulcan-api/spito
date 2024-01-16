@@ -3,6 +3,7 @@ package vrctFs
 import (
 	"fmt"
 	"gopkg.in/mgo.v2/bson"
+	"os"
 	"reflect"
 	"sort"
 )
@@ -21,19 +22,29 @@ func (p *FilePrototype) mergeTextLayers() (PrototypeLayer, error) {
 		IsOptional: false,
 	}
 
+	finalContent, err := os.ReadFile(finalLayer.ContentPath)
+	if err != nil {
+		finalContent = nil
+	}
+
 	sort.Slice(p.Layers, func(i, j int) bool {
 		return !p.Layers[i].IsOptional && p.Layers[j].IsOptional
 	})
 
-	for i, layer := range p.Layers {
-		// TODO: check if contents differ
-		if finalLayer.ContentPath != "" && layer.ContentPath != "" && !layer.IsOptional {
+	for i, currentLayer := range p.Layers {
+		currentContent, err := os.ReadFile(currentLayer.ContentPath)
+		if err != nil {
+			return finalLayer, err
+		}
+
+		if finalLayer.ContentPath != "" && currentLayer.ContentPath != "" && !currentLayer.IsOptional && !reflect.DeepEqual(finalContent, currentContent) {
 			return finalLayer, fmt.Errorf(
-				"non optional layer nr. %d is in conflict with previous layers", i,
+				"non optional currentLayer nr. %d is in conflict with previous layers", i,
 			)
 		}
-		if (layer.IsOptional && finalLayer.ContentPath == "") || !layer.IsOptional {
-			finalLayer.ContentPath = layer.ContentPath
+		if (currentLayer.IsOptional && finalLayer.ContentPath == "") || !currentLayer.IsOptional {
+			finalLayer.ContentPath = currentLayer.ContentPath
+			finalContent = currentContent
 		}
 	}
 
