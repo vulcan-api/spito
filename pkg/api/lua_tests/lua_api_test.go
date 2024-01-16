@@ -12,11 +12,12 @@ import (
 
 func TestLuaApi(t *testing.T) {
 	scripts := []string{
-		"sysinfo_test.lua",
-		"fs_test.lua",
-		"rule_require_test.lua",
 		"daemon_test.lua",
+		"fs_test.lua",
 		"package_test.lua",
+		"rule_require_test.lua",
+		"sh_test.lua",
+		"sysinfo_test.lua",
 	}
 
 	for _, scriptName := range scripts {
@@ -37,13 +38,17 @@ func TestLuaApi(t *testing.T) {
 			InfoApi:      cmdApi.InfoApi{},
 		}
 
-		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file))
+		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
 		if err != nil {
 			t.Fatalf("Error occurred: %s", fmt.Sprint(err))
 		}
 
 		if !doesRulePass {
 			t.Fatalf("Rule %s did not pass!", scriptName)
+		}
+
+		if err := ruleVRCT.DeleteRuntimeTemp(); err != nil {
+			t.Fatal("Failed to remove temporary VRCT files", err.Error())
 		}
 	}
 }

@@ -7,12 +7,6 @@ import (
 	"os"
 )
 
-func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
-	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName), nil
-	})
-}
-
 type Rule struct {
 	url          string
 	name         string
@@ -54,10 +48,29 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %v", val)
 }
 
-func CheckRuleScript(importLoopData *shared.ImportLoopData, script string) (bool, error) {
+func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return ExecuteLuaMain(script, importLoopData)
+		return _internalCheckRule(importLoopData, identifier, ruleName, nil), nil
 	})
+}
+
+func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		// TODO: implement preprocessing instead of hard coding ruleConf
+		ruleConf := RuleConf{
+			Path:   "",
+			Unsafe: false,
+		}
+		script = processScript(script, &ruleConf)
+		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
+	})
+}
+
+func handleErrorAndPanic(errChan chan error, err error) {
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
 }
 
 func checkAndProcessPanics(
@@ -67,11 +80,10 @@ func checkAndProcessPanics(
 
 	errChan := importLoopData.ErrChan
 	doesRulePassChan := make(chan bool)
-
 	go func() {
 		defer func() {
 			r := recover()
-			if errChan != nil {
+			if errChan != nil && r != nil {
 				errChan <- anyToError(r)
 			}
 		}()
@@ -93,49 +105,71 @@ func checkAndProcessPanics(
 
 // This function shouldn't be executed directly,
 // because in case of panic it does not handle errors at all
-func _internalCheckRule(importLoopData *shared.ImportLoopData, identifier string, name string) bool {
-	ruleSetLocation := RuleSetLocation{}
-	ruleSetLocation.New(identifier)
-	simpleUrl := ruleSetLocation.simpleUrl
+func _internalCheckRule(
+	importLoopData *shared.ImportLoopData,
+	identifierOrPath string,
+	ruleName string,
+	previousRuleConf *RuleConf,
+) bool {
+	rulesetLocation := NewRulesetLocation(identifierOrPath)
+	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory
 	errChan := importLoopData.ErrChan
 
-	if rulesHistory.Contains(simpleUrl, name) {
-		if rulesHistory.IsRuleInProgress(simpleUrl, name) {
+	if rulesHistory.Contains(identifier, ruleName) {
+		if rulesHistory.IsRuleInProgress(identifier, ruleName) {
 			errChan <- errors.New("ERROR: Dependencies creates infinity loop")
 			panic(nil)
 		} else {
 			return true
 		}
 	}
-	rulesHistory.Push(simpleUrl, name, true)
+	rulesHistory.Push(identifier, ruleName, true)
 
-	err := FetchRuleSet(&ruleSetLocation)
-	if err != nil {
-		errChan <- errors.New("Failed to fetch rules from git: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
-		panic(nil)
-	}
-
-	lockfilePath := ruleSetLocation.GetRuleSetPath() + "/" + LOCK_FILENAME
-	_, lockfileErr := os.ReadFile(lockfilePath)
-
-	if os.IsNotExist(lockfileErr) {
-		_, err := ruleSetLocation.createLockfile(map[string]bool{})
+	if !rulesetLocation.IsPath {
+		err := FetchRuleset(&rulesetLocation)
 		if err != nil {
-			errChan <- errors.New("Failed to create dependency tree for rule: " + ruleSetLocation.GetFullUrl() + "\n" + err.Error())
+			errChan <- errors.New("Failed to fetch rules from: " + identifier + "\n" + err.Error())
 			panic(nil)
 		}
 	}
 
-	script, err := getScript(ruleSetLocation, name)
+	lockfilePath := rulesetLocation.GetRulesetPath() + "/" + LockFilename
+	_, lockfileErr := os.ReadFile(lockfilePath)
+
+	if os.IsNotExist(lockfileErr) {
+		_, err := rulesetLocation.createLockfile(map[string]bool{})
+		if err != nil {
+			errChan <- errors.New("Failed to create dependency tree for: " + identifier + "\n" + err.Error())
+			panic(nil)
+		}
+	}
+
+	script, err := getScript(&rulesetLocation, ruleName)
 	if err != nil {
-		errChan <- errors.New("Failed to read script called: " + name + " in git: " + ruleSetLocation.GetFullUrl())
+		errChan <- errors.New("Failed to read script called: " + ruleName + " from " + identifier + "\n" + err.Error())
 		panic(nil)
 	}
 
-	rulesHistory.SetProgress(simpleUrl, name, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData)
+	rulesetConf, err := getRulesetConf(&rulesetLocation)
+	if err != nil {
+		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
+		panic(nil)
+	}
+
+	ruleConf := rulesetConf.Rules[ruleName]
+	script = processScript(script, &ruleConf)
+
+	if previousRuleConf != nil {
+		if !previousRuleConf.Unsafe && ruleConf.Unsafe {
+			errChan <- errors.New("unsafe rule cannot be imported by safe rule")
+			panic(nil)
+		}
+	}
+
+	rulesHistory.SetProgress(identifier, ruleName, false)
+	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
 		return false
 	}

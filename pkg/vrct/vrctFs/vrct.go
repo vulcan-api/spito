@@ -18,27 +18,17 @@ const VirtualFilePostfix = ".prototype.bson"
 type FsVRCT struct {
 	virtualFSPath  string
 	fsRequirements []FsRequirement
-}
-
-type FsRequirement struct {
-	// In simpler words - how this rule appeared here
-	ruleStackTrace   []string
-	required         map[string]string
-	abandoned        map[string]string
-	checkRequirement func() bool
-}
-
-type PrototypeLayer struct {
-	// If content path is specified and file exists in real fs, real file will be later overridden by this content
-	// (We don't store content as string in order to make bson lightweight and fast accessible)
-	ContentPath string `bson:",omitempty"`
-	OptionsPath string `bson:",omitempty"`
-	IsOptional  bool
-	// TODO: stack trace
+	revertSteps    RevertSteps
 }
 
 func NewFsVRCT() (FsVRCT, error) {
 	err := os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
+	revertSteps, err := NewRevertSteps()
+	if err != nil {
+		return FsVRCT{}, nil
+	}
+
+	err = os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
 	if err != nil {
 		return FsVRCT{}, err
 	}
@@ -51,7 +41,15 @@ func NewFsVRCT() (FsVRCT, error) {
 	return FsVRCT{
 		virtualFSPath:  dir,
 		fsRequirements: make([]FsRequirement, 0),
+		revertSteps:    revertSteps,
 	}, nil
+}
+
+func (v *FsVRCT) DeleteRuntimeTemp() error {
+	if err := v.revertSteps.DeleteRuntimeTemp(); err != nil {
+		return err
+	}
+	return os.RemoveAll(v.virtualFSPath)
 }
 
 func (v *FsVRCT) checkRequirements() (bool, *FsRequirement) {
@@ -88,10 +86,18 @@ func (v *FsVRCT) Apply() error {
 		return err
 	}
 
-	return mergeToRealFs(mergeDir)
+	if err := v.mergeToRealFs(mergeDir); err != nil {
+		return err
+	}
+
+	return os.RemoveAll(mergeDir)
 }
 
-func mergeToRealFs(mergeDirPath string) error {
+func (v *FsVRCT) Revert() error {
+	return v.revertSteps.Apply()
+}
+
+func (v *FsVRCT) mergeToRealFs(mergeDirPath string) error {
 	splitMergePath := strings.Split(mergeDirPath, "/")[3:]
 	destPath := strings.Join(splitMergePath, "/")
 	if len(destPath) != 0 {
@@ -104,22 +110,48 @@ func mergeToRealFs(mergeDirPath string) error {
 	}
 
 	for _, entry := range entries {
+		realFsEntryPath := destPath + "/" + entry.Name()
+		mergeDirEntryPath := mergeDirPath + "/" + entry.Name()
+
 		if entry.IsDir() {
-			if err := os.MkdirAll(destPath+"/"+entry.Name(), os.ModePerm); err != nil {
+			_, err := os.Stat(realFsEntryPath)
+			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
-			if err := mergeToRealFs(mergeDirPath + "/" + entry.Name()); err != nil {
+
+			// If originally dir does not exist, then revert should delete it
+			if os.IsNotExist(err) {
+				v.revertSteps.RemoveDirAll(realFsEntryPath)
+			}
+			if err := os.MkdirAll(realFsEntryPath, os.ModePerm); err != nil {
+				return err
+			}
+			if err := v.mergeToRealFs(mergeDirEntryPath); err != nil {
 				return err
 			}
 			continue
 		}
 
-		err := os.Remove(destPath + "/" + entry.Name())
+		filePrototype := FilePrototype{}
+		err := filePrototype.Read(v.virtualFSPath, realFsEntryPath)
+		if err != nil {
+			return err
+		}
+
+		if err := v.revertSteps.BackupOldContent(realFsEntryPath); err != nil {
+			return err
+		}
+
+		err = os.Remove(realFsEntryPath)
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 
-		if err := os.Rename(mergeDirPath+"/"+entry.Name(), destPath+"/"+entry.Name()); err != nil {
+		if err := os.Rename(mergeDirEntryPath, realFsEntryPath); err != nil {
+			return err
+		}
+
+		if err := filePrototype.Save(); err != nil {
 			return err
 		}
 	}
@@ -165,6 +197,20 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 	}
 
 	return nil
+}
+
+type FsRequirement struct {
+	// In simpler words - how this rule appeared here
+	ruleStackTrace   []string
+	checkRequirement func() bool
+}
+
+type PrototypeLayer struct {
+	// If ContentPath is specified and file exists in real fs, real file will be later overridden by this content
+	// (We don't store content as string in order to make bson lightweight and fast accessible)
+	ContentPath string `bson:",omitempty"`
+	OptionsPath string `bson:",omitempty"`
+	IsOptional  bool
 }
 
 func (p *FilePrototype) mergeLayers() (PrototypeLayer, error) {
@@ -273,28 +319,28 @@ func getBoolMap(value interface{}, option interface{}) (map[string]interface{}, 
 	return mappedValue, mappedOption, nil
 }
 
-func getBoolArray(value interface{}, option interface{}) ([]any, []any, error) {
-	valueKind := reflect.ValueOf(value).Kind()
-	optionKind := reflect.ValueOf(option).Kind()
-
-	if valueKind != reflect.Slice {
-		return nil, nil, fmt.Errorf("trying to map interface that is not map")
-	}
-	arrayedValue := value.([]any)
-
-	var arrayedOption []any
-	if optionKind == reflect.Slice {
-		arrayedOption = option.([]any)
-	} else if optionKind == reflect.Bool {
-		for range arrayedValue {
-			arrayedOption = append(arrayedOption, option.(bool))
-		}
-	} else {
-		return arrayedValue, nil, fmt.Errorf("options structure does not match config's one: types conflict '%s' and '%s'", valueKind, optionKind)
-	}
-
-	return arrayedValue, arrayedOption, nil
-}
+//func getBoolArray(value interface{}, option interface{}) ([]any, []any, error) {
+//	valueKind := reflect.ValueOf(value).Kind()
+//	optionKind := reflect.ValueOf(option).Kind()
+//
+//	if valueKind != reflect.Slice {
+//		return nil, nil, fmt.Errorf("trying to map interface that is not map")
+//	}
+//	arrayedValue := value.([]any)
+//
+//	var arrayedOption []any
+//	if optionKind == reflect.Slice {
+//		arrayedOption = option.([]any)
+//	} else if optionKind == reflect.Bool {
+//		for range arrayedValue {
+//			arrayedOption = append(arrayedOption, option.(bool))
+//		}
+//	} else {
+//		return arrayedValue, nil, fmt.Errorf("options structure does not match config's one: types conflict '%s' and '%s'", valueKind, optionKind)
+//	}
+//
+//	return arrayedValue, arrayedOption, nil
+//}
 
 func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interface{}, toMerge map[string]interface{}, toMergeOptions map[string]interface{}, isOptional bool) (map[string]interface{}, map[string]interface{}, error) {
 	for key, toMergeVal := range toMerge {

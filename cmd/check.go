@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	cmdApi "github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
 	"github.com/avorty/spito/internal/checker"
@@ -9,44 +12,77 @@ import (
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var checkFileCmd = &cobra.Command{
-	Use:   "check file {path}",
+	Use:   "file {path}",
 	Short: "Check local lua rule file",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		path := args[1]
+		path := args[0]
 
 		runtimeData := getInitialRuntimeData(cmd)
+		defer func() {
+			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
+				fmt.Printf("Failed to remove temporary VRCT files"+
+					"\n You should remove them manually in /tmp or reboot your device \n%s", err.Error())
+				os.Exit(1)
+			}
+		}()
+
 		script, err := os.ReadFile(path)
 		if err != nil {
 			fmt.Printf("Failed to read file %s\n", path)
 			os.Exit(1)
 		}
 
-		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script))
+		fileAbsolutePath, err := filepath.Abs(path)
+		if err != nil {
+			runtimeData.InfoApi.Error("Cannot create the absolute path to the file!")
+			os.Exit(1)
+		}
+
+		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
 		}
 
-		communicateRuleResult(args[1], doesRulePass)
+		communicateRuleResult(path, doesRulePass)
 	},
 }
 
 var checkCmd = &cobra.Command{
-	Use:   "check {ruleset identifier} {rule}",
+	Use:   "check {ruleset identifier or path} {rule}",
 	Short: "Check whether your machine pass rule",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		runtimeData := getInitialRuntimeData(cmd)
-		identifier := args[0]
+		identifierOrPath := args[0]
 		ruleName := args[1]
 
-		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifier, ruleName)
+		defer func() {
+			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
+				fmt.Printf("Failed to remove temporary VRCT files"+
+					"\n You should remove them manually in /tmp or reboot your device \n%s", err.Error())
+				os.Exit(1)
+			}
+		}()
+
+		if executionPath, err := os.Getwd(); err == nil {
+			localRulesetPath := identifierOrPath
+			if filepath.IsLocal(identifierOrPath) {
+				localRulesetPath = filepath.Join(executionPath, identifierOrPath)
+			}
+
+			pathExists, err := shared.DoesPathExist(localRulesetPath)
+			if err == nil && pathExists {
+				identifierOrPath = localRulesetPath
+			}
+		}
+
+		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%s", err)
+			_, _ = fmt.Fprintf(os.Stderr, "%s", err.Error())
 			os.Exit(1)
 		}
 

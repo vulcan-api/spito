@@ -44,7 +44,7 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 
 	var filePath string
 
-	if p.RealFileExists {
+	if finalLayer.ContentPath == "" {
 		filePath = p.getDestinationPath()
 	} else {
 		filePath = finalLayer.ContentPath
@@ -94,6 +94,9 @@ func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
 	file, err := os.ReadFile(p.getVirtualPath())
 
 	if os.IsNotExist(err) {
+		_, err := os.Stat(realPath)
+		p.RealFileExists = !os.IsNotExist(err)
+
 		return p.Save()
 	} else if err != nil {
 		return err
