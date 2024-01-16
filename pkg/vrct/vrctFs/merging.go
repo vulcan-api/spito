@@ -52,7 +52,6 @@ func (p *FilePrototype) mergeTextLayers() (PrototypeLayer, error) {
 }
 
 func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
-	// create new layer first
 	finalLayer, err := p.CreateLayer(nil, nil, true)
 	if err != nil {
 		return finalLayer, err
@@ -68,6 +67,7 @@ func (p *FilePrototype) mergeConfigLayers() (PrototypeLayer, error) {
 		return finalLayer, err
 	}
 
+	// sort configs by their default optionality
 	sort.Slice(p.Layers, func(i, j int) bool {
 		return !p.Layers[i].IsOptional && p.Layers[j].IsOptional
 	})
