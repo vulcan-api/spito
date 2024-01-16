@@ -80,11 +80,9 @@ func (p *FilePrototype) SimulateFile() ([]byte, error) {
 	return fileContent, err
 }
 
-// TODO: think of splitting it up into to functions (read and load)
 func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
 	prototypeFilePath := filepath.Join(vrctPrefix, realPath)
 
-	// TODO: instead of adding slash, use filepath.Join in appropriate lines
 	path := filepath.Dir(prototypeFilePath)
 	name := filepath.Base(prototypeFilePath)
 
@@ -103,7 +101,6 @@ func (p *FilePrototype) Read(vrctPrefix string, realPath string) error {
 
 	err = bson.Unmarshal(file, p)
 
-	// TODO: think about it (sus)
 	p.Path = path
 	p.Name = name
 	return err
@@ -123,14 +120,23 @@ func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional b
 		return PrototypeLayer{}, errors.New("file prototype hasn't been loaded yet")
 	}
 
-	// TODO: check if file with random name already exist
 	dir := filepath.Dir(p.Path)
 
+randomizeFile:
 	randFileName := randomLetters(5)
 	contentPath := filepath.Join(dir, randFileName)
+	_, err := os.Stat(contentPath)
+	if err == nil {
+		goto randomizeFile
+	}
 
+randomizeOptions:
 	randOptsName := randomLetters(5)
 	optionsPath := filepath.Join(dir, randOptsName)
+	_, err = os.Stat(optionsPath)
+	if err == nil {
+		goto randomizeOptions
+	}
 
 	tempConvertedContent, err := GetMapFromBytes(content, p.FileType)
 
