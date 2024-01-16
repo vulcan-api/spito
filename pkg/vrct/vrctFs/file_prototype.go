@@ -153,7 +153,10 @@ func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional b
 	var tempOptionalKeysMap map[string]interface{}
 	err = json.Unmarshal(options, &tempOptionalKeysMap)
 	if err != nil {
-		return PrototypeLayer{}, err
+		err = yaml.Unmarshal(options, &tempOptionalKeysMap)
+		if err != nil {
+			return PrototypeLayer{}, err
+		}
 	}
 
 	optionalKeysBson, err := bson.Marshal(tempOptionalKeysMap)

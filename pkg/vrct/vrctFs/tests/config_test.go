@@ -60,7 +60,7 @@ func TestConfigsMatrix(t *testing.T) {
 				},
 				{
 					path:        "yaml/extrepo-full.yaml",
-					optionsPath: "yaml/full-options.json",
+					optionsPath: "yaml/full-options.yaml",
 					isOptional:  false,
 				},
 			},
