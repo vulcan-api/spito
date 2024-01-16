@@ -100,11 +100,11 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 		}
 
 		return FileInfo{
-			name:     name,
-			size:     int64(len(content)),
-			fileMode: stat.Mode(),    //TODO: consider changing it
-			modTime:  stat.ModTime(), //TODO: same
-			isDir:    stat.IsDir(),
+			name:    name,
+			size:    int64(len(content)),
+			mode:    stat.Mode(),    //TODO: consider changing it
+			modTime: stat.ModTime(), //TODO: same
+			isDir:   stat.IsDir(),
 		}, nil
 	}
 
