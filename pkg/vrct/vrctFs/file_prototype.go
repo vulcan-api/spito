@@ -147,7 +147,6 @@ randomizeOptions:
 		}
 	}
 
-	// TODO: think about changing ModePerm (spito can be run as root (dangerous))
 	if err = os.WriteFile(contentPath, content, os.ModePerm); err != nil {
 		return PrototypeLayer{}, err
 	}
@@ -184,9 +183,14 @@ randomizeOptions:
 }
 
 func (p *FilePrototype) AddNewLayer(layer PrototypeLayer) error {
-	// TODO: merge first and check if new layers is addable
+	backup := p.Layers
 	p.Layers = append(p.Layers, layer)
-	if err := p.Save(); err != nil {
+	_, err := p.mergeLayers()
+	if err != nil {
+		p.Layers = backup
+		return err
+	}
+	if err = p.Save(); err != nil {
 		return err
 	}
 

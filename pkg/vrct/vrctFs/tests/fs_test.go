@@ -64,6 +64,11 @@ func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
 		t.Fatal("Failed to create file "+testFilePath+"\n", err)
 	}
 
+	err = fsVrct.CreateFile(testFilePath, []byte("this should result in error"), nil, false, vrctFs.TextFile)
+	if err == nil {
+		t.Fatalf("something is wrong with merging: %s", err)
+	}
+
 	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), nil, true, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed trying to override file "+testFilePath+"\n", err)
