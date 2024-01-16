@@ -38,14 +38,13 @@ func TestConfigsMatrix(t *testing.T) {
 		{
 			configs: []Config{
 				{
-					path:        "json/eslint-default.json",
-					optionsPath: "json/default-options.json",
-					isOptional:  false,
+					path:       "json/eslint-default.json",
+					isOptional: true,
 				},
 				{
-					path:        "json/eslint-prettier.json",
-					optionsPath: "json/prettier-options.json",
-					isOptional:  true,
+					path:        "json/eslint-esprima.json",
+					optionsPath: "json/esprima-options.json",
+					isOptional:  false,
 				},
 			},
 			resultPath:      "json/eslint-merged.json",

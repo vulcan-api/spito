@@ -1,9 +1,10 @@
 {
   "root": true,
   "extends": [
-    "prettier"
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
   ],
-  "parser": "@typescript-eslint/parser",
+  "parser": "esprima",
   "parserOptions": { "project": ["./tsconfig.json"] },
   "plugins": [
     "@typescript-eslint"

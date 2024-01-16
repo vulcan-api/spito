@@ -319,29 +319,6 @@ func getBoolMap(value interface{}, option interface{}) (map[string]interface{}, 
 	return mappedValue, mappedOption, nil
 }
 
-//func getBoolArray(value interface{}, option interface{}) ([]any, []any, error) {
-//	valueKind := reflect.ValueOf(value).Kind()
-//	optionKind := reflect.ValueOf(option).Kind()
-//
-//	if valueKind != reflect.Slice {
-//		return nil, nil, fmt.Errorf("trying to map interface that is not map")
-//	}
-//	arrayedValue := value.([]any)
-//
-//	var arrayedOption []any
-//	if optionKind == reflect.Slice {
-//		arrayedOption = option.([]any)
-//	} else if optionKind == reflect.Bool {
-//		for range arrayedValue {
-//			arrayedOption = append(arrayedOption, option.(bool))
-//		}
-//	} else {
-//		return arrayedValue, nil, fmt.Errorf("options structure does not match config's one: types conflict '%s' and '%s'", valueKind, optionKind)
-//	}
-//
-//	return arrayedValue, arrayedOption, nil
-//}
-
 func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interface{}, toMerge map[string]interface{}, toMergeOptions map[string]interface{}, isOptional bool) (map[string]interface{}, map[string]interface{}, error) {
 	for key, toMergeVal := range toMerge {
 		mergerVal, ok := merger[key]
@@ -378,27 +355,9 @@ func mergeConfigs(merger map[string]interface{}, mergerOptions map[string]interf
 			continue
 		}
 
-		// TODO: good system needed
-		//if reflect.ValueOf(toMergeVal).Kind() == reflect.Slice {
-		//	mergerValueAsArray, mergerOptionAsArray, err := getBoolArray(mergerVal, mergerOption)
-		//	if err != nil {
-		//		return merger, mergerOptions, err
-		//	}
-
-		//	toMergeValueAsArray, toMergeOptionAsArray, err := getBoolArray(mergerVal, mergerOption)
-		//	if err != nil {
-		//		return merger, mergerOptions, err
-		//	}
-
-		//	merger[key] = append(mergerValueAsArray, toMergeValueAsArray...)
-		//	mergerOptions[key] = append(mergerOptionAsArray, toMergeOptionAsArray...)
-
-		//	if err != nil {
-		//		return merger, mergerOptions, err
-		//	}
-
-		//	continue
-		//}
+		if reflect.ValueOf(mergerVal).Kind() == reflect.Slice {
+			return merger, mergerOptions, fmt.Errorf("key '%s' is unmergable as arrays merging is unsupported yet", key)
+		}
 
 		isMergerKeyOpt := true
 		mergerOptKind := reflect.ValueOf(mergerOption).Kind()
