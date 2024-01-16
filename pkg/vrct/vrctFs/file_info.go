@@ -11,6 +11,7 @@ type FileInfo struct {
 	mode    fs.FileMode
 	modTime time.Time
 	isDir   bool
+	sys     any
 }
 
 func (f FileInfo) Name() string {

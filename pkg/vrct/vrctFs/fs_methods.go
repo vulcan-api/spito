@@ -24,11 +24,13 @@ func (v *VRCTFs) CreateFile(filePath string, content []byte, optionalKeys []byte
 	}
 	dirPath := filepath.Dir(filePath)
 
+	// TODO: consider pushing almost everything below in filePrototype.LoadOrCreate
 	err = os.MkdirAll(filepath.Join(v.virtualFSPath, dirPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
+	// TODO: create function that allows to merge json and xml configs (and first think if it is useful in any way)
 	filePrototype := FilePrototype{
 		FileType: fileType,
 	}
@@ -42,6 +44,7 @@ func (v *VRCTFs) CreateFile(filePath string, content []byte, optionalKeys []byte
 		return err
 	}
 
+	// TODO: check for conflict out of the box
 	err = filePrototype.AddNewLayer(prototypeLayer)
 	return err
 }
@@ -97,11 +100,11 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 		}
 
 		return FileInfo{
-			name:    name,
-			size:    int64(len(content)),
-			mode:    stat.Mode(),
-			modTime: stat.ModTime(),
-			isDir:   stat.IsDir(),
+			name:     name,
+			size:     int64(len(content)),
+			fileMode: stat.Mode(),    //TODO: consider changing it
+			modTime:  stat.ModTime(), //TODO: same
+			isDir:    stat.IsDir(),
 		}, nil
 	}
 
