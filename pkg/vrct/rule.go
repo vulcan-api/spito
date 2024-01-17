@@ -5,7 +5,7 @@ import (
 )
 
 type RuleVRCT struct {
-	Fs vrctFs.FsVRCT
+	Fs vrctFs.VRCTFs
 }
 
 func NewRuleVRCT() (*RuleVRCT, error) {
@@ -21,10 +21,6 @@ func NewRuleVRCT() (*RuleVRCT, error) {
 
 func (v RuleVRCT) DeleteRuntimeTemp() error {
 	return v.Fs.DeleteRuntimeTemp()
-}
-
-func (v RuleVRCT) InnerValidate() error {
-	return v.Fs.InnerValidate()
 }
 
 func (v RuleVRCT) Apply() error {

@@ -1,76 +1,50 @@
 package vrctFs
 
 import (
-	"fmt"
 	"os"
-	"slices"
-	"sort"
+	"path/filepath"
 	"strings"
 )
 
 const VirtualFsPathPrefix = "/tmp/spito-vrct/fs"
+const VirtualFilePostfix = ".prototype.bson"
 
-type FsVRCT struct {
-	virtualFSPath  string
-	fsRequirements []FsRequirement
-	revertSteps    *RevertSteps
+type VRCTFs struct {
+	virtualFSPath string
+	revertSteps   RevertSteps
 }
 
-func NewFsVRCT() (FsVRCT, error) {
+func NewFsVRCT() (VRCTFs, error) {
+	err := os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
 	revertSteps, err := NewRevertSteps()
 	if err != nil {
-		return FsVRCT{}, nil
+		return VRCTFs{}, nil
 	}
 
 	err = os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
 	if err != nil {
-		return FsVRCT{}, err
+		return VRCTFs{}, err
 	}
 
 	dir, err := os.MkdirTemp(VirtualFsPathPrefix, "")
 	if err != nil {
-		return FsVRCT{}, err
+		return VRCTFs{}, err
 	}
 
-	return FsVRCT{
-		virtualFSPath:  dir,
-		fsRequirements: make([]FsRequirement, 0),
-		revertSteps:    &revertSteps,
+	return VRCTFs{
+		virtualFSPath: dir,
+		revertSteps:   revertSteps,
 	}, nil
 }
 
-func (v *FsVRCT) DeleteRuntimeTemp() error {
+func (v *VRCTFs) DeleteRuntimeTemp() error {
 	if err := v.revertSteps.DeleteRuntimeTemp(); err != nil {
 		return err
 	}
 	return os.RemoveAll(v.virtualFSPath)
 }
 
-func (v *FsVRCT) checkRequirements() (bool, *FsRequirement) {
-	for _, req := range v.fsRequirements {
-		if req.checkRequirement() == false {
-			return false, &req
-		}
-	}
-
-	return true, nil
-}
-
-func (v *FsVRCT) InnerValidate() error {
-	for _, requirement := range v.fsRequirements {
-		if !requirement.checkRequirement() {
-			return fmt.Errorf("requirement %v is not met", requirement.ruleStackTrace)
-		}
-	}
-
-	return nil
-}
-
-func (v *FsVRCT) Apply() error {
-	if err := v.InnerValidate(); err != nil {
-		return err
-	}
-
+func (v *VRCTFs) Apply() error {
 	mergeDir, err := os.MkdirTemp("/tmp", "spito-fs-vrct-merge")
 	if err != nil {
 		return err
@@ -87,11 +61,11 @@ func (v *FsVRCT) Apply() error {
 	return os.RemoveAll(mergeDir)
 }
 
-func (v *FsVRCT) Revert() error {
+func (v *VRCTFs) Revert() error {
 	return v.revertSteps.Apply()
 }
 
-func (v *FsVRCT) mergeToRealFs(mergeDirPath string) error {
+func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 	splitMergePath := strings.Split(mergeDirPath, "/")[3:]
 	destPath := strings.Join(splitMergePath, "/")
 	if len(destPath) != 0 {
@@ -104,9 +78,8 @@ func (v *FsVRCT) mergeToRealFs(mergeDirPath string) error {
 	}
 
 	for _, entry := range entries {
-		realFsEntryPath := destPath + "/" + entry.Name()
-		mergeDirEntryPath := mergeDirPath + "/" + entry.Name()
-		prototypePath := fmt.Sprintf("%s/%s.prototype.bson", v.virtualFSPath, entry.Name())
+		realFsEntryPath := filepath.Join(destPath, entry.Name())
+		mergeDirEntryPath := filepath.Join(mergeDirPath, entry.Name())
 
 		if entry.IsDir() {
 			_, err := os.Stat(realFsEntryPath)
@@ -128,7 +101,7 @@ func (v *FsVRCT) mergeToRealFs(mergeDirPath string) error {
 		}
 
 		filePrototype := FilePrototype{}
-		err := filePrototype.Read(prototypePath, realFsEntryPath)
+		err := filePrototype.Read(v.virtualFSPath, realFsEntryPath)
 		if err != nil {
 			return err
 		}
@@ -163,10 +136,10 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 	for _, dirEntry := range dirs {
 		if dirEntry.IsDir() {
 			dirName := dirEntry.Name()
-			if err := os.MkdirAll(destPath+"/"+dirName, os.ModePerm); err != nil {
+			if err := os.MkdirAll(filepath.Join(destPath, dirName), os.ModePerm); err != nil {
 				return err
 			}
-			if err := mergePrototypes(prototypesDirPath+"/"+dirName, destPath+"/"+dirName); err != nil {
+			if err := mergePrototypes(filepath.Join(prototypesDirPath, dirName), filepath.Join(destPath, dirName)); err != nil {
 				return err
 			}
 			continue
@@ -176,7 +149,7 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 			fileName := strings.ReplaceAll(prototypeName, ".prototype.bson", "")
 
 			prototype := FilePrototype{}
-			if err := prototype.Read(prototypesDirPath+"/"+prototypeName, destPath); err != nil {
+			if err := prototype.Read(prototypesDirPath, fileName); err != nil {
 				return err
 			}
 			file, err := prototype.SimulateFile()
@@ -184,87 +157,12 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 				return err
 			}
 
-			if err := os.WriteFile(destPath+"/"+fileName, file, os.ModePerm); err != nil {
+			if err := os.WriteFile(filepath.Join(destPath, fileName), file, os.ModePerm); err != nil {
 				return err
 			}
 			continue
 		}
-		fmt.Printf("[WARNING] Unrecognized file %s in %s\n", prototypeName, prototypesDirPath)
 	}
 
 	return nil
-}
-
-type FsRequirement struct {
-	// In simpler words - how this rule appeared here
-	ruleStackTrace   []string
-	checkRequirement func() bool
-}
-
-const (
-	ConfigFile = iota
-	TextFile
-)
-
-type PrototypeLayer struct {
-	// If ContentPath is specified and file exists in real fs, real file will be later overridden by this content
-	// (We don't store content as string in order to make bson lightweight and fast accessible)
-	ContentPath   *string `bson:",omitempty"`
-	IsOptional    bool
-	ConfigOptions []ConfigOption `bson:",omitempty"`
-	ConfigType    *int           `bson:",omitempty"`
-	// TODO: stack trace
-}
-
-func (p *FilePrototype) mergeLayers(optLayersIndexesToSkip []int) (PrototypeLayer, error) {
-	pl := PrototypeLayer{
-		IsOptional: false,
-	}
-
-	encounteredOptionalLayers := 0
-
-	for i, layer := range p.Layers {
-		if layer.IsOptional {
-			encounteredOptionalLayers++
-			if slices.Contains(optLayersIndexesToSkip, encounteredOptionalLayers-1) {
-				continue
-			}
-		}
-
-		var optionalInfoPrefix string
-		if layer.IsOptional {
-			optionalInfoPrefix = "optional"
-		} else {
-			optionalInfoPrefix = "non optional"
-		}
-		potentialConflictError := fmt.Errorf(
-			"%s layer nr. %d is in conflict with previous layers", optionalInfoPrefix, i,
-		)
-
-		pl.ConfigOptions = append(pl.ConfigOptions, layer.ConfigOptions...)
-		pl.IsOptional = layer.IsOptional && pl.IsOptional
-
-		if pl.ConfigType != nil && layer.ConfigType != nil {
-			return pl, potentialConflictError
-		}
-		pl.ConfigType = layer.ConfigType
-	}
-
-	// Not optional layers first
-	sort.Slice(p.Layers, func(i, j int) bool {
-		return !p.Layers[i].IsOptional && p.Layers[j].IsOptional
-	})
-
-	for i, layer := range p.Layers {
-		if pl.ContentPath != nil && layer.ContentPath != nil && !layer.IsOptional {
-			return pl, fmt.Errorf(
-				"non optional layer nr. %d is in conflict with previous layers", i,
-			)
-		}
-		if (layer.IsOptional && pl.ContentPath == nil) || !layer.IsOptional {
-			pl.ContentPath = layer.ContentPath
-		}
-	}
-
-	return pl, nil
 }

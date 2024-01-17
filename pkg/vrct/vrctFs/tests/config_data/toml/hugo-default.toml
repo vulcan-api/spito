@@ -1,0 +1,9 @@
+baseURL = 'https://spito.com/'
+languageCode = 'en-us'
+title = 'Spito'
+author = 'Avorty'
+[params]
+subtitle = 'No effort, big changes'
+[params.contact]
+email = 'spito@avorty.org'
+

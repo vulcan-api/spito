@@ -6,11 +6,12 @@ import (
 )
 
 type FileInfo struct {
-	name     string
-	size     int64
-	fileMode fs.FileMode
-	modTime  time.Time
-	isDir    bool
+	name    string
+	size    int64
+	mode    fs.FileMode
+	modTime time.Time
+	isDir   bool
+	sys     any
 }
 
 func (f FileInfo) Name() string {
@@ -22,7 +23,7 @@ func (f FileInfo) Size() int64 {
 }
 
 func (f FileInfo) Mode() fs.FileMode {
-	return f.fileMode
+	return f.mode
 }
 
 func (f FileInfo) ModTime() time.Time {
@@ -34,6 +35,5 @@ func (f FileInfo) IsDir() bool {
 }
 
 func (f FileInfo) Sys() any {
-	// TODO: implement this function
 	return nil
 }

@@ -1,0 +1,24 @@
+baseURL = 'https://spito.com/'
+relativeURLs = true
+languageCode = 'en-us'
+title = 'Spito'
+author = 'Avorty'
+theme = "dark"
+paginate = 5
+
+[params]
+subtitle = 'No effort, big changes'
+[params.contact]
+email = 'spito@avorty.org'
+
+[menu]
+
+[[menu.main]]
+identifier = "spito"
+name = "Sptio"
+url = "/spito/"
+
+[[menu.main]]
+identifier = "basedbook"
+name = "Basedbook"
+url = "/basedbook/"

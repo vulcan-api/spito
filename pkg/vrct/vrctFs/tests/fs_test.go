@@ -53,13 +53,23 @@ func TestCreatingFile(t *testing.T) {
 	_ = os.RemoveAll(tmpPath)
 }
 
-func makeFsChanges(t *testing.T, fsVrct *vrctFs.FsVRCT, testFilePath string) {
-	err := fsVrct.CreateFile(testFilePath, []byte(newContent), false)
+func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
+	err := fsVrct.CreateFile(testFilePath, []byte(newContent), nil, false, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed to create file "+testFilePath+"\n", err)
 	}
 
-	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), true)
+	err = fsVrct.CreateFile(testFilePath, []byte(newContent), nil, false, vrctFs.TextFile)
+	if err != nil {
+		t.Fatal("Failed to create file "+testFilePath+"\n", err)
+	}
+
+	err = fsVrct.CreateFile(testFilePath, []byte("this should result in error"), nil, false, vrctFs.TextFile)
+	if err == nil {
+		t.Fatalf("something is wrong with merging: %s", err)
+	}
+
+	err = fsVrct.CreateFile(testFilePath, []byte("this should be overridden"), nil, true, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed trying to override file "+testFilePath+"\n", err)
 	}
@@ -92,7 +102,7 @@ func makeFsChanges(t *testing.T, fsVrct *vrctFs.FsVRCT, testFilePath string) {
 	}
 }
 
-func revertFsChanges(t *testing.T, fsVrct *vrctFs.FsVRCT, testFilePath string) {
+func revertFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
 	err := fsVrct.Revert()
 	if err != nil {
 		t.Fatal("Failed to revert VRCT\n", err)

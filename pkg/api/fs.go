@@ -8,7 +8,7 @@ import (
 )
 
 type FsApi struct {
-	FsVRCT *vrctFs.FsVRCT
+	FsVRCT *vrctFs.VRCTFs
 }
 
 func (f *FsApi) PathExists(path string) bool {
@@ -142,8 +142,9 @@ func (f *FsApi) GetProperLines(regex string, fileContent string) ([]string, erro
 
 type CreateFileOptions struct {
 	optional bool
+	fileType int
 }
 
 func (f *FsApi) CreateFile(path, content string, options CreateFileOptions) error {
-	return f.FsVRCT.CreateFile(path, []byte(content), options.optional)
+	return f.FsVRCT.CreateFile(path, []byte(content), nil, options.optional, options.fileType)
 }

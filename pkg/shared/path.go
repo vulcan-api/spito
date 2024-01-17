@@ -22,11 +22,11 @@ func ExpandTilde(path *string) error {
 	if err != nil {
 		return err
 	}
-	
-	if (*path == "~") {
+
+	if *path == "~" {
 		*path = usr.HomeDir
 	}
-	if (strings.HasPrefix(*path, "~/")) {
+	if strings.HasPrefix(*path, "~/") {
 		*path = strings.Replace(*path, "~", usr.HomeDir, 1)
 	}
 	return nil

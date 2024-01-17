@@ -256,7 +256,6 @@ func GetDaemon(daemonName string) (Daemon, error) {
 		return Daemon{}, errors.New("daemon name contains illegal character")
 	}
 
-	// TODO: root handling
 	switch initSystem {
 	case SYSTEMD:
 		return getSystemdDaemon(ctx, daemonName)

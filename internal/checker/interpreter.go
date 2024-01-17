@@ -46,7 +46,7 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleCo
 		err := FetchRuleset(&rulesetLocation)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-	        err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
+		err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 		return 0
 	}))
@@ -54,7 +54,7 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleCo
 	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
 		rulePath := L.Get(1).String()
 		shared.ExpandTilde(&rulePath)
-		
+
 		if err := L.DoFile(rulePath); err != nil {
 			importLoopData.ErrChan <- err
 			panic(nil)

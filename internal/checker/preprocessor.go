@@ -7,7 +7,6 @@ import (
 	"unicode"
 )
 
-
 func processScript(script string, ruleConf *RuleConf) string {
 	newScript, decorators := getDecorators(script)
 

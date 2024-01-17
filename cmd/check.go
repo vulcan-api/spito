@@ -41,7 +41,7 @@ var checkFileCmd = &cobra.Command{
 			runtimeData.InfoApi.Error("Cannot create the absolute path to the file!")
 			os.Exit(1)
 		}
-		
+
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
