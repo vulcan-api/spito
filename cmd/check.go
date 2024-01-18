@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
+	"unicode"
 
 	cmdApi "github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
@@ -13,6 +15,26 @@ import (
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
 )
+
+func askAndExecuteRule(runtimeData shared.ImportLoopData) {
+
+	fmt.Printf("Would you like to execute this rule? [y/N]: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	answer, _, err := reader.ReadRune()
+	handleError(err)
+
+	answer = unicode.ToLower(answer)
+
+	if answer == 'y' {
+		err = runtimeData.VRCT.Apply()
+		if err != nil {
+			err = runtimeData.VRCT.Revert()
+			runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
+			handleError(err)
+		}
+	}
+}
 
 var checkFileCmd = &cobra.Command{
 	Use:   "file {path}",
@@ -48,6 +70,10 @@ var checkFileCmd = &cobra.Command{
 		}
 
 		communicateRuleResult(path, doesRulePass)
+
+		if doesRulePass {
+			askAndExecuteRule(runtimeData)
+		}
 	},
 }
 
@@ -87,6 +113,9 @@ var checkCmd = &cobra.Command{
 		}
 
 		communicateRuleResult(ruleName, doesRulePass)
+		if doesRulePass {
+			askAndExecuteRule(runtimeData)
+		}
 	},
 }
 
