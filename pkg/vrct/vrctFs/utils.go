@@ -18,7 +18,7 @@ func randomLetters(length int) string {
 
 func pathMustBeAbsolute(path string) (string, error) {
 	if path[0] != '/' {
-		return "", fmt.Errorf("path must be absolute")
+		return "", fmt.Errorf("Path must be absolute")
 	}
 
 	return path, nil

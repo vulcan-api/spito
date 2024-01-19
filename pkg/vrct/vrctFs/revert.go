@@ -2,10 +2,16 @@ package vrctFs
 
 import (
 	"fmt"
+	"github.com/walle/targz"
+	"gopkg.in/mgo.v2/bson"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 const revertTmpPath = "/tmp/spito-vrct/fs-revert"
+const revertStepsBsonName = "revert_steps.bson"
 
 const (
 	removeFile = iota
@@ -13,16 +19,21 @@ const (
 	replaceContent
 )
 
+func GetSerializedRevertStepsDir() (string, error) {
+	dir, err := os.UserHomeDir()
+	return dir + "/.local/state/spito/revert-steps-serialized", err
+}
+
 type RevertStep struct {
-	path   string
-	action int
-	// oldContentPath field is optional
-	oldContentPath string
+	Path   string `bson:"Path"`
+	Action int    `bson:"Action"`
+	// OldContentPath field is optional
+	OldContentPath string `bson:"OldContentPath"`
 }
 
 type RevertSteps struct {
-	steps         []RevertStep
-	revertTempDir string
+	Steps         []RevertStep `bson:"Steps"`
+	RevertTempDir string       `bson:"-"`
 }
 
 func NewRevertSteps() (RevertSteps, error) {
@@ -37,21 +48,21 @@ func NewRevertSteps() (RevertSteps, error) {
 	}
 
 	return RevertSteps{
-		revertTempDir: dir,
+		RevertTempDir: dir,
 	}, nil
 }
 
 func (r *RevertSteps) RemoveFile(path string) {
-	r.steps = append(r.steps, RevertStep{
-		path:   path,
-		action: removeFile,
+	r.Steps = append(r.Steps, RevertStep{
+		Path:   path,
+		Action: removeFile,
 	})
 }
 
 func (r *RevertSteps) RemoveDirAll(path string) {
-	r.steps = append(r.steps, RevertStep{
-		path:   path,
-		action: removeDirAll,
+	r.Steps = append(r.Steps, RevertStep{
+		Path:   path,
+		Action: removeDirAll,
 	})
 }
 
@@ -64,7 +75,7 @@ func (r *RevertSteps) BackupOldContent(path string) error {
 		return err
 	}
 
-	tempContentFile, err := os.CreateTemp(r.revertTempDir, "old-")
+	tempContentFile, err := os.CreateTemp(r.RevertTempDir, "old-")
 	if err != nil {
 		return err
 	}
@@ -80,37 +91,37 @@ func (r *RevertSteps) BackupOldContent(path string) error {
 		return err
 	}
 
-	r.steps = append(r.steps, RevertStep{
-		path:           path,
-		action:         replaceContent,
-		oldContentPath: tempContentFile.Name(),
+	r.Steps = append(r.Steps, RevertStep{
+		Path:           path,
+		Action:         replaceContent,
+		OldContentPath: tempContentFile.Name(),
 	})
 	return nil
 }
 
 func (r *RevertStep) Apply() error {
-	switch r.action {
+	switch r.Action {
 	case removeFile:
-		return os.Remove(r.path)
+		return os.Remove(r.Path)
 	case removeDirAll:
-		return os.RemoveAll(r.path)
+		return os.RemoveAll(r.Path)
 	case replaceContent:
-		if r.oldContentPath == "" {
+		if r.OldContentPath == "" {
 			return fmt.Errorf("oldContentPath cannot be null if RevertStep action is: \"replaceContent\"\n")
 		}
-		err := os.RemoveAll(r.path)
+		err := os.RemoveAll(r.Path)
 		if err != nil {
 			return err
 		}
 
-		return os.Rename(r.oldContentPath, r.path)
+		return os.Rename(r.OldContentPath, r.Path)
 	default:
-		return fmt.Errorf("unknown RevertStep action: %d\n", r.action)
+		return fmt.Errorf("unknown RevertStep action: %d\n", r.Action)
 	}
 }
 
 func (r *RevertSteps) Apply() error {
-	for _, step := range r.steps {
+	for _, step := range r.Steps {
 		if err := step.Apply(); err != nil {
 			return err
 		}
@@ -119,5 +130,129 @@ func (r *RevertSteps) Apply() error {
 }
 
 func (r *RevertSteps) DeleteRuntimeTemp() error {
-	return os.RemoveAll(r.revertTempDir)
+	return os.RemoveAll(r.RevertTempDir)
+}
+
+// Serialize 1st return value is number which should be provided in order to deserialize propert RevertSteps
+func (r *RevertSteps) Serialize() (int, error) {
+	outBson, err := bson.Marshal(r)
+	if err != nil {
+		return 0, err
+	}
+
+	err = os.WriteFile(filepath.Join(r.RevertTempDir, revertStepsBsonName), outBson, os.ModePerm)
+	if err != nil {
+		return 0, err
+	}
+
+	serializedRevertStepsDir, err := GetSerializedRevertStepsDir()
+	if err != nil {
+		return 0, err
+	}
+
+	dirEntries, err := os.ReadDir(serializedRevertStepsDir)
+	if err != nil {
+		return 0, err
+	}
+
+	largestRevertNum := -1
+	for _, entry := range dirEntries {
+		entryName := strings.TrimSuffix(entry.Name(), ".tar.gz")
+		num, err := strconv.Atoi(entryName)
+		if err != nil {
+			continue
+		}
+
+		if num > largestRevertNum {
+			largestRevertNum = num
+		}
+	}
+
+	revertNum := largestRevertNum + 1
+
+	err = targz.Compress(
+		filepath.Join(r.RevertTempDir, "*"),
+		filepath.Join(serializedRevertStepsDir, fmt.Sprintf("%d.tar.gz", revertNum)),
+	)
+
+	return revertNum, err
+}
+
+func (r *RevertSteps) Deserialize(revertNum int) error {
+	// Firstly extract .tar.gz to r.RevertTempDir
+
+	if err := r.DeleteRuntimeTemp(); err != nil {
+		return err
+	}
+	if err := os.Mkdir(r.RevertTempDir, os.ModePerm); err != nil {
+		return err
+	}
+
+	revertStepsDir, err := GetSerializedRevertStepsDir()
+	if err != nil {
+		return err
+	}
+
+	revertNumDir := filepath.Join(r.RevertTempDir, strconv.Itoa(revertNum))
+
+	err = targz.Extract(
+		filepath.Join(revertStepsDir, fmt.Sprintf("%d.tar.gz", revertNum)),
+		revertNumDir,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = moveAllChildren(revertNumDir, filepath.Dir(revertStepsDir))
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(revertNumDir); err != nil {
+		return err
+	}
+
+	// Now Unmarshall bson into r
+
+	bsonPath := filepath.Join(r.RevertTempDir, revertStepsBsonName)
+	bsonContent, err := os.ReadFile(bsonPath)
+	if err != nil {
+		return err
+	}
+
+	if err := bson.Unmarshal(bsonContent, r); err != nil {
+		return err
+	}
+
+	return os.Remove(bsonPath)
+}
+
+func moveAllChildren(currentPath, destPath string) error {
+	dirEntries, err := os.ReadDir(currentPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range dirEntries {
+		destEntryPath := filepath.Join(destPath, entry.Name())
+		currentEntryPath := filepath.Join(currentPath, entry.Name())
+
+		if entry.IsDir() {
+			if err := os.Mkdir(currentEntryPath, os.ModePerm); err != nil {
+				return err
+			}
+			if err := moveAllChildren(currentEntryPath, destEntryPath); err != nil {
+				return err
+			}
+			if err := os.Remove(currentEntryPath); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := os.Rename(currentEntryPath, destEntryPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

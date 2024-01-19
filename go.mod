@@ -1,6 +1,8 @@
 module github.com/avorty/spito
 
-go 1.21
+go 1.21.6
+
+replace github.com/walle/targz => ./lib/targz
 
 require (
 	github.com/go-git/go-git/v5 v5.11.0
@@ -9,6 +11,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.1
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/spf13/cobra v1.7.0
+	github.com/walle/targz v0.0.0-00010101000000-000000000000
 	github.com/yuin/gopher-lua v1.1.0
 	github.com/zcalusic/sysinfo v1.0.1
 	gopkg.in/ini.v1 v1.67.0
