@@ -15,7 +15,7 @@ type VRCTFs struct {
 	revertSteps   RevertSteps
 }
 
-func Rename(source string, destination string) error {
+func MoveFile(source string, destination string) error {
 	sourceFile, err := os.Open(source)
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 			return err
 		}
 
-		err = Rename(mergeDirEntryPath, realFsEntryPath)
+		err = MoveFile(mergeDirEntryPath, realFsEntryPath)
 
 		if err != nil {
 			return err
