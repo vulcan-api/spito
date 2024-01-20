@@ -2,7 +2,7 @@ package vrctFs
 
 import (
 	"fmt"
-	"github.com/walle/targz"
+	"github.com/BaderBC/targz"
 	"gopkg.in/mgo.v2/bson"
 	"os"
 	"path/filepath"

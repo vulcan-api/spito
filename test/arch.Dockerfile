@@ -1,11 +1,10 @@
 FROM archlinux
 
-RUN pacman -Sy go git --noconfirm
+RUN pacman -Sy go --noconfirm
 
 WORKDIR /app
 COPY .. .
 
-RUN git submodule update --init
 RUN go build
 
 CMD ["/sbin/init"]
