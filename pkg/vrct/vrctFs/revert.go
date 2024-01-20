@@ -20,8 +20,16 @@ const (
 )
 
 func GetSerializedRevertStepsDir() (string, error) {
-	dir, err := os.UserHomeDir()
-	return dir + "/.local/state/spito/revert-steps-serialized", err
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	dir := homeDir + "/.local/state/spito/revert-steps-serialized"
+
+	// Ensure exist
+	err = os.MkdirAll(dir, os.ModePerm)
+
+	return dir, err
 }
 
 type RevertStep struct {
@@ -194,16 +202,16 @@ func (r *RevertSteps) Deserialize(revertNum int) error {
 	}
 
 	revertNumDir := filepath.Join(r.RevertTempDir, strconv.Itoa(revertNum))
+	revertTarGzPath := filepath.Join(revertStepsDir, fmt.Sprintf("%d.tar.gz", revertNum))
 
-	err = targz.Extract(
-		filepath.Join(revertStepsDir, fmt.Sprintf("%d.tar.gz", revertNum)),
-		revertNumDir,
-	)
-	if err != nil {
+	if err = targz.Extract(revertTarGzPath, revertNumDir); err != nil {
+		return err
+	}
+	if err := os.Remove(revertTarGzPath); err != nil {
 		return err
 	}
 
-	err = moveAllChildren(revertNumDir, filepath.Dir(revertStepsDir))
+	err = moveAllChildren(revertNumDir, filepath.Dir(revertNumDir))
 	if err != nil {
 		return err
 	}

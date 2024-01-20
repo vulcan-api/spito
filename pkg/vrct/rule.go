@@ -23,7 +23,7 @@ func (v RuleVRCT) DeleteRuntimeTemp() error {
 	return v.Fs.DeleteRuntimeTemp()
 }
 
-func (v RuleVRCT) Apply() error {
+func (v RuleVRCT) Apply() (int, error) {
 	return v.Fs.Apply()
 }
 

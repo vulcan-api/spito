@@ -44,21 +44,27 @@ func (v *VRCTFs) DeleteRuntimeTemp() error {
 	return os.RemoveAll(v.virtualFSPath)
 }
 
-func (v *VRCTFs) Apply() error {
+// Apply returns revertNumber
+func (v *VRCTFs) Apply() (int, error) {
 	mergeDir, err := os.MkdirTemp("/tmp", "spito-fs-vrct-merge")
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := mergePrototypes(v.virtualFSPath, mergeDir); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := v.mergeToRealFs(mergeDir); err != nil {
-		return err
+		return 0, err
 	}
 
-	return os.RemoveAll(mergeDir)
+	revertNum, err := v.revertSteps.Serialize()
+	if err != nil {
+		return 0, err
+	}
+
+	return revertNum, os.RemoveAll(mergeDir)
 }
 
 func (v *VRCTFs) Revert() error {
