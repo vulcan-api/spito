@@ -122,7 +122,7 @@ func (r *RevertStep) Apply() error {
 			return err
 		}
 
-		return os.Rename(r.OldContentPath, r.Path)
+		return MoveFile(r.OldContentPath, r.Path)
 	default:
 		return fmt.Errorf("unknown RevertStep action: %d\n", r.Action)
 	}

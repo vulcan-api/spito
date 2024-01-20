@@ -1,6 +1,7 @@
 package vrctFs
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,43 @@ const VirtualFilePostfix = ".prototype.bson"
 type VRCTFs struct {
 	virtualFSPath string
 	revertSteps   RevertSteps
+}
+
+func MoveFile(source string, destination string) error {
+	sourceFile, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+
+	destinationFile, err := os.Create(destination)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	err = destinationFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	err = sourceFile.Close()
+	if err != nil {
+		return err
+	}
+
+	if err = os.Remove(source); err != nil {
+		return err
+	}
+
+	err = destinationFile.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewFsVRCT() (VRCTFs, error) {
@@ -121,7 +159,9 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 			return err
 		}
 
-		if err := os.Rename(mergeDirEntryPath, realFsEntryPath); err != nil {
+		err = MoveFile(mergeDirEntryPath, realFsEntryPath)
+
+		if err != nil {
 			return err
 		}
 
