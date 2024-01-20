@@ -17,7 +17,6 @@ import (
 )
 
 func askAndExecuteRule(runtimeData shared.ImportLoopData) {
-
 	fmt.Printf("Would you like to execute this rule? [y/N]: ")
 
 	reader := bufio.NewReader(os.Stdin)
