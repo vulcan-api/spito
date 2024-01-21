@@ -61,6 +61,10 @@ var publishCommand = &cobra.Command{
 		err = yaml.Unmarshal(configFileContents, &configFileValues)
 		handleError(err)
 
+		if configFileValues.RepoUrl == "" || configFileValues.Branch == "" {
+			printErrorAndExit(errors.New("repo_url and branch keys in spito configuration file cannot be empty"))
+		}
+
 		requestBody := PublishRequestBody{
 			Url:    configFileValues.RepoUrl,
 			Branch: configFileValues.Branch,
@@ -90,7 +94,9 @@ var publishCommand = &cobra.Command{
 				if len(pathArgument) > 0 {
 					path, ok := pathArgument["path"]
 					if !ok {
-						printErrorAndExit(errors.New("there's no 'path' argument specified"))
+						printErrorAndExit(
+							errors.New("there's no 'path' argument specified inside Description decorator in rule: " +
+								filepath.Join(rulesetPath, rule.Path)))
 					}
 					descriptionBytes, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path, "..", path))
 					handleError(err)

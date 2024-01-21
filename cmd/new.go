@@ -21,7 +21,7 @@ func getGitUsername() string {
 	handleError(err)
 	gitUsername := gitConfig.User.Name
 	if gitUsername == "" {
-		printErrorAndExit(errors.New("Cannot find your git username. Please set it globally using git config"))
+		printErrorAndExit(errors.New("cannot find your git username. Please set it globally using git config"))
 	}
 	return gitUsername
 }
@@ -40,12 +40,12 @@ var newRulesetCommand = &cobra.Command{
 		rulesetName := strings.ReplaceAll(args[0], " ", "")
 
 		if rulesetName == "" {
-			printErrorAndExit(errors.New("The ruleset name cannot be empty!"))
+			printErrorAndExit(errors.New("the ruleset name cannot be empty"))
 		}
 
 		_, err := os.Stat(rulesetName)
 		if err == nil {
-			printErrorAndExit(errors.New(fmt.Sprintf("Ruleset '%s' already exists!", rulesetName)))
+			printErrorAndExit(errors.New(fmt.Sprintf("ruleset '%s' already exists", rulesetName)))
 		}
 
 		shouldAssumeDefaultValues, err := cmd.Flags().GetBool("non-interactive")

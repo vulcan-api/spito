@@ -43,6 +43,11 @@ func GetDecorators(script string) (string, []string) {
 	return script, fileScopeDecorators
 }
 
+func removeQuotes(text *string) {
+	*text = strings.TrimPrefix(*text, "\"")
+	*text = strings.TrimSuffix(*text, "\"")
+}
+
 func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, error) {
 	betweenParenthesesRegex := regexp.MustCompile(`\(.*\)`)
 	argumentCode := betweenParenthesesRegex.FindString(decoratorCode)
@@ -52,7 +57,7 @@ func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, e
 	arguments := strings.Split(argumentCode, ",")
 
 	var positionalArguments []string
-	var namedArguments map[string]string
+	namedArguments := make(map[string]string)
 
 	for argumentNumber, argument := range arguments {
 		argumentTokens := strings.Split(argument, "=")
@@ -61,12 +66,12 @@ func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, e
 		}
 
 		if len(argumentTokens) == 1 {
-			argumentTokens[0] = strings.TrimPrefix(argumentTokens[0], "\"")
-			argumentTokens[0] = strings.TrimSuffix(argumentTokens[0], "\"")
+			removeQuotes(&argumentTokens[0])
 
 			positionalArguments = append(positionalArguments, argumentTokens[0])
 			continue
 		}
+		removeQuotes(&argumentTokens[1])
 		namedArguments[argumentTokens[0]] = argumentTokens[1]
 	}
 	return positionalArguments, namedArguments, nil

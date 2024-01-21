@@ -25,12 +25,12 @@ type Rule struct {
 }
 
 type ConfigFileLayout struct {
-	RepoUrl     string          `yaml:"Repo_url"`
-	GitPrefix   string          `yaml:"Git_prefix"`
-	Identifier  string          `yaml:"Identifier"`
-	Rules       map[string]Rule `yaml:"Rules"`
-	Description string          `yaml:"Description"`
-	Branch      string          `yaml:"branch"`
+	RepoUrl     string `yaml:"repo_url"`
+	GitPrefix   string `yaml:"git_prefix"`
+	Identifier  string
+	Rules       map[string]Rule
+	Description string
+	Branch      string
 }
 
 var rootCmd = &cobra.Command{
