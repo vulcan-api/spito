@@ -19,17 +19,18 @@ func printErrorAndExit(errorToBePrinted error) {
 }
 
 type Rule struct {
-	Path string `yaml:"path"`
+	Path        string `yaml:"path"`
 	Description string `yaml:"description"`
-	Unsafe bool `yaml:"unsafe"`
+	Unsafe      bool   `yaml:"unsafe"`
 }
 
 type ConfigFileLayout struct {
-	Repo_url   string
-	Git_prefix string
-	Identifier string
-	Rules      map[string]Rule
-	Description string
+	RepoUrl     string          `yaml:"Repo_url"`
+	GitPrefix   string          `yaml:"Git_prefix"`
+	Identifier  string          `yaml:"Identifier"`
+	Rules       map[string]Rule `yaml:"Rules"`
+	Description string          `yaml:"Description"`
+	Branch      string          `yaml:"branch"`
 }
 
 var rootCmd = &cobra.Command{

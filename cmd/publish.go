@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/internal/checker"
+	"github.com/avorty/spito/pkg/shared"
+	"github.com/spf13/cobra"
+	"gopkg.in/mgo.v2/bson"
+	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
-
-	"github.com/avorty/spito/cmd/cmdApi"
-	"github.com/avorty/spito/internal/checker"
-	"github.com/avorty/spito/pkg/shared"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"slices"
 )
 
 const (
@@ -30,8 +30,9 @@ type RuleForRequest struct {
 }
 
 type PublishRequestBody struct {
-	Url   string           `json:"url"`
-	Rules []RuleForRequest `json:"rules"`
+	Url    string           `json:"url"`
+	Branch string           `json:"branch"`
+	Rules  []RuleForRequest `json:"rules"`
 }
 
 var publishCommand = &cobra.Command{
@@ -61,7 +62,8 @@ var publishCommand = &cobra.Command{
 		handleError(err)
 
 		requestBody := PublishRequestBody{
-			Url: configFileValues.Repo_url,
+			Url:    configFileValues.RepoUrl,
+			Branch: configFileValues.Branch,
 		}
 		for ruleName, rule := range configFileValues.Rules {
 			currentRuleForRequest := RuleForRequest{
@@ -83,25 +85,21 @@ var publishCommand = &cobra.Command{
 					continue
 				}
 
-				betweenParanthesesRegex := regexp.MustCompile(`\(.*\)`)
-				argument := betweenParanthesesRegex.FindString(decorator)
-				argument = strings.TrimSpace(argument)
-				argument = strings.TrimPrefix(argument, "(")
-				argument = strings.TrimSuffix(argument, ")")
+				description, pathArgument, err := checker.GetDecoratorArguments(decorator)
 
-				if strings.HasPrefix(argument, "file=") {
-					tokens := strings.Split(argument, "=")
-					if len(tokens) < 2 {
-						printErrorAndExit(errors.New("Incorrect \"Description\" decorator syntax inside rule: " + ruleName))
+				if len(pathArgument) > 0 {
+					path, ok := pathArgument["path"]
+					if !ok {
+						printErrorAndExit(errors.New("there's no 'path' argument specified"))
 					}
-					descriptionBytes, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path, "..", tokens[1][1:len(tokens[1])-1]))
+					descriptionBytes, err := os.ReadFile(filepath.Join(rulesetPath, rule.Path, "..", path))
 					handleError(err)
-
 					currentRuleForRequest.Description = string(descriptionBytes)
-				} else if strings.HasSuffix(argument, "\"") && strings.HasPrefix(argument, "\"") {
-					currentRuleForRequest.Description = argument[1 : len(argument)-1]
+					break
+				} else if len(description) > 0 {
+					currentRuleForRequest.Description = description[0]
 				} else {
-					printErrorAndExit(errors.New("Incorrect \"Description\" decorator syntax inside rule: " + ruleName))
+					printErrorAndExit(errors.New("incorrect 'Description' decorator syntax"))
 				}
 				break
 			}
@@ -110,18 +108,36 @@ var publishCommand = &cobra.Command{
 		}
 
 		var tokenFilenamePath string
+
+		tokenFilenamePath = filepath.Join(
+			shared.GetEnvWithDefaultValue("XDG_STATE_HOME", secretGlobalDirectoryDefaultValue),
+			secretDirectoryName,
+			tokenStorageFilename)
+		err = shared.ExpandTilde(&tokenFilenamePath)
+		handleError(err)
+
 		isTokenStoredLocally, err := cmd.Flags().GetBool("local")
 		handleError(err)
 
-		if isTokenStoredLocally {
-			tokenFilenamePath = filepath.Join(rulesetPath, secretDirectoryName, tokenStorageFilename)
-		} else {
-			tokenFilenamePath = filepath.Join(secretDirectoryPath, tokenStorageFilename)
-			shared.ExpandTilde(&tokenFilenamePath)
-		}
-
-		token, err := os.ReadFile(tokenFilenamePath)
+		tokenFileRawData, err := os.ReadFile(tokenFilenamePath)
 		handleError(err)
+
+		tokenData := TokenStorageLayout{}
+		err = bson.Unmarshal(tokenFileRawData, &tokenData)
+		handleError(err)
+
+		var token string
+		if isTokenStoredLocally {
+			tokenPosition := slices.IndexFunc(tokenData.LocalKeys, func(localToken LocalToken) bool {
+				return localToken.Path == rulesetPath
+			})
+			if tokenPosition == -1 {
+				printErrorAndExit(errors.New("cannot find the local token for ruleset: " + rulesetPath))
+			}
+			token = tokenData.LocalKeys[tokenPosition].Token
+		} else {
+			token = tokenData.GlobalToken
+		}
 
 		jsonBody, err := json.Marshal(requestBody)
 		handleError(err)
@@ -139,10 +155,13 @@ var publishCommand = &cobra.Command{
 
 		httpResponse, err := httpClient.Do(httpRequest)
 		handleError(err)
-		defer httpResponse.Body.Close()
+		defer func() {
+			err = httpResponse.Body.Close()
+			handleError(err)
+		}()
 
 		var responseBody map[string]interface{}
-		json.NewDecoder(httpResponse.Body).Decode(&responseBody)
+		err = json.NewDecoder(httpResponse.Body).Decode(&responseBody)
 
 		if statusCode, codeExists := responseBody["statusCode"]; codeExists && statusCode.(float64) == 404 {
 			printErrorAndExit(errors.New("it seems that your ruleset doesn't exist in the spito store. Please create it in the spito GUI first"))
@@ -150,6 +169,6 @@ var publishCommand = &cobra.Command{
 			printErrorAndExit(errors.New("error during publishing"))
 		}
 
-		cmdApi.InfoApi{}.Log("Successfully published the ruleset!")
+		cmdApi.InfoApi{}.Log("successfully published the ruleset!")
 	},
 }

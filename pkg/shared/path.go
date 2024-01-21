@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+const (
+	DirectoryPermissions = 0755
+	FilePermissions      = 0644
+)
+
 func DoesPathExist(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -22,12 +27,19 @@ func ExpandTilde(path *string) error {
 	if err != nil {
 		return err
 	}
-	
-	if (*path == "~") {
+
+	if *path == "~" {
 		*path = usr.HomeDir
 	}
-	if (strings.HasPrefix(*path, "~/")) {
+	if strings.HasPrefix(*path, "~/") {
 		*path = strings.Replace(*path, "~", usr.HomeDir, 1)
 	}
 	return nil
+}
+
+func GetEnvWithDefaultValue(environmentVariable string, defaultValue string) string {
+	if val := os.Getenv(environmentVariable); val != "" {
+		return val
+	}
+	return defaultValue
 }

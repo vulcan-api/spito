@@ -64,21 +64,27 @@ var newRulesetCommand = &cobra.Command{
 			var input string
 
 			fmt.Printf("Enter your git service username (%s): ", gitUsername)
-			fmt.Scanf("%s", &input)
+			_, err = fmt.Scanf("%s", &input)
+			handleError(err)
+
 			if input != "" {
 				gitUsername = input
 			}
 			input = ""
 
 			fmt.Printf("Enter your ruleset repository name (%s): ", rulesetName)
-			fmt.Scanf("%s", &input)
+			_, err = fmt.Scanf("%s", &input)
+			handleError(err)
+
 			if input != "" {
 				rulesetRepositoryName = input
 			}
 			input = ""
 
 			fmt.Printf("Enter your git repository hosting provider (%s): ", checker.GetDefaultRepoPrefix())
-			fmt.Scanf("%s", &input)
+			_, err = fmt.Scanf("%s", &input)
+			handleError(err)
+
 			if input != "" {
 				hostingProvider = input
 			}
@@ -86,12 +92,15 @@ var newRulesetCommand = &cobra.Command{
 
 			repositoryUrl = fmt.Sprintf("https://%s/%s/%s", hostingProvider, gitUsername, rulesetRepositoryName)
 			fmt.Printf("Enter repository URL (%s): ", repositoryUrl)
-			fmt.Scanf("%s", &input)
+			_, err = fmt.Scanf("%s", &input)
+			handleError(err)
+
 			if input != "" {
 				repositoryUrlObject, err := url.ParseRequestURI(input)
 				for err != nil || !isRequestPathOK(*repositoryUrlObject) {
 					fmt.Print("Enter a valid URL: ")
-					fmt.Scanf("%s", &input)
+					_, err = fmt.Scanf("%s", &input)
+					handleError(err)
 					repositoryUrlObject, err = url.ParseRequestURI(input)
 				}
 				if input[len(repositoryUrl)-1] == '/' {
@@ -113,21 +122,25 @@ var newRulesetCommand = &cobra.Command{
 		for _, fileName := range filesToBeCreated {
 			file, err := os.Create(rulesetName + "/" + fileName)
 			handleError(err)
-			file.Close()
+			err = file.Close()
+			handleError(err)
 		}
 
 		configFile, err := os.Create(rulesetName + "/" + checker.ConfigFilename)
 		handleError(err)
 		config := ConfigFileLayout{
-			Repo_url:   repositoryUrl,
-			Git_prefix: hostingProvider,
+			RepoUrl:    repositoryUrl,
+			GitPrefix:  hostingProvider,
 			Identifier: rulesetIdentifier,
 			Rules:      map[string]Rule{},
 		}
 		configFileContents, err := yaml.Marshal(config)
 		handleError(err)
-		configFile.Write(configFileContents)
-		configFile.Close()
+		_, err = configFile.Write(configFileContents)
+		handleError(err)
+
+		err = configFile.Close()
+		handleError(err)
 
 		err = os.Mkdir(rulesetName+"/"+"rules", 0700)
 		handleError(err)
