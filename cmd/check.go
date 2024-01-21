@@ -25,14 +25,19 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 
 	answer = unicode.ToLower(answer)
 
-	if answer == 'y' {
-		err = runtimeData.VRCT.Apply()
-		if err != nil {
-			err = runtimeData.VRCT.Revert()
-			runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
-			handleError(err)
-		}
+	if answer != 'y' {
+		return
 	}
+
+	revertNum, err := runtimeData.VRCT.Apply()
+	if err != nil {
+		err = runtimeData.VRCT.Revert()
+		runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
+		handleError(err)
+	}
+
+	revertCommand := fmt.Sprintf("spito revert %d", revertNum)
+	runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
 }
 
 var checkFileCmd = &cobra.Command{

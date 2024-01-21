@@ -46,14 +46,15 @@ func TestCreatingFile(t *testing.T) {
 		t.Fatal("Failed to close test file in \""+testFilePath+"\" this means test is broken not spito\n", err.Error())
 	}
 
-	makeFsChanges(t, fsVrct, testFilePath)
-	revertFsChanges(t, fsVrct, testFilePath)
+	revertNum := makeFsChanges(t, fsVrct, testFilePath)
+	revertFsChanges(t, testFilePath, revertNum)
 
 	// cleanup
 	_ = os.RemoveAll(tmpPath)
 }
 
-func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
+// Returns revertNum
+func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) int {
 	err := fsVrct.CreateFile(testFilePath, []byte(newContent), nil, false, vrctFs.TextFile)
 	if err != nil {
 		t.Fatal("Failed to create file "+testFilePath+"\n", err)
@@ -85,7 +86,7 @@ func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
 		t.Fatal("Failed to properly simulate " + testFilePath + " file content")
 	}
 
-	err = fsVrct.Apply()
+	revertNum, err := fsVrct.Apply()
 	if err != nil {
 		t.Fatal("Failed to apply VRCT\n", err)
 	}
@@ -100,22 +101,36 @@ func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
 		t.Logf("expected content: \"%s\"\n\n", newContent)
 		t.Fatal("Failed to properly merge " + testFilePath + " file content")
 	}
+
+	return revertNum
 }
 
-func revertFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) {
-	err := fsVrct.Revert()
+func revertFsChanges(t *testing.T, testFilePath string, revertNum int) {
+	revertSteps, err := vrctFs.NewRevertSteps()
 	if err != nil {
-		t.Fatal("Failed to revert VRCT\n", err)
+		t.Fatalf("Failed to initialize RevertSteps\n%s", err.Error())
+	}
+
+	if err := revertSteps.Deserialize(revertNum); err != nil {
+		t.Fatalf(
+			"Failed to deserialize RevertSteps using %d revert number \n%s",
+			revertNum,
+			err.Error(),
+		)
+	}
+
+	if err := revertSteps.Apply(); err != nil {
+		t.Fatalf("Failed to revert VRCT\n%s", err.Error())
 	}
 
 	file, err := os.ReadFile(testFilePath)
 	if err != nil {
-		t.Fatal("Failed to read from real fs file "+testFilePath+"\n", err)
+		t.Fatalf("Failed to read from real fs file %s\n%s", testFilePath, err.Error())
 	}
 
 	if string(file) != originalContent {
 		t.Logf("content:\"%s\"\n", string(file))
 		t.Logf("expected content: \"%s\"\n\n", originalContent)
-		t.Fatal("Failed to properly revert " + testFilePath + " file content")
+		t.Fatalf("Failed to properly revert %s file content", testFilePath)
 	}
 }

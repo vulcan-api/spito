@@ -1,8 +1,7 @@
 package vrct
 
 type VRCT interface {
-	InnerValidate() error
-	Apply() error
+	Apply() (int, error)
 	DeleteRuntimeTemp() error
 	Revert() error
 
