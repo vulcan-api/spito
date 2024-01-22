@@ -59,10 +59,10 @@ func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, e
 	var positionalArguments []string
 	namedArguments := make(map[string]string)
 
-	for argumentNumber, argument := range arguments {
+	for argumentIndex, argument := range arguments {
 		argumentTokens := strings.Split(argument, "=")
 		if len(argumentTokens) > 2 {
-			return nil, nil, errors.New(fmt.Sprintf("syntax error in argument number %d", argumentNumber))
+			return nil, nil, errors.New(fmt.Sprintf("syntax error in argument number %d", argumentIndex))
 		}
 
 		if len(argumentTokens) == 1 {

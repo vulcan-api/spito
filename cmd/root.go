@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/internal/checker"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	"os"
+	"path/filepath"
 )
 
 func handleError(errorToBePrinted error) {
@@ -31,6 +34,14 @@ type ConfigFileLayout struct {
 	Rules       map[string]Rule
 	Description string
 	Branch      string
+}
+
+func readConfigFile(rulesetPath string, output *ConfigFileLayout) {
+	configFileContents, err := os.ReadFile(filepath.Join(rulesetPath, checker.ConfigFilename))
+	handleError(err)
+
+	err = yaml.Unmarshal(configFileContents, &output)
+	handleError(err)
 }
 
 var rootCmd = &cobra.Command{
