@@ -18,7 +18,7 @@ func GetRulesetConf(ruleSetLocation *RulesetLocation) (RulesetConf, error) {
 	}
 
 	for key := range rulesetConfYaml.Rules {
-		ruleConf, err := rulesetConfYaml.GetRuleConf(ruleSetLocation, key)
+		ruleConf, err := rulesetConfYaml.GetRuleConfBasedOnYaml(ruleSetLocation, key)
 		if err != nil {
 			return RulesetConf{}, err
 		}
@@ -35,10 +35,28 @@ func GetRuleConf(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, e
 		return RuleConf{}, err
 	}
 
-	return rulesetConfYaml.GetRuleConf(rulesetLocation, ruleName)
+	return rulesetConfYaml.GetRuleConfBasedOnYaml(rulesetLocation, ruleName)
 }
 
-func (s *RulesetConfYaml) GetRuleConf(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, error) {
+func GetRuleConfFromScript(scriptPath string) (RuleConf, error) {
+	ruleConf := RuleConf{
+		Path:        scriptPath,
+		Unsafe:      false,
+		Environment: false,
+	}
+
+	scriptRaw, err := os.ReadFile(scriptPath)
+	if err != nil {
+		return RuleConf{}, err
+	}
+
+	// Get data from decorators
+	processScript(string(scriptRaw), &ruleConf)
+	
+	return ruleConf, err
+}
+
+func (s *RulesetConfYaml) GetRuleConfBasedOnYaml(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, error) {
 	False := false // I did it in order to get pointer to false
 	var ruleConf RuleConf
 
