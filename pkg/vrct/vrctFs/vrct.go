@@ -1,6 +1,7 @@
 package vrctFs
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,43 @@ const VirtualFilePostfix = ".prototype.bson"
 type VRCTFs struct {
 	virtualFSPath string
 	revertSteps   RevertSteps
+}
+
+func MoveFile(source string, destination string) error {
+	sourceFile, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+
+	destinationFile, err := os.Create(destination)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	err = destinationFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	err = sourceFile.Close()
+	if err != nil {
+		return err
+	}
+
+	if err = os.Remove(source); err != nil {
+		return err
+	}
+
+	err = destinationFile.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewFsVRCT() (VRCTFs, error) {
@@ -44,21 +82,27 @@ func (v *VRCTFs) DeleteRuntimeTemp() error {
 	return os.RemoveAll(v.virtualFSPath)
 }
 
-func (v *VRCTFs) Apply() error {
+// Apply returns revertNumber
+func (v *VRCTFs) Apply() (int, error) {
 	mergeDir, err := os.MkdirTemp("/tmp", "spito-fs-vrct-merge")
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := mergePrototypes(v.virtualFSPath, mergeDir); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := v.mergeToRealFs(mergeDir); err != nil {
-		return err
+		return 0, err
 	}
 
-	return os.RemoveAll(mergeDir)
+	revertNum, err := v.revertSteps.Serialize()
+	if err != nil {
+		return 0, err
+	}
+
+	return revertNum, os.RemoveAll(mergeDir)
 }
 
 func (v *VRCTFs) Revert() error {
@@ -115,7 +159,9 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 			return err
 		}
 
-		if err := os.Rename(mergeDirEntryPath, realFsEntryPath); err != nil {
+		err = MoveFile(mergeDirEntryPath, realFsEntryPath)
+
+		if err != nil {
 			return err
 		}
 

@@ -12,7 +12,7 @@ import (
 //
 // Arguments:
 //
-//	filePath - path to file
+//	filePath - Path to file
 //	content - content of file
 //	optionalKeys - json or yaml document describing which key in config is optional
 //	isOptional - default option in configs / is able to merge in text files

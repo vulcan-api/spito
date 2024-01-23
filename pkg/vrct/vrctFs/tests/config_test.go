@@ -133,7 +133,7 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 		t.Fatalf("Failed to read file destinationPath %s: %s\n", setup.destinationPath, err)
 	}
 
-	err = vrct.Apply()
+	_, err = vrct.Apply()
 	if err != nil {
 		t.Fatal("Failed to apply VRCT\n", err)
 	}
