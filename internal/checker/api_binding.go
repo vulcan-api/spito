@@ -58,6 +58,8 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 	fsNamespace.AddFn("FindAll", apiFs.FindAll)
 	fsNamespace.AddFn("GetProperLines", apiFs.GetProperLines)
 	fsNamespace.AddFn("CreateFile", apiFs.CreateFile)
+	fsNamespace.AddFn("CreateConfig", apiFs.CreateConfig)
+	fsNamespace.AddFn("UpdateConfig", apiFs.UpdateConfig)
 
 	return fsNamespace.createTable(L)
 }

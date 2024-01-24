@@ -142,9 +142,21 @@ func (f *FsApi) GetProperLines(regex string, fileContent string) ([]string, erro
 
 type CreateFileOptions struct {
 	optional bool
-	fileType int
 }
 
 func (f *FsApi) CreateFile(path, content string, options CreateFileOptions) error {
-	return f.FsVRCT.CreateFile(path, []byte(content), nil, options.optional, options.fileType)
+	return f.FsVRCT.CreateFile(path, []byte(content), options.optional)
+}
+
+type CreateConfigOptions struct {
+	optional   bool
+	options    string
+	configType vrctFs.FileType
+}
+
+func (f *FsApi) CreateConfig(path, content string, options CreateConfigOptions) error {
+	return f.FsVRCT.CreateConfig(path, []byte(content), []byte(options.options), options.optional, options.configType)
+}
+func (f *FsApi) UpdateConfig(path, content string, options CreateConfigOptions) error {
+	return f.FsVRCT.UpdateConfig(path, []byte(content), []byte(options.options), options.optional, options.configType)
 }

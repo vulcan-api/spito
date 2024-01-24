@@ -13,7 +13,7 @@ type ConfigsSetup struct {
 	configs         []Config
 	resultPath      string
 	destinationPath string
-	configType      int
+	configType      vrctFs.FileType
 }
 
 type Config struct {
@@ -54,14 +54,12 @@ func TestConfigsMatrix(t *testing.T) {
 		{
 			configs: []Config{
 				{
-					path:        "yaml/extrepo-default.yaml",
-					optionsPath: "yaml/default-options.json",
-					isOptional:  false,
+					path:       "yaml/extrepo-default.yaml",
+					isOptional: true,
 				},
 				{
-					path:        "yaml/extrepo-full.yaml",
-					optionsPath: "yaml/full-options.yaml",
-					isOptional:  false,
+					path:       "yaml/extrepo-full.yaml",
+					isOptional: false,
 				},
 			},
 			resultPath:      "yaml/extrepo-full.yaml",
@@ -117,7 +115,7 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 			}
 		}
 
-		err = vrct.CreateFile(setup.destinationPath, configTestData, options, config.isOptional, setup.configType)
+		err = vrct.CreateConfig(setup.destinationPath, configTestData, options, config.isOptional, setup.configType)
 		if err != nil {
 			t.Fatal("Failed trying to override file "+setup.destinationPath+"\n", err)
 		}
@@ -160,11 +158,11 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 
 	eq := reflect.DeepEqual(desiredResult, obtainedResult)
 	if !eq {
-		t.Fatal("Failed to properly simulate " + setup.destinationPath + " file content")
+		t.Fatalf("Failed to properly simulate '%s' file content!\nDesired content: >>>%s<<<\n\n Received content: >>>%s<<<", setup.destinationPath, desiredResult, obtainedResult)
 	}
 
 	eq = reflect.DeepEqual(desiredResult, obtainedRealResult)
 	if !eq {
-		t.Fatal("Failed to properly simulate " + setup.destinationPath + " file content")
+		t.Fatalf("Failed to properly simulate '%s' file content!\nDesired content: >>>%s<<<\n\n Received content: >>>%s<<<", setup.destinationPath, desiredResult, obtainedResult)
 	}
 }

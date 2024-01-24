@@ -1,7 +1,6 @@
 package vrctFs
 
 import (
-	"fmt"
 	"math/rand"
 )
 
@@ -14,12 +13,4 @@ func randomLetters(length int) string {
 	}
 
 	return string(result)
-}
-
-func pathMustBeAbsolute(path string) (string, error) {
-	if path[0] != '/' {
-		return "", fmt.Errorf("path must be absolute")
-	}
-
-	return path, nil
 }

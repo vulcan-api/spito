@@ -12,11 +12,12 @@ import (
 )
 
 type FilePrototype struct {
-	Layers         []PrototypeLayer
-	RealFileExists bool
-	FileType       int
-	Path           string `bson:"-"`
-	Name           string `bson:"-"`
+	Layers               []PrototypeLayer
+	RealFileExists       bool
+	FileType             FileType
+	OriginalFileIncluded bool
+	Path                 string `bson:"-"`
+	Name                 string `bson:"-"`
 }
 
 func (p *FilePrototype) getDestinationPath() string {
@@ -188,13 +189,16 @@ func (p *FilePrototype) CreateLayer(content []byte, options []byte, isOptional b
 	return newLayer, nil
 }
 
-func (p *FilePrototype) AddNewLayer(layer PrototypeLayer) error {
+func (p *FilePrototype) AddNewLayer(layer PrototypeLayer, isOriginal bool) error {
 	backup := p.Layers
 	p.Layers = append(p.Layers, layer)
 	_, err := p.mergeLayers()
 	if err != nil {
 		p.Layers = backup
 		return err
+	}
+	if isOriginal {
+		p.OriginalFileIncluded = true
 	}
 	if err = p.Save(); err != nil {
 		return err

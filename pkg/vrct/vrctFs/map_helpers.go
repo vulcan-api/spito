@@ -39,7 +39,7 @@ func SaveBsonMap(toSave map[string]interface{}, pathToFile string) error {
 	return nil
 }
 
-func GetMapFromBytes(content []byte, configType int) (map[string]interface{}, error) {
+func GetMapFromBytes(content []byte, configType FileType) (map[string]interface{}, error) {
 	var err error
 	var resultMap map[string]interface{}
 	switch configType {
