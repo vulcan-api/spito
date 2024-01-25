@@ -21,7 +21,7 @@ func processScript(script string, ruleConf *RuleConf) string {
 	return newScript
 }
 
-// Returns script without decorators and array of decorator values
+// GetDecorators Returns script without decorators and array of decorator values
 func GetDecorators(script string) (string, []string) {
 	var fileScopeDecorators []string
 

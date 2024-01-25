@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-const ConfigFilename = "spito-rules.yml"
+const ConfigFilename = "spito.yml"
 const LockFilename = "spito-lock.yml"
 
 func getRuleSetsDir() (string, error) {
@@ -121,6 +121,7 @@ func (r *RulesetLocation) IsRuleSetDownloaded() bool {
 }
 
 func (r *RulesetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
+	// TODO: I see that Seweryn Pajor handle only spito.yml but forgot about spito.yaml case
 	configPath := r.GetRulesetPath() + "/" + ConfigFilename
 	configFileContents, err := os.ReadFile(configPath)
 	if err != nil {
