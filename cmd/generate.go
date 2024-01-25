@@ -52,7 +52,10 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 	ruleFile.Write([]byte(exampleRuleContents))
 	ruleFile.Close()
 
-	config.Rules[rulePathTokens[len(rulePathTokens)-1]] = "./rules/" + rulePath + ".lua"
+	config.Rules[rulePathTokens[len(rulePathTokens)-1]] = Rule{
+		Path: "./rules/" + rulePath + ".lua",
+		Description: "",
+	}
 
 	configFile, err := os.Create(checker.ConfigFilename)
 	defer configFile.Close()

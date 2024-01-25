@@ -1,6 +1,8 @@
 package checker
 
 import (
+	"errors"
+	"fmt"
 	"github.com/avorty/spito/pkg/api"
 	"regexp"
 	"strings"
@@ -8,7 +10,7 @@ import (
 )
 
 func processScript(script string, ruleConf *RuleConf) string {
-	newScript, decorators := getDecorators(script)
+	newScript, decorators := GetDecorators(script)
 
 	for _, decorator := range decorators {
 		if strings.ToLower(decorator) == "unsafe" {
@@ -22,8 +24,8 @@ func processScript(script string, ruleConf *RuleConf) string {
 	return newScript
 }
 
-// Returns script without decorators and array of decorator values
-func getDecorators(script string) (string, []string) {
+// GetDecorators Returns script without decorators and array of decorator values
+func GetDecorators(script string) (string, []string) {
 	var fileScopeDecorators []string
 
 	fileScopeRegex := regexp.MustCompile(`#!\[[^]]+]`)
@@ -42,6 +44,40 @@ func getDecorators(script string) (string, []string) {
 	}
 
 	return script, fileScopeDecorators
+}
+
+func removeQuotes(text *string) {
+	*text = strings.TrimPrefix(*text, "\"")
+	*text = strings.TrimSuffix(*text, "\"")
+}
+
+func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, error) {
+	betweenParenthesesRegex := regexp.MustCompile(`\(.*\)`)
+	argumentCode := betweenParenthesesRegex.FindString(decoratorCode)
+	argumentCode = strings.TrimPrefix(argumentCode, "(")
+	argumentCode = strings.TrimSuffix(argumentCode, ")")
+
+	arguments := strings.Split(argumentCode, ",")
+
+	var positionalArguments []string
+	namedArguments := make(map[string]string)
+
+	for argumentIndex, argument := range arguments {
+		argumentTokens := strings.Split(argument, "=")
+		if len(argumentTokens) > 2 {
+			return nil, nil, errors.New(fmt.Sprintf("syntax error in argument number %d", argumentIndex))
+		}
+
+		if len(argumentTokens) == 1 {
+			removeQuotes(&argumentTokens[0])
+
+			positionalArguments = append(positionalArguments, argumentTokens[0])
+			continue
+		}
+		removeQuotes(&argumentTokens[1])
+		namedArguments[argumentTokens[0]] = argumentTokens[1]
+	}
+	return positionalArguments, namedArguments, nil
 }
 
 func removeWhitespaces(decorator string) string {

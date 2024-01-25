@@ -7,18 +7,18 @@ import (
 	"path/filepath"
 )
 
-func GetRulesetConf(ruleSetLocation *RulesetLocation) (RulesetConf, error) {
+func GetRulesetConf(rulesetLocation *RulesetLocation) (RulesetConf, error) {
 	spitoRulesetConf := RulesetConf{
 		Rules: make(map[string]RuleConf),
 	}
 
-	rulesetConfYaml, err := getRulesetConfYaml(ruleSetLocation)
+	rulesetConfYaml, err := getRulesetConfYaml(rulesetLocation)
 	if err != nil {
 		return RulesetConf{}, err
 	}
 
 	for key := range rulesetConfYaml.Rules {
-		ruleConf, err := rulesetConfYaml.GetRuleConfBasedOnYaml(ruleSetLocation, key)
+		ruleConf, err := rulesetConfYaml.GetRuleConfBasedOnYaml(rulesetLocation, key)
 		if err != nil {
 			return RulesetConf{}, err
 		}
@@ -52,7 +52,7 @@ func GetRuleConfFromScript(scriptPath string) (RuleConf, error) {
 
 	// Get data from decorators
 	processScript(string(scriptRaw), &ruleConf)
-	
+
 	return ruleConf, err
 }
 
@@ -137,22 +137,27 @@ func getRulesetConfYaml(rulesetLocation *RulesetLocation) (RulesetConfYaml, erro
 		return RulesetConfYaml{}, err
 	}
 
-	// Support for both .yaml and .yml
-	spitoRulesDataBytes, err := os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito-rules.yml")
-	if os.IsNotExist(err) {
-		var err2 error
-		spitoRulesDataBytes, err2 = os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito-rules.yaml")
-		if err2 != nil {
-			return RulesetConfYaml{}, err2
-		}
-	} else if err != nil {
+	rawSpitoYaml, err := ReadRawSpitoYaml(rulesetLocation)
+	if err != nil {
 		return RulesetConfYaml{}, err
 	}
 
 	var spitoRulesYaml RulesetConfYaml
-	err = yaml.Unmarshal(spitoRulesDataBytes, &spitoRulesYaml)
+	err = yaml.Unmarshal(rawSpitoYaml, &spitoRulesYaml)
 
 	return spitoRulesYaml, err
+}
+
+func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
+	spitoRulesDataBytes, err := os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito.yml")
+	if os.IsNotExist(err) {
+		var err2 error
+		spitoRulesDataBytes, err2 = os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito.yaml")
+		if err2 != nil {
+			return nil, err2
+		}
+	}
+	return spitoRulesDataBytes, err
 }
 
 type RulesetConfYaml struct {
