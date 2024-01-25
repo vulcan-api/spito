@@ -1,12 +1,14 @@
 module github.com/avorty/spito
 
-go 1.21
+go 1.21.6
 
 require (
+	github.com/BaderBC/targz v1.0.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/joho/godotenv v1.5.1
 	github.com/oleiade/reflections v1.0.1
+	github.com/pelletier/go-toml/v2 v2.1.1
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/spf13/cobra v1.7.0
 	github.com/yuin/gopher-lua v1.1.0
@@ -40,6 +42,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	golang.org/x/crypto v0.17.0 // indirect

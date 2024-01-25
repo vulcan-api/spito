@@ -1,76 +1,115 @@
 package vrctFs
 
 import (
-	"fmt"
-	"gopkg.in/mgo.v2/bson"
+	"io"
 	"os"
-	"slices"
-	"sort"
+	"path/filepath"
 	"strings"
 )
 
-const VIRTUAL_FS_PATH_PREFIX = "/tmp/spito-vrct/fs"
+const VirtualFsPathPrefix = "/tmp/spito-vrct/fs"
+const VirtualFilePostfix = ".prototype.bson"
 
-type FsVRCT struct {
-	virtualFSPath  string
-	fsRequirements []FsRequirement
+type VRCTFs struct {
+	virtualFSPath string
+	revertSteps   RevertSteps
 }
 
-func NewFsVRCT() (FsVRCT, error) {
-	err := os.MkdirAll(VIRTUAL_FS_PATH_PREFIX, os.ModePerm)
+func MoveFile(source string, destination string) error {
+	sourceFile, err := os.Open(source)
 	if err != nil {
-		return FsVRCT{}, err
+		return err
 	}
 
-	dir, err := os.MkdirTemp(VIRTUAL_FS_PATH_PREFIX, "")
+	destinationFile, err := os.Create(destination)
 	if err != nil {
-		return FsVRCT{}, err
+		return err
 	}
 
-	return FsVRCT{
-		virtualFSPath:  dir,
-		fsRequirements: make([]FsRequirement, 0),
-	}, nil
-}
-
-func (v *FsVRCT) checkRequirements() (bool, *FsRequirement) {
-	for _, req := range v.fsRequirements {
-		if req.checkRequirement() == false {
-			return false, &req
-		}
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return err
 	}
 
-	return true, nil
-}
-
-func (v *FsVRCT) InnerValidate() error {
-	for _, requirement := range v.fsRequirements {
-		if !requirement.checkRequirement() {
-			return fmt.Errorf("requirement %v is not met", requirement.ruleStackTrace)
-		}
+	err = destinationFile.Sync()
+	if err != nil {
+		return err
 	}
 
+	err = sourceFile.Close()
+	if err != nil {
+		return err
+	}
+
+	if err = os.Remove(source); err != nil {
+		return err
+	}
+
+	err = destinationFile.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (v *FsVRCT) Apply() error {
-	if err := v.InnerValidate(); err != nil {
-		return err
+func NewFsVRCT() (VRCTFs, error) {
+	err := os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
+	revertSteps, err := NewRevertSteps()
+	if err != nil {
+		return VRCTFs{}, nil
 	}
 
+	err = os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
+	if err != nil {
+		return VRCTFs{}, err
+	}
+
+	dir, err := os.MkdirTemp(VirtualFsPathPrefix, "")
+	if err != nil {
+		return VRCTFs{}, err
+	}
+
+	return VRCTFs{
+		virtualFSPath: dir,
+		revertSteps:   revertSteps,
+	}, nil
+}
+
+func (v *VRCTFs) DeleteRuntimeTemp() error {
+	if err := v.revertSteps.DeleteRuntimeTemp(); err != nil {
+		return err
+	}
+	return os.RemoveAll(v.virtualFSPath)
+}
+
+// Apply returns revertNumber
+func (v *VRCTFs) Apply() (int, error) {
 	mergeDir, err := os.MkdirTemp("/tmp", "spito-fs-vrct-merge")
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := mergePrototypes(v.virtualFSPath, mergeDir); err != nil {
-		return err
+		return 0, err
 	}
 
-	return mergeToRealFs(mergeDir)
+	if err := v.mergeToRealFs(mergeDir); err != nil {
+		return 0, err
+	}
+
+	revertNum, err := v.revertSteps.Serialize()
+	if err != nil {
+		return 0, err
+	}
+
+	return revertNum, os.RemoveAll(mergeDir)
 }
 
-func mergeToRealFs(mergeDirPath string) error {
+func (v *VRCTFs) Revert() error {
+	return v.revertSteps.Apply()
+}
+
+func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 	splitMergePath := strings.Split(mergeDirPath, "/")[3:]
 	destPath := strings.Join(splitMergePath, "/")
 	if len(destPath) != 0 {
@@ -83,22 +122,50 @@ func mergeToRealFs(mergeDirPath string) error {
 	}
 
 	for _, entry := range entries {
+		realFsEntryPath := filepath.Join(destPath, entry.Name())
+		mergeDirEntryPath := filepath.Join(mergeDirPath, entry.Name())
+
 		if entry.IsDir() {
-			if err := os.MkdirAll(destPath+"/"+entry.Name(), os.ModePerm); err != nil {
+			_, err := os.Stat(realFsEntryPath)
+			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
-			if err := mergeToRealFs(mergeDirPath + "/" + entry.Name()); err != nil {
+
+			// If originally dir does not exist, then revert should delete it
+			if os.IsNotExist(err) {
+				v.revertSteps.RemoveDirAll(realFsEntryPath)
+			}
+			if err := os.MkdirAll(realFsEntryPath, os.ModePerm); err != nil {
+				return err
+			}
+			if err := v.mergeToRealFs(mergeDirEntryPath); err != nil {
 				return err
 			}
 			continue
 		}
 
-		err := os.Remove(destPath + "/" + entry.Name())
+		filePrototype := FilePrototype{}
+		err := filePrototype.Read(v.virtualFSPath, realFsEntryPath)
+		if err != nil {
+			return err
+		}
+
+		if err := v.revertSteps.BackupOldContent(realFsEntryPath); err != nil {
+			return err
+		}
+
+		err = os.Remove(realFsEntryPath)
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 
-		if err := os.Rename(mergeDirPath+"/"+entry.Name(), destPath+"/"+entry.Name()); err != nil {
+		err = MoveFile(mergeDirEntryPath, realFsEntryPath)
+
+		if err != nil {
+			return err
+		}
+
+		if err := filePrototype.Save(); err != nil {
 			return err
 		}
 	}
@@ -115,10 +182,10 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 	for _, dirEntry := range dirs {
 		if dirEntry.IsDir() {
 			dirName := dirEntry.Name()
-			if err := os.MkdirAll(destPath+"/"+dirName, os.ModePerm); err != nil {
+			if err := os.MkdirAll(filepath.Join(destPath, dirName), os.ModePerm); err != nil {
 				return err
 			}
-			if err := mergePrototypes(prototypesDirPath+"/"+dirName, destPath+"/"+dirName); err != nil {
+			if err := mergePrototypes(filepath.Join(prototypesDirPath, dirName), filepath.Join(destPath, dirName)); err != nil {
 				return err
 			}
 			continue
@@ -128,7 +195,7 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 			fileName := strings.ReplaceAll(prototypeName, ".prototype.bson", "")
 
 			prototype := FilePrototype{}
-			if err := prototype.Read(prototypesDirPath + "/" + prototypeName); err != nil {
+			if err := prototype.Read(prototypesDirPath, fileName); err != nil {
 				return err
 			}
 			file, err := prototype.SimulateFile()
@@ -136,171 +203,11 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 				return err
 			}
 
-			if err := os.WriteFile(destPath+"/"+fileName, file, os.ModePerm); err != nil {
+			if err := os.WriteFile(filepath.Join(destPath, fileName), file, os.ModePerm); err != nil {
 				return err
 			}
 			continue
 		}
-		fmt.Printf("[WARNING] Unrecognized file %s in %s\n", prototypeName, prototypesDirPath)
-	}
-
-	return nil
-}
-
-type FsRequirement struct {
-	// In simpler words - how this rule appeared here
-	ruleStackTrace   []string
-	checkRequirement func() bool
-}
-
-const (
-	ConfigFile = iota
-	TextFile
-)
-
-type FilePrototype struct {
-	Layers         []PrototypeLayer
-	RealFileExists bool
-	FileType       *int
-	SelfPath       string `bson:"-"`
-}
-
-type PrototypeLayer struct {
-	// If content path is specified and file exists in real fs, real file will be later overridden by this content
-	// (We don't store content as string in order to make bson lightweight and fast accessible)
-	ContentPath   *string `bson:",omitempty"`
-	IsOptional    bool
-	ConfigOptions []ConfigOption `bson:",omitempty"`
-	ConfigType    *int           `bson:",omitempty"`
-	// TODO: stack trace
-}
-
-func (p *FilePrototype) mergeLayers(optLayersIndexesToSkip []int) (PrototypeLayer, error) {
-	pl := PrototypeLayer{
-		IsOptional: false,
-	}
-
-	encounteredOptionalLayers := 0
-
-	for i, layer := range p.Layers {
-		if layer.IsOptional {
-			encounteredOptionalLayers++
-			if slices.Contains(optLayersIndexesToSkip, encounteredOptionalLayers-1) {
-				continue
-			}
-		}
-
-		var optionalInfoPrefix string
-		if layer.IsOptional {
-			optionalInfoPrefix = "optional"
-		} else {
-			optionalInfoPrefix = "non optional"
-		}
-		potentialConflictError := fmt.Errorf(
-			"%s layer nr. %d is in conflict with previous layers", optionalInfoPrefix, i,
-		)
-
-		pl.ConfigOptions = append(pl.ConfigOptions, layer.ConfigOptions...)
-		pl.IsOptional = layer.IsOptional && pl.IsOptional
-
-		if pl.ConfigType != nil && layer.ConfigType != nil {
-			return pl, potentialConflictError
-		}
-		pl.ConfigType = layer.ConfigType
-	}
-
-	// Not optional layers first
-	sort.Slice(p.Layers, func(i, j int) bool {
-		return !p.Layers[i].IsOptional && p.Layers[j].IsOptional
-	})
-
-	for i, layer := range p.Layers {
-		if pl.ContentPath != nil && layer.ContentPath != nil && !layer.IsOptional {
-			return pl, fmt.Errorf(
-				"non optional layer nr. %d is in conflict with previous layers", i,
-			)
-		}
-		if (layer.IsOptional && pl.ContentPath == nil) || !layer.IsOptional {
-			pl.ContentPath = layer.ContentPath
-		}
-	}
-
-	return pl, nil
-}
-
-func (p *FilePrototype) getDestinationPath() string {
-	splitPath := strings.Split(p.SelfPath, "/")
-	return strings.Join(splitPath[:len(splitPath)-1], "/")
-}
-
-func (p *FilePrototype) SimulateFile() ([]byte, error) {
-	finalLayer, err := p.mergeLayers([]int{})
-	if err != nil {
-		return nil, err
-	}
-
-	var fileType int
-	if p.FileType == nil {
-		fileType = TextFile
-	} else {
-		fileType = *p.FileType
-	}
-
-	switch fileType {
-	case TextFile:
-		var filePath string
-
-		if p.RealFileExists {
-			filePath = p.getDestinationPath()
-		} else {
-			filePath = *finalLayer.ContentPath
-		}
-
-		file, err := os.ReadFile(filePath)
-		if err != nil {
-			return nil, err
-		}
-
-		return file, nil
-
-	case ConfigFile:
-		// TODO
-		break
-	}
-
-	// Todo: handle other FileTypes
-	panic("Unimplemented FileType simulation")
-}
-
-func (p *FilePrototype) Read(prototypePath string) error {
-	p.SelfPath = prototypePath
-	file, err := os.ReadFile(prototypePath)
-
-	if os.IsNotExist(err) {
-		return p.Save()
-	} else if err != nil {
-		return err
-	}
-
-	err = bson.Unmarshal(file, p)
-
-	p.SelfPath = prototypePath
-	return err
-}
-
-func (p *FilePrototype) Save() error {
-	rawBson, err := bson.Marshal(p)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(p.SelfPath, rawBson, os.ModePerm)
-}
-
-func (p *FilePrototype) AddNewLayer(layer PrototypeLayer) error {
-	p.Layers = append(p.Layers, layer)
-	if err := p.Save(); err != nil {
-		return err
 	}
 
 	return nil

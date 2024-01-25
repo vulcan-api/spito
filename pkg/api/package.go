@@ -27,8 +27,8 @@ type Package struct {
 	Replaces      []string
 	InstalledSize []string
 	Packager      string
-	BuildDate     string //TODO: consider some kind of date type
-	InstallDate   string //TODO: consider some kind of date type
+	BuildDate     string
+	InstallDate   string
 	InstallReason string
 	InstallScript bool
 	ValidatedBy   string

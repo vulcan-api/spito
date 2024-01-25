@@ -46,5 +46,9 @@ func TestLuaApi(t *testing.T) {
 		if !doesRulePass {
 			t.Fatalf("Rule %s did not pass!", scriptName)
 		}
+
+		if err := ruleVRCT.DeleteRuntimeTemp(); err != nil {
+			t.Fatal("Failed to remove temporary VRCT files", err.Error())
+		}
 	}
 }

@@ -1,0 +1,18 @@
+theme = "dark"
+relativeURLs = true
+baseURL = "/"
+title = "Random title"
+author = "Random guy"
+paginate = 5
+
+[menu]
+
+[[menu.main]]
+identifier = "spito"
+name = "Sptio"
+url = "/spito/"
+
+[[menu.main]]
+identifier = "basedbook"
+name = "Basedbook"
+url = "/basedbook/"

@@ -68,27 +68,41 @@ func getDaemonDataFromFS(daemonName, path string) (bool, string, error) {
 func getSystemdDaemon(ctx context.Context, daemonName string) (Daemon, error) {
 	daemon := Daemon{Name: daemonName}
 
-	output, ok, err := execute(ctx, "systemctl", "is-active", daemonName)
+	isActiveOutput, ok, err := execute(ctx, "systemctl", "is-active", daemonName)
 	if !ok {
 		return daemon, err
 	}
-	if output == "active" {
+	if isActiveOutput == "active" {
 		daemon.IsActive = true
 	}
 
-	output, ok, err = execute(ctx, "systemctl", "is-enabled", daemonName)
+	isEnabledOutput, ok, err := execute(ctx, "systemctl", "is-enabled", daemonName)
 	if !ok {
 		return daemon, err
 	}
-	if output == "enabled" || output == "static" || output == "indirect" {
+
+	// If output is alias, resolve real daemon
+	if isEnabledOutput == "alias" {
+		daemonIdOutput, ok, err := execute(ctx, "systemctl", "show", "-p", "Id", "--value", daemonName)
+		if !ok {
+			return daemon, err
+		}
+
+		isEnabledOutput, ok, err = execute(ctx, "systemctl", "is-enabled", daemonIdOutput)
+		if !ok {
+			return daemon, err
+		}
+	}
+
+	if isEnabledOutput == "enabled" || isEnabledOutput == "static" || isEnabledOutput == "indirect" {
 		daemon.IsEnabled = true
 	}
 
-	output, ok, err = execute(ctx, "systemctl", "get-default")
+	getDefaultOutput, ok, err := execute(ctx, "systemctl", "get-default")
 	if !ok {
 		return daemon, err
 	}
-	daemon.RunLevel = output
+	daemon.RunLevel = getDefaultOutput
 
 	return daemon, nil
 }
@@ -256,7 +270,6 @@ func GetDaemon(daemonName string) (Daemon, error) {
 		return Daemon{}, errors.New("daemon name contains illegal character")
 	}
 
-	// TODO: root handling
 	switch initSystem {
 	case SYSTEMD:
 		return getSystemdDaemon(ctx, daemonName)

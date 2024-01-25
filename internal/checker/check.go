@@ -48,7 +48,6 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %v", val)
 }
 
-
 func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		return _internalCheckRule(importLoopData, identifier, ruleName, nil), nil
@@ -152,7 +151,6 @@ func _internalCheckRule(
 		errChan <- errors.New("Failed to read script called: " + ruleName + " from " + identifier + "\n" + err.Error())
 		panic(nil)
 	}
-
 
 	rulesetConf, err := getRulesetConf(&rulesetLocation)
 	if err != nil {

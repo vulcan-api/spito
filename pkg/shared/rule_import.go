@@ -10,3 +10,7 @@ type ImportLoopData struct {
 	RulesHistory RulesHistory
 	ErrChan      chan error
 }
+
+func (i *ImportLoopData) DeleteRuntimeTemp() error {
+	return i.VRCT.DeleteRuntimeTemp()
+}

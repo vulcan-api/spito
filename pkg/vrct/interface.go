@@ -1,13 +1,10 @@
 package vrct
 
 type VRCT interface {
-	InnerValidate() error
-	Apply() error
+	Apply() (int, error)
+	DeleteRuntimeTemp() error
+	Revert() error
 
-	//TODO: implement soon
-	//Revert() error
-
-	// Currently unimportant
-	//Serialize() []byte
+	//Serialize() ([]byte, error)
 	//Deserialize([]byte) (VRCT, error)
 }

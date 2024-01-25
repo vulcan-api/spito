@@ -3,10 +3,10 @@ package vrctFs
 import "io/fs"
 
 type DirEntry struct {
-	name   string
-	isDir  bool
-	type_  fs.FileMode
-	StatFn func() (fs.FileInfo, error)
+	name      string
+	isDir     bool
+	entryType fs.FileMode
+	StatFn    func() (fs.FileInfo, error)
 }
 
 func (d DirEntry) Name() string {
@@ -18,7 +18,7 @@ func (d DirEntry) IsDir() bool {
 }
 
 func (d DirEntry) Type() fs.FileMode {
-	return d.type_
+	return d.entryType
 }
 
 func (d DirEntry) Info() (fs.FileInfo, error) {

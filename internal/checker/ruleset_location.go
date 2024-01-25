@@ -15,10 +15,7 @@ const LockFilename = "spito-lock.yml"
 
 func getRuleSetsDir() (string, error) {
 	dir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return dir + "/.local/state/spito-rules/rule-sets", nil
+	return dir + "/.local/state/spito/rulesets", err
 }
 
 func initRequiredTmpDirs() error {

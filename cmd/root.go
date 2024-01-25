@@ -64,6 +64,7 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(checkCmd)
 	checkCmd.AddCommand(checkFileCmd)
+	rootCmd.AddCommand(revertCmd)
 	rootCmd.AddCommand(newRulesetCommand)
 	rootCmd.AddCommand(generateRuleCommand)
 	rootCmd.AddCommand(generateShortCommand)
