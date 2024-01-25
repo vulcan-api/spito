@@ -121,9 +121,7 @@ func (r *RulesetLocation) IsRuleSetDownloaded() bool {
 }
 
 func (r *RulesetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
-	// TODO: I see that Seweryn Pajor handle only spito.yml but forgot about spito.yaml case
-	configPath := r.GetRulesetPath() + "/" + ConfigFilename
-	configFileContents, err := os.ReadFile(configPath)
+	configFileContents, err := ReadSpitoYaml(r)
 	if err != nil {
 		return []string{}, err
 	}
