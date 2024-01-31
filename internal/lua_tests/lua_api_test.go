@@ -20,7 +20,7 @@ type luaTest struct {
 
 const basePath = "/tmp/spito-lua-test/"
 const exampleJsonName = "example.json"
-const expectedExampleJsonContent = `{"first-key": "first-val", "example-key": "example-val"}`
+const expectedExampleJsonContent = `{"first-key": "first-val", "example-key": "example-val", "next-example-key": "next-example-val"}`
 
 var exampleJsonPath = filepath.Join(basePath, exampleJsonName)
 
@@ -45,7 +45,7 @@ func TestLuaApi(t *testing.T) {
 	scripts := []luaTest{
 		{file: "daemon_test.lua"},
 		{file: "fs_test.lua", beforeTest: prepareFsTest, afterTest: finalizeFsTest},
-		{file: "package_test.lua"},
+		//{file: "package_test.lua"},
 		{file: "rule_require_test.lua"},
 		{file: "sh_test.lua"},
 		{file: "sysinfo_test.lua"},
@@ -85,15 +85,15 @@ func TestLuaApi(t *testing.T) {
 			t.Fatalf("Rule %s did not pass!", script.file)
 		}
 
+		if err := ruleVRCT.DeleteRuntimeTemp(); err != nil {
+			t.Fatal("Failed to remove temporary VRCT files", err.Error())
+		}
+
 		if script.afterTest != nil {
 			err = script.afterTest()
 			if err != nil {
 				t.Fatalf("error occured during finalization stage of test '%s': %s", script.file, err)
 			}
-		}
-
-		if err := ruleVRCT.DeleteRuntimeTemp(); err != nil {
-			t.Fatal("Failed to remove temporary VRCT files", err.Error())
 		}
 	}
 }

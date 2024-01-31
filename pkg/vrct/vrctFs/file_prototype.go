@@ -197,9 +197,9 @@ func (p *FilePrototype) AddNewLayer(layer PrototypeLayer, isOriginal bool) error
 		p.Layers = backup
 		return err
 	}
-	if isOriginal {
-		p.OriginalFileIncluded = true
-	}
+
+	p.OriginalFileIncluded = isOriginal
+
 	if err = p.Save(); err != nil {
 		return err
 	}

@@ -40,7 +40,7 @@ func (v *VRCTFs) CreateFile(filePath string, content []byte, isOptional bool) er
 	}
 
 	if filePrototype.FileType != TextFile {
-		return fmt.Errorf("%s cannot be created as it's already config file", filePath)
+		return fmt.Errorf("%s cannot be created as it's already a config file", filePath)
 	}
 
 	prototypeLayer, err := filePrototype.CreateLayer(content, nil, isOptional)
