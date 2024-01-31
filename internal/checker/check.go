@@ -62,7 +62,15 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scrip
 			Unsafe: false,
 		}
 		script = processScript(script, &ruleConf)
-		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
+		status, err := ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
+		if !status || err != nil {
+			return status, err
+		}
+		_, err = importLoopData.VRCT.Apply()
+		if err != nil {
+			return true, err
+		}
+		return status, err
 	})
 }
 

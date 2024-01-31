@@ -50,7 +50,6 @@ function main()
         ConfigType = api.fs.Config.Json
     }
 
-    -- TODO: fix auto creating tmp directory in this directory
     err = api.fs.UpdateConfig(configPath, '{"example-key":"example-val"}', options)
     if err ~= nil then
         api.info.Error(err)
@@ -68,9 +67,6 @@ function main()
         api.info.Error(err)
         return false
     end
-
-    -- TODO: do it automatically
-    api.fs.Apply()
 
     return true
 end

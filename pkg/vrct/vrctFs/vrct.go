@@ -135,9 +135,6 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 			if os.IsNotExist(err) {
 				v.revertSteps.RemoveDirAll(realFsEntryPath)
 			}
-			if err := os.MkdirAll(realFsEntryPath, os.ModePerm); err != nil {
-				return err
-			}
 			if err := v.mergeToRealFs(mergeDirEntryPath); err != nil {
 				return err
 			}
