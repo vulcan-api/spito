@@ -3,6 +3,7 @@ package checker
 import (
 	api "github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
 	"reflect"
@@ -60,8 +61,20 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 	fsNamespace.AddFn("CreateFile", apiFs.CreateFile)
 	fsNamespace.AddFn("CreateConfig", apiFs.CreateConfig)
 	fsNamespace.AddFn("UpdateConfig", apiFs.UpdateConfig)
+	fsNamespace.AddFn("Apply", apiFs.Apply)
+	fsNamespace.AddField("Config", getConfigEnums(L))
 
 	return fsNamespace.createTable(L)
+}
+
+func getConfigEnums(L *lua.LState) lua.LValue {
+	infoNamespace := newLuaNamespace()
+
+	infoNamespace.AddField("Json", lua.LNumber(vrctFs.JsonConfig))
+	infoNamespace.AddField("Yaml", lua.LNumber(vrctFs.YamlConfig))
+	infoNamespace.AddFn("Toml", lua.LNumber(vrctFs.TomlConfig))
+
+	return infoNamespace.createTable(L)
 }
 
 func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
@@ -76,6 +89,7 @@ func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.
 
 	return infoNamespace.createTable(L)
 }
+
 func getShNamespace(L *lua.LState) lua.LValue {
 	shellNamespace := newLuaNamespace()
 

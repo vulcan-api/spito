@@ -45,5 +45,20 @@ function main()
         return false
     end
 
+    configPath = "/tmp/spito-lua-test/example.json"
+    options = {
+        ConfigType = api.fs.Config.Json
+    }
+
+    err = api.fs.UpdateConfig(configPath, '{"example-key":"example-val"}', options)
+    if err ~= nil then
+        api.info.Error(err)
+        return false
+    end
+
+    api.fs.Apply()
+
+
+
     return true
 end

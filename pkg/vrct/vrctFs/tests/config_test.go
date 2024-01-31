@@ -5,7 +5,6 @@ import (
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 )
 
@@ -128,7 +127,7 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 
 	obtainedRawResult, err := vrct.ReadFile(setup.destinationPath)
 	if err != nil {
-		t.Fatalf("Failed to read file destinationPath %s: %s\n", setup.destinationPath, err)
+		t.Fatalf("Failed to read file destinationPath %s: %s", setup.destinationPath, err)
 	}
 
 	_, err = vrct.Apply()
@@ -138,31 +137,17 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 
 	obtainedRealRawResult, err := os.ReadFile(setup.destinationPath)
 	if err != nil {
-		t.Fatal("Failed to read from real fs file "+setup.destinationPath+"\n", err)
+		t.Fatalf("Failed to read from real fs file '%s': %s", setup.destinationPath, err)
 	}
 
-	desiredResult, err := vrctFs.GetMapFromBytes(desiredRawResult, setup.configType)
+	err = vrctFs.CompareConfigs(obtainedRawResult, desiredRawResult, setup.configType)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to properly merge virtual fs file '%s': %s", setup.destinationPath, err)
 	}
 
-	obtainedResult, err := vrctFs.GetMapFromBytes(obtainedRawResult, setup.configType)
+	err = vrctFs.CompareConfigs(obtainedRealRawResult, desiredRawResult, setup.configType)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to properly save real fs file '%s': %s", setup.destinationPath, err)
 	}
 
-	obtainedRealResult, err := vrctFs.GetMapFromBytes(obtainedRealRawResult, setup.configType)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	eq := reflect.DeepEqual(desiredResult, obtainedResult)
-	if !eq {
-		t.Fatalf("Failed to properly simulate '%s' file content!\nDesired content: >>>%s<<<\n\n Received content: >>>%s<<<", setup.destinationPath, desiredResult, obtainedResult)
-	}
-
-	eq = reflect.DeepEqual(desiredResult, obtainedRealResult)
-	if !eq {
-		t.Fatalf("Failed to properly simulate '%s' file content!\nDesired content: >>>%s<<<\n\n Received content: >>>%s<<<", setup.destinationPath, desiredResult, obtainedResult)
-	}
 }
