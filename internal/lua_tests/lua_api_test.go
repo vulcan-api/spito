@@ -45,7 +45,7 @@ func TestLuaApi(t *testing.T) {
 	scripts := []luaTest{
 		{file: "daemon_test.lua"},
 		{file: "fs_test.lua", beforeTest: prepareFsTest, afterTest: finalizeFsTest},
-		//{file: "package_test.lua"},
+		{file: "package_test.lua"},
 		{file: "rule_require_test.lua"},
 		{file: "sh_test.lua"},
 		{file: "sysinfo_test.lua"},
