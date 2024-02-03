@@ -3,14 +3,15 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/avorty/spito/internal/constants"
 	"os"
 	"path/filepath"
 	"unicode"
 
-	cmdApi "github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
 	"github.com/avorty/spito/internal/checker"
-	shared "github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
@@ -137,7 +138,7 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 			panic(err)
 		}
 
-		busObject := conn.Object("org.spito.gui", "/org/spito/gui")
+		busObject := conn.Object(constants.DbusInterfaceId, constants.DbusObjectPath)
 		infoApi = guiApi.InfoApi{
 			BusObject: busObject,
 		}

@@ -6,6 +6,18 @@ Spito has been designed to allow users easily swap
 and edit configuration files. It's user-friendly and
 lays the foundations for auto-repair tools.
 
+## Installation
+Only for local user
+```bash
+go install
+```
+
+For the whole operating system **(remember to run as root)**
+```bash
+export GOBIN=/usr/bin
+go install
+```
+
 ## Use cases
 
 ### Simple config - samba
