@@ -2,6 +2,7 @@ package checker
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
@@ -9,6 +10,7 @@ import (
 )
 
 var EnvironmentDataPath = filepath.Join(shared.UserHomeDir, ".local/state/spito/environment-data.json")
+var NotEnvironmentErr = errors.New("called environment only parts of code with rule which is not an environment")
 
 type AppliedEnvironments []*AppliedEnvironment
 type AppliedEnvironment struct {
@@ -87,63 +89,76 @@ func (e *AppliedEnvironments) RevertOther(envIdentifierOrPath string) error {
 	return nil
 }
 
-func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
+func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identifierOrPath string, envName string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName, nil), nil
+		rulesetLocation := NewRulesetLocation(identifierOrPath)
+		ruleConf, err := GetRuleConf(&rulesetLocation, envName)
+		if err != nil {
+			return false, err
+		}
+
+		if !ruleConf.Environment {
+			return false, NotEnvironmentErr
+		}
+		return _internalCheckRule(importLoopData, identifierOrPath, envName, nil), nil
 	})
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !doesEnvPass {
-		return doesEnvPass, err
+		return errors.New("environment didn't passed, cannot apply")
 	}
 
 	appliedEnvironments, err := ReadAppliedEnvironments()
 	if err != nil {
-		return false, err
+		return err
 	}
-	if err := appliedEnvironments.RevertOther(identifier); err != nil {
-		return false, err
+	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
+		return err
 	}
 
 	revertNum, err := importLoopData.VRCT.Apply()
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	appliedEnvironments.SetAsApplied(identifier, revertNum)
-	return doesEnvPass, appliedEnvironments.Save()
+	appliedEnvironments.SetAsApplied(identifierOrPath, revertNum)
+	return appliedEnvironments.Save()
 }
 
-func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) (bool, error) {
+func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		ruleConf := RuleConf{
 			Path:   "",
 			Unsafe: false,
 		}
 		script = processScript(script, &ruleConf)
+		if !ruleConf.Environment {
+			return false, NotEnvironmentErr
+		}
+
 		return ExecuteLuaMain(script, importLoopData, &ruleConf, filepath.Dir(scriptPath))
 	})
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !doesEnvPass {
-		return doesEnvPass, err
+		return errors.New("environment didn't passed, cannot apply")
 	}
 
 	appliedEnvironments, err := ReadAppliedEnvironments()
 	if err != nil {
-		return false, err
+		return err
 	}
 	if err := appliedEnvironments.RevertOther(scriptPath); err != nil {
-		return false, err
+		return err
 	}
 
 	revertNum, err := importLoopData.VRCT.Apply()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	appliedEnvironments.SetAsApplied(scriptPath, revertNum)
-	return doesEnvPass, appliedEnvironments.Save()
+	return appliedEnvironments.Save()
 }
