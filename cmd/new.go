@@ -123,7 +123,7 @@ var newRulesetCommand = &cobra.Command{
 		_, err = git.PlainInit(rulesetName, false)
 		handleError(err)
 
-		filesToBeCreated := []string{"README.md", checker.LockFilename}
+		filesToBeCreated := []string{"README.md"}
 		for _, fileName := range filesToBeCreated {
 			file, err := os.Create(rulesetName + "/" + fileName)
 			handleError(err)
