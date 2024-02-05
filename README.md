@@ -9,7 +9,8 @@ lays the foundations for auto-repair tools.
 
 ## Installation
 
-For the whole operating system **(remember to run as root)**
+First of all install [go](https://go.dev/doc/install).
+To install spito for the whole operating system **(remember to run as root)**
 
 ```bash
 export GOBIN=/usr/bin
