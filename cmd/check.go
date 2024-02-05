@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"github.com/avorty/spito/internal/constants"
 	"os"
 	"path/filepath"
 	"unicode"
@@ -138,7 +137,10 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 			panic(err)
 		}
 
-		busObject := conn.Object(constants.DbusInterfaceId, constants.DbusObjectPath)
+		dbusId := os.Getenv("DBUS_INTERFACE_ID")
+		dbusPath := os.Getenv("DBUS_OBJECT_PATH")
+
+		busObject := conn.Object(dbusId, dbus.ObjectPath(dbusPath))
 		infoApi = guiApi.InfoApi{
 			BusObject: busObject,
 		}
