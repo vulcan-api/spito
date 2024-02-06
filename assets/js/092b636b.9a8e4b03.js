@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[394],{4968:t=>{t.exports=JSON.parse('{"title":"Getting started","description":"How to get started with the SPITO","slug":"/category/getting-started","permalink":"/spito/docs/category/getting-started","navigation":{"next":{"title":"Installation","permalink":"/spito/docs/getting-started/installation"}}}')}}]);
