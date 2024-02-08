@@ -18,7 +18,7 @@ function main ()
     local path = "{{ .Path }}"
     local defaultContent = "{{ .Content }}"
 
-    local err = api.fs.CreateFile(path, defaultContent)
+    local err = api.fs.CreateFile(path, defaultContent, {})
     if err ~= nil then
         api.info.Error(err)
         return false
