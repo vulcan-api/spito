@@ -13,6 +13,7 @@ The `api.pkg` module provides functions for working with packages.
 
 ### Returns:
 - `package` (Package): The package info from `pacman -Qi`.
+- `error` (string): The error message if the package does not exist.
 
 
 | Field         | Type    | Description |
@@ -42,5 +43,12 @@ The `api.pkg` module provides functions for working with packages.
 ### Example usage:
 
 ```lua
-local pkg = api.pkg.get("gnome-shell")
+function gnome_exists()
+  app_info, err = api.pkg.Get("gnome-shell")
+  if err ~= nil then
+    api.info.Error("Error occured during obtaining package info!")
+    return false
+  end
+  return true
+end
 ```

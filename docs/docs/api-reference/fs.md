@@ -42,11 +42,19 @@ local exists = api.fs.fileExists("/etc/passwd", false)
 
 ### Returns:
 - `content` (string): The content of the file.
+- `error` (string): The error message if the file does not exist.
 
 ### Example usage:
 
 ```lua
-local content = api.fs.readFile("/etc/passwd")
+function readPasswd()
+  local content, err = api.fs.readFile("/etc/passwd")
+  if err ~= nil then
+    api.info.error("Error occured during reading the file: " .. err)
+    return false
+  end
+  return true
+end
 ```
 
 ## api.fs.readDir
@@ -56,11 +64,17 @@ local content = api.fs.readFile("/etc/passwd")
 
 ### Returns:
 - `files` ([]string): The files in the directory.
+- `error` (string): The error message if the directory does not exist.
 
 ### Example usage:
 
 ```lua
-local files = api.fs.readDir("/etc")
+function readDir()
+  local files = api.fs.readDir("/etc")
+  for _, file in ipairs(files) do
+    api.info.info(file)
+  end
+end
 ```
 
 ## api.fs.fileContains
@@ -103,11 +117,19 @@ local content = api.fs.removeComments(api.fs.readFile("/etc/passwd"), "#", "/*",
 
 ### Returns:
 - `lines` ([]int): The lines where the regex was found.
+- `error` (string): The error message if the regex is invalid.
 
 ### Example usage:
 
 ```lua
-local lines = api.fs.find("root", api.fs.readFile("/etc/passwd"))
+function findRoot()
+  local lines, err = api.fs.find("root", api.fs.readFile("/etc/passwd"))
+  if err ~= nil then
+    api.info.error("Error occured during finding the regex: " .. err)
+    return false
+  end
+  return true
+end
 ```
 
 ## api.fs.findAll
@@ -118,11 +140,19 @@ local lines = api.fs.find("root", api.fs.readFile("/etc/passwd"))
 
 ### Returns:
 - `lines` ([][]int): The lines where the regex was found.
+- `error` - The error message if the regex is invalid.
 
 ### Example usage:
 
 ```lua
-local lines = api.fs.findAll("root", api.fs.readFile("/etc/passwd"))
+function findAllRoots()
+  local lines, err = api.fs.findAll("root", api.fs.readFile("/etc/passwd"))
+  if err ~= nil then
+    api.info.error("Error occured during finding the regex: " .. err)
+    return false
+  end
+  return true
+end
 ```
 
 ## api.fs.getProperLines
@@ -133,11 +163,19 @@ local lines = api.fs.findAll("root", api.fs.readFile("/etc/passwd"))
 
 ### Returns:
 - `lines` ([]string): The lines where the regex was found.
+- `error` (string): The error message if the regex is invalid.
 
 ### Example usage:
 
 ```lua
-local lines = api.fs.getProperLines("root", api.fs.readFile("/etc/passwd"))
+function getRoots()
+  local lines, err = api.fs.getProperLines("root", api.fs.readFile("/etc/passwd"))
+  if err ~= nil then
+    api.info.error("Error occured during finding the regex: " .. err)
+    return false
+  end
+  return true
+end
 ```
 
 ## api.fs.createFile
@@ -146,6 +184,7 @@ local lines = api.fs.getProperLines("root", api.fs.readFile("/etc/passwd"))
 - `path` (string): The path to create.
 - `content` (string): The content of the file.
 - `options` (CreateFileOptions): The options for creating the file.
+- `error` (string): The error message if the file already exists.
 
 `CreateFileOptions`:
 - `optional` (bool): Whether the file is optional.
@@ -154,6 +193,13 @@ local lines = api.fs.getProperLines("root", api.fs.readFile("/etc/passwd"))
 ### Example usage:
 
 ```lua
-api.fs.createFile("/etc/passwd", "root:x:0:0:root:/root:/bin/bash", { optional = false, fileType = "passwd" })
+function createFile()
+  local err = api.fs.createFile("/etc/passwd", "root:x:0:0:root:/root:/bin/bash", { optional = false, fileType = "passwd" })
+  if err ~= nil then
+    api.info.error("Error occured during creating the file: " .. err)
+    return false
+  end
+  return true
+end
 ```
 

@@ -27,11 +27,19 @@ local distro = api.sys.getDistro()
 
 ### Returns:
 - `daemon` (Daemon): The daemon info.
+- `error` (string): The error message if the daemon does not exist.
 
 ### Example usage:
 
 ```lua
-local daemon = api.sys.getDaemon("NetworkManager")
+function networkManagerExists()
+  local daemon, err = api.sys.getDaemon("dbus")
+  if err ~= nil then
+    api.info.error("Error occured during obtaining daemon info!")
+    return false
+  end
+  return true
+end
 ```
 
 ## api.sys.getInitSystem
@@ -41,10 +49,17 @@ local daemon = api.sys.getDaemon("NetworkManager")
 
 ### Returns:
 - `initSystem` (InitSystem): The init system info.
+- `error` (string): The error message if the init system does not exist.
 
 ### Example usage:
 
 ```lua
-local initSystem = api.sys.getInitSystem()
+function initSystemExists()
+  local initSystem, err = api.sys.getInitSystem()
+  if err ~= nil then
+    api.info.error("Error occured during obtaining init system info!")
+    return false
+  end
+  return true
+end
 ```
-
