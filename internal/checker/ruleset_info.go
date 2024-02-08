@@ -7,21 +7,26 @@ import (
 	"path/filepath"
 )
 
-func getRulesetConf(ruleSetLocation *RulesetLocation) (RulesetConf, error) {
-	// Support for both .yaml and .yml
-	spitoRulesDataBytes, err := os.ReadFile(ruleSetLocation.GetRulesetPath() + "/spito-rules.yml")
+func ReadSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
+	spitoRulesDataBytes, err := os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito.yml")
 	if os.IsNotExist(err) {
 		var err2 error
-		spitoRulesDataBytes, err2 = os.ReadFile(ruleSetLocation.GetRulesetPath() + "/spito-rules.yaml")
+		spitoRulesDataBytes, err2 = os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito.yaml")
 		if err2 != nil {
-			return RulesetConf{}, err2
+			return nil, err2
 		}
-	} else if err != nil {
+	}
+	return spitoRulesDataBytes, err
+}
+
+func getRulesetConf(rulesetLocation *RulesetLocation) (RulesetConf, error) {
+	spitoRulesetYamlRaw, err := ReadSpitoYaml(rulesetLocation)
+	if err != nil {
 		return RulesetConf{}, err
 	}
 
-	var spitoRulesYaml SpitoRulesetYaml
-	if err := yaml.Unmarshal(spitoRulesDataBytes, &spitoRulesYaml); err != nil {
+	var spitoRulesetYaml SpitoRulesetYaml
+	if err := yaml.Unmarshal(spitoRulesetYamlRaw, &spitoRulesetYaml); err != nil {
 		return RulesetConf{}, err
 	}
 
@@ -29,8 +34,8 @@ func getRulesetConf(ruleSetLocation *RulesetLocation) (RulesetConf, error) {
 		Rules: make(map[string]RuleConf),
 	}
 
-	for key := range spitoRulesYaml.Rules {
-		ruleConf, err := spitoRulesYaml.getRuleConf(key)
+	for key := range spitoRulesetYaml.Rules {
+		ruleConf, err := spitoRulesetYaml.getRuleConf(key)
 		if err != nil {
 			return RulesetConf{}, err
 		}

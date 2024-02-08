@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/internal/checker"
@@ -21,9 +22,16 @@ func getGitUsername() string {
 	handleError(err)
 	gitUsername := gitConfig.User.Name
 	if gitUsername == "" {
-		printErrorAndExit(errors.New("Cannot find your git username. Please set it globally using git config"))
+		printErrorAndExit(errors.New("cannot find your git username. Please set it globally using git config"))
 	}
 	return gitUsername
+}
+
+func getStringFromStdin(scanner *bufio.Scanner) string {
+	if !scanner.Scan() {
+		handleError(scanner.Err())
+	}
+	return scanner.Text()
 }
 
 func isRequestPathOK(urlToValidate url.URL) bool {
@@ -40,12 +48,12 @@ var newRulesetCommand = &cobra.Command{
 		rulesetName := strings.ReplaceAll(args[0], " ", "")
 
 		if rulesetName == "" {
-			printErrorAndExit(errors.New("The ruleset name cannot be empty!"))
+			printErrorAndExit(errors.New("the ruleset name cannot be empty"))
 		}
 
 		_, err := os.Stat(rulesetName)
 		if err == nil {
-			printErrorAndExit(errors.New(fmt.Sprintf("Ruleset '%s' already exists!", rulesetName)))
+			printErrorAndExit(errors.New(fmt.Sprintf("ruleset '%s' already exists", rulesetName)))
 		}
 
 		shouldAssumeDefaultValues, err := cmd.Flags().GetBool("non-interactive")
@@ -63,22 +71,27 @@ var newRulesetCommand = &cobra.Command{
 		if !shouldAssumeDefaultValues {
 			var input string
 
+			scanner := bufio.NewScanner(os.Stdin)
+
 			fmt.Printf("Enter your git service username (%s): ", gitUsername)
-			fmt.Scanf("%s", &input)
+			input = getStringFromStdin(scanner)
+
 			if input != "" {
 				gitUsername = input
 			}
 			input = ""
 
 			fmt.Printf("Enter your ruleset repository name (%s): ", rulesetName)
-			fmt.Scanf("%s", &input)
+			input = getStringFromStdin(scanner)
+
 			if input != "" {
 				rulesetRepositoryName = input
 			}
 			input = ""
 
 			fmt.Printf("Enter your git repository hosting provider (%s): ", checker.GetDefaultRepoPrefix())
-			fmt.Scanf("%s", &input)
+			input = getStringFromStdin(scanner)
+
 			if input != "" {
 				hostingProvider = input
 			}
@@ -86,12 +99,13 @@ var newRulesetCommand = &cobra.Command{
 
 			repositoryUrl = fmt.Sprintf("https://%s/%s/%s", hostingProvider, gitUsername, rulesetRepositoryName)
 			fmt.Printf("Enter repository URL (%s): ", repositoryUrl)
-			fmt.Scanf("%s", &input)
+			input = getStringFromStdin(scanner)
+
 			if input != "" {
 				repositoryUrlObject, err := url.ParseRequestURI(input)
 				for err != nil || !isRequestPathOK(*repositoryUrlObject) {
 					fmt.Print("Enter a valid URL: ")
-					fmt.Scanf("%s", &input)
+					input = getStringFromStdin(scanner)
 					repositoryUrlObject, err = url.ParseRequestURI(input)
 				}
 				if input[len(repositoryUrl)-1] == '/' {
@@ -109,25 +123,29 @@ var newRulesetCommand = &cobra.Command{
 		_, err = git.PlainInit(rulesetName, false)
 		handleError(err)
 
-		filesToBeCreated := []string{"README.md", checker.LockFilename}
+		filesToBeCreated := []string{"README.md"}
 		for _, fileName := range filesToBeCreated {
 			file, err := os.Create(rulesetName + "/" + fileName)
 			handleError(err)
-			file.Close()
+			err = file.Close()
+			handleError(err)
 		}
 
 		configFile, err := os.Create(rulesetName + "/" + checker.ConfigFilename)
 		handleError(err)
 		config := ConfigFileLayout{
-			Repo_url:   repositoryUrl,
-			Git_prefix: hostingProvider,
+			RepoUrl:    repositoryUrl,
+			GitPrefix:  hostingProvider,
 			Identifier: rulesetIdentifier,
-			Rules:      map[string]string{},
+			Rules:      map[string]Rule{},
 		}
 		configFileContents, err := yaml.Marshal(config)
 		handleError(err)
-		configFile.Write(configFileContents)
-		configFile.Close()
+		_, err = configFile.Write(configFileContents)
+		handleError(err)
+
+		err = configFile.Close()
+		handleError(err)
 
 		err = os.Mkdir(rulesetName+"/"+"rules", 0700)
 		handleError(err)
