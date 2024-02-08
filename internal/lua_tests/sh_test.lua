@@ -1,7 +1,7 @@
 #![unsafe]
 
 function main()
-    res = api.sh.Command("echo \"Test\"")
+    res = api.sh.command("echo \"Test\"")
     
     return trim(res) == "Test"
 end

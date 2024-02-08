@@ -1,6 +1,6 @@
 function main()
     
-    dbus = api.sys.GetDaemon("dbus")
+    dbus = api.sys.getDaemon("dbus")
     if dbus.Name == "" or not dbus.IsActive or not dbus.IsEnabled then
         return false
     end

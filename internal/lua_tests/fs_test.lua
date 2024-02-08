@@ -1,82 +1,82 @@
 function main()
-    etcExits, err = api.fs.PathExists("/etc")
+    etcExits, err = api.fs.pathExists("/etc")
     if err ~= nil and etcExists then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    dirs, err = api.fs.ReadDir("/etc")
+    dirs, err = api.fs.readDir("/etc")
     if err ~= nil and len(dirs) > 0 then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    releaseExits, err = api.fs.FileExists("/etc/os-release", false)
+    releaseExits, err = api.fs.fileExists("/etc/os-release", false)
     if err ~= nil and releaseExists then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    resolv, err = api.fs.ReadFile("/etc/resolv.conf")
+    resolv, err = api.fs.readFile("/etc/resolv.conf")
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    cleanResolv = api.fs.RemoveComments(resolv, "#", "", "")
-    anyNameserverIsOnSite = api.fs.FileContains(cleanResolv, "nameserver")
+    cleanResolv = api.fs.removeComments(resolv, "#", "", "")
+    anyNameserverIsOnSite = api.fs.fileContains(cleanResolv, "nameserver")
     if not anyNameserverIsOnSite then
-        api.info.Error("No nameserver is on site")
+        api.info.error("No nameserver is on site")
         return false
     end
 
     partitionRegex = "[0-9]+."
-    indexes, err = api.fs.Find(partitionRegex, cleanResolv)
+    indexes, err = api.fs.find(partitionRegex, cleanResolv)
 
     if err ~= nil or indexes == nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    lines, err = api.fs.GetProperLines(partitionRegex, resolv)
+    lines, err = api.fs.getProperLines(partitionRegex, resolv)
 
     if err ~= nil or lines == nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
     configPath = "/tmp/spito-lua-test/example.json"
     options = {
-        ConfigType = api.fs.Config.Json
+        ConfigType = api.fs.config.json
     }
 
-    err = api.fs.UpdateConfig(configPath, '{"example-key":"example-val"}', options)
+    err = api.fs.updateConfig(configPath, '{"example-key":"example-val"}', options)
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    err = api.fs.CreateConfig(configPath, '{"example-key":"example-val"}', options)
+    err = api.fs.createConfig(configPath, '{"example-key":"example-val"}', options)
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    err = api.fs.CreateConfig(configPath, '{"next-example-key":"next-example-val"}', options)
+    err = api.fs.createConfig(configPath, '{"next-example-key":"next-example-val"}', options)
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    content, err = api.fs.ReadFile(configPath)
+    content, err = api.fs.readFile(configPath)
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    err = api.fs.CompareConfigs(content, '{"example-key": "example-val", "next-example-key": "next-example-val", "first-key":"first-val"}', options.ConfigType)
+    err = api.fs.compareConfigs(content, '{"example-key": "example-val", "next-example-key": "next-example-val", "first-key":"first-val"}', options.ConfigType)
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
