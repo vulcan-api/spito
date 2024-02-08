@@ -160,3 +160,7 @@ func (f *FsApi) CreateConfig(path, content string, options CreateConfigOptions) 
 func (f *FsApi) UpdateConfig(path, content string, options CreateConfigOptions) error {
 	return f.FsVRCT.UpdateConfig(path, []byte(content), []byte(options.Options), options.Optional, options.ConfigType)
 }
+
+func (f *FsApi) CompareConfigs(received, desired []byte, configType uint) error {
+	return vrctFs.CompareConfigs(received, desired, vrctFs.FileType(configType))
+}

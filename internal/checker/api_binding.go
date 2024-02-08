@@ -62,6 +62,7 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 	fsNamespace.AddFn("CreateConfig", apiFs.CreateConfig)
 	fsNamespace.AddFn("UpdateConfig", apiFs.UpdateConfig)
 	fsNamespace.AddFn("Apply", apiFs.Apply)
+	fsNamespace.AddFn("CompareConfigs", apiFs.CompareConfigs)
 	fsNamespace.AddField("Config", getConfigEnums(L))
 
 	return fsNamespace.createTable(L)

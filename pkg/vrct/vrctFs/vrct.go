@@ -122,6 +122,9 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 	}
 
 	for _, entry := range entries {
+		if destPath == "" {
+			destPath = "/"
+		}
 		realFsEntryPath := filepath.Join(destPath, entry.Name())
 		mergeDirEntryPath := filepath.Join(mergeDirPath, entry.Name())
 
@@ -134,6 +137,9 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 			// If originally dir does not exist, then revert should delete it
 			if os.IsNotExist(err) {
 				v.revertSteps.RemoveDirAll(realFsEntryPath)
+			}
+			if err := os.MkdirAll(realFsEntryPath, os.ModePerm); err != nil {
+				return err
 			}
 			if err := v.mergeToRealFs(mergeDirEntryPath); err != nil {
 				return err

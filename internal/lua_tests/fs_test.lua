@@ -68,5 +68,17 @@ function main()
         return false
     end
 
+    content, err = api.fs.ReadFile(configPath)
+    if err ~= nil then
+        api.info.Error(err)
+        return false
+    end
+
+    err = api.fs.CompareConfigs(content, '{"example-key": "example-val", "next-example-key": "next-example-val", "first-key":"first-val"}', options.ConfigType)
+    if err ~= nil then
+        api.info.Error(err)
+        return false
+    end
+
     return true
 end
