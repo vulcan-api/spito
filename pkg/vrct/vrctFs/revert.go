@@ -3,7 +3,6 @@ package vrctFs
 import (
 	"fmt"
 	"github.com/BaderBC/targz"
-	"github.com/avorty/spito/pkg/shared"
 	"gopkg.in/mgo.v2/bson"
 	"os"
 	"path/filepath"
@@ -25,7 +24,8 @@ func GetSerializedRevertStepsDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(homeDir, shared.LocalStateSpitoPath, "revert-steps-serialized"
+	// cannot use shared.LocalStateSpitoPath, because it creates incorrect golang import loop
+	dir := filepath.Join(homeDir, ".local/state/spito/revert-steps-serialized")
 
 	// Ensure exist
 	err = os.MkdirAll(dir, os.ModePerm)
