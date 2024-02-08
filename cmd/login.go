@@ -16,10 +16,9 @@ import (
 )
 
 const (
-	tokenVerificationRoute            = "token/verify"
-	secretDirectoryName               = "secret"
-	tokenStorageFilename              = "user-tokens.json"
-	secretGlobalDirectoryDefaultValue = "~/.local/state/spito"
+	tokenVerificationRoute = "token/verify"
+	secretDirectoryName    = "secret"
+	tokenStorageFilename   = "user-tokens.json"
 )
 
 type TokenValidationResponse struct {
@@ -77,7 +76,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("your token is invalid. Please check if the token really belongs to your account"))
 	}
 	secretFilePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", secretGlobalDirectoryDefaultValue),
+		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
 		secretDirectoryName,
 		tokenStorageFilename)
 	err = shared.ExpandTilde(&secretFilePath)

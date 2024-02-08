@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-var EnvironmentDataPath = filepath.Join(shared.UserHomeDir, ".local/state/spito/environment-data.json")
+var EnvironmentDataPath = filepath.Join(shared.UserHomeDir, shared.LocalStateSpitoPath, "environment-data.json")
 var NotEnvironmentErr = errors.New("called environment only parts of code with rule which is not an environment")
 
 type AppliedEnvironments []*AppliedEnvironment
