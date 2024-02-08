@@ -46,7 +46,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("the token cannot be empty"))
 	}
 
-	if exists, _ := shared.DoesPathExist(checker.ConfigFilename); isLoggingInLocally && !exists {
+	if exists, _ := shared.PathExists(checker.ConfigFilename); isLoggingInLocally && !exists {
 		printErrorAndExit(errors.New("please run this command inside a spito ruleset"))
 	}
 
@@ -92,7 +92,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 
 	tokenData := TokenStorageLayout{}
 
-	if doesTokenFileExists, _ := shared.DoesPathExist(secretFilePath); doesTokenFileExists {
+	if doesTokenFileExists, _ := shared.PathExists(secretFilePath); doesTokenFileExists {
 		tokenFileRaw, err := os.ReadFile(secretFilePath)
 		handleError(err)
 		err = bson.Unmarshal(tokenFileRaw, &tokenData)

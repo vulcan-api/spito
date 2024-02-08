@@ -25,7 +25,7 @@ var UserHomeDir = func() string {
 	return dir
 }()
 
-func DoesPathExist(path string) (bool, error) {
+func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -36,13 +36,13 @@ func DoesPathExist(path string) (bool, error) {
 	return false, err
 }
 
-func CreateIfNotExist(path, defaultContent string) error {
-	pathExist, err := DoesPathExist(path)
+func CreateIfNotExists(path, defaultContent string) error {
+	pathExists, err := PathExists(path)
 	if err != nil {
 		return err
 	}
 
-	if !pathExist {
+	if !pathExists {
 		if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 			return err
 		}

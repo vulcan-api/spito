@@ -110,7 +110,7 @@ var checkCmd = &cobra.Command{
 				localRulesetPath = filepath.Join(executionPath, identifierOrPath)
 			}
 
-			pathExists, err := shared.DoesPathExist(localRulesetPath)
+			pathExists, err := shared.PathExists(localRulesetPath)
 			if err == nil && pathExists {
 				identifierOrPath = localRulesetPath
 			}

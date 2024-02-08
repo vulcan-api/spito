@@ -20,7 +20,7 @@ type AppliedEnvironment struct {
 }
 
 func ReadAppliedEnvironments() (AppliedEnvironments, error) {
-	if err := shared.CreateIfNotExist(EnvironmentDataPath, "[]"); err != nil {
+	if err := shared.CreateIfNotExists(EnvironmentDataPath, "[]"); err != nil {
 		return nil, err
 	}
 
