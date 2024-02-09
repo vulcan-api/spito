@@ -6,14 +6,14 @@ sidebar_position: 1
 
 The `api.pkg` module provides functions for working with packages.
 
-## api.pkg.get
+## get
 
 ### Arguments:
 - `name` (string): The name of the package to get.
 
 ### Returns:
 - `package` (Package): The package info from `pacman -Qi`.
-- `error` (string): The error message if the package does not exist.
+- `error` (error): The error message if the package does not exist.
 
 
 | Field         | Type    | Description |

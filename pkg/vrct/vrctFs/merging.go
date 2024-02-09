@@ -9,10 +9,9 @@ import (
 )
 
 func (p *FilePrototype) mergeLayers() (PrototypeLayer, error) {
-	switch p.FileType {
-	case TextFile:
+	if p.FileType == TextFile {
 		return p.mergeTextLayers()
-	default:
+	} else {
 		return p.mergeConfigLayers()
 	}
 }

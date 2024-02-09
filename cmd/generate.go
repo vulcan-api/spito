@@ -53,7 +53,7 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 	ruleFile.Close()
 
 	config.Rules[rulePathTokens[len(rulePathTokens)-1]] = Rule{
-		Path: "./rules/" + rulePath + ".lua",
+		Path:        "./rules/" + rulePath + ".lua",
 		Description: "",
 	}
 

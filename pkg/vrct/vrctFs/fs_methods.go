@@ -1,6 +1,7 @@
 package vrctFs
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -14,43 +15,45 @@ import (
 //
 //	filePath - Path to file
 //	content - content of file
-//	optionalKeys - json or yaml document describing which key in config is optional
 //	isOptional - default option in configs / is able to merge in text files
-//	fileType - given 0 - text file, otherwise config specified in file_type.go
-func (v *VRCTFs) CreateFile(filePath string, content []byte, optionalKeys []byte, isOptional bool, fileType int) error {
+func (v *VRCTFs) CreateFile(filePath string, content []byte, isOptional bool) error {
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return err
 	}
 	dirPath := filepath.Dir(filePath)
 
-	// TODO: consider pushing almost everything below in filePrototype.LoadOrCreate
 	err = os.MkdirAll(filepath.Join(v.virtualFSPath, dirPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	// TODO: create function that allows to merge json and xml configs (and first think if it is useful in any way)
 	filePrototype := FilePrototype{
-		FileType: fileType,
+		FileType: TextFile,
 	}
 	err = filePrototype.Read(v.virtualFSPath, filePath)
 	if err != nil {
 		return err
 	}
+	if filePrototype.FileType != TextFile {
+		return errors.New("trying to create file, where it's config type")
+	}
 
-	prototypeLayer, err := filePrototype.CreateLayer(content, optionalKeys, isOptional)
+	if filePrototype.FileType != TextFile {
+		return fmt.Errorf("%s cannot be created as it's already a config file", filePath)
+	}
+
+	prototypeLayer, err := filePrototype.CreateLayer(content, nil, isOptional)
 	if err != nil {
 		return err
 	}
 
-	// TODO: check for conflict out of the box
-	err = filePrototype.AddNewLayer(prototypeLayer)
+	err = filePrototype.AddNewLayer(prototypeLayer, false)
 	return err
 }
 
 func (v *VRCTFs) ReadFile(filePath string) ([]byte, error) {
-	filePath, err := pathMustBeAbsolute(filePath)
+	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +77,7 @@ func (v *VRCTFs) ReadFile(filePath string) ([]byte, error) {
 }
 
 func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
-	path, err := pathMustBeAbsolute(path)
+	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +105,8 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 		return FileInfo{
 			name:    name,
 			size:    int64(len(content)),
-			mode:    stat.Mode(),    //TODO: consider changing it
-			modTime: stat.ModTime(), //TODO: same
+			mode:    stat.Mode(),
+			modTime: stat.ModTime(),
 			isDir:   stat.IsDir(),
 		}, nil
 	}
@@ -124,7 +127,7 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 
 func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 	dirEntries := make(map[string]os.DirEntry)
-	path, err := pathMustBeAbsolute(path)
+	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,9 @@
 package vrctFs
 
+type FileType int
+
 const (
-	TextFile = iota
+	TextFile FileType = iota
 	JsonConfig
 	YamlConfig
 	TomlConfig
