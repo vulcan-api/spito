@@ -39,11 +39,29 @@ function main()
     end
 
     lines, err = api.fs.getProperLines(partitionRegex, resolv)
-
     if err ~= nil or lines == nil then
         api.info.error(err)
         return false
     end
+
+    fileToBeCreatedPath = "/tmp/spito-create-file-test-24tc89t221"
+    fileToBeCreatedContent = "example content"
+    err = api.fs.createFile(fileToBeCreatedPath, fileToBeCreatedContent, false)
+    if err ~= nil then
+        api.info.error(err)
+        return false
+    end
+
+    content, err = api.fs.readFile(fileToBeCreatedPath)
+    if err ~= nil then
+        api.info.error(err)
+        return false
+    end
+    if content ~= fileToBeCreatedContent then
+        api.info.error("Failed to properly create file - wrong content")
+        return false
+    end
+
 
     configPath = "/tmp/spito-lua-test/example.json"
     options = {
@@ -74,7 +92,9 @@ function main()
         return false
     end
 
-    err = api.fs.compareConfigs(content, '{"example-key": "example-val", "next-example-key": "next-example-val", "first-key":"first-val"}', options.ConfigType)
+    err = api.fs.compareConfigs(content,
+        '{"example-key": "example-val", "next-example-key": "next-example-val", "first-key":"first-val"}',
+        options.ConfigType)
     if err ~= nil then
         api.info.error(err)
         return false
