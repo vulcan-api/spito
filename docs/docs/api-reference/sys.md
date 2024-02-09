@@ -6,7 +6,7 @@ sidebar_position: 2
 
 The `api.sys` module provides functions for working with the system.
 
-## .getDistro
+## getDistro
 
 ### Arguments:
 - `name` (string): The name of the package to get.
@@ -20,7 +20,7 @@ The `api.sys` module provides functions for working with the system.
 distro = api.sys.getDistro()
 ```
 
-## .getDaeomon
+## getDaemon
 
 ### Arguments:
 - `name` (string): The name of the package to get.
@@ -42,7 +42,7 @@ function networkManagerExists()
 end
 ```
 
-## .getInitSystem
+## getInitSystem
 
 ### Arguments:
 - `name` (string): The name of the package to get.
