@@ -9,7 +9,7 @@ The `api.info` module provides functions for logging information.
 When executing from CLI the log messages are printed to the console. <br />
 When executing from the GUI the log messages are displayed in the app. 
 
-## api.info.log
+## log
 
 ### Arguments:
 - `messages` (string...): The message to log.
@@ -20,7 +20,7 @@ When executing from the GUI the log messages are displayed in the app.
 api.info.log("Hello, world!")
 ```
 
-## api.info.debug
+## debug
 
 ### Arguments:
 - `messages` (string...): The message to log.
@@ -31,7 +31,7 @@ api.info.log("Hello, world!")
 api.info.debug("Hello, world!")
 ```
 
-## api.info.error
+## error
 
 ### Arguments:
 - `messages` (string...): The message to log.
@@ -42,7 +42,7 @@ api.info.debug("Hello, world!")
 api.info.error("Hello, world!")
 ```
 
-## api.info.warn
+## warn
 
 ### Arguments:
 - `messages` (string...): The message to log.
@@ -53,7 +53,7 @@ api.info.error("Hello, world!")
 api.info.warn("Hello, world!")
 ```
 
-## api.info.important
+## important
 
 ### Arguments:
 - `messages` (string...): The message to log.
