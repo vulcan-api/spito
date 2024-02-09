@@ -58,7 +58,7 @@ function main()
         return false
     end
     if content ~= fileToBeCreatedContent then
-        api.info.error("Failed to property create file - wrong content")
+        api.info.error("Failed to properly create file - wrong content")
         return false
     end
 
