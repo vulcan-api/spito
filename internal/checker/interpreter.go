@@ -37,7 +37,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
+func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 	L.SetGlobal("require_remote", L.NewFunction(func(state *lua.LState) int {
 		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
@@ -53,7 +53,11 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *shared
 
 	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
 		rulePath := L.Get(1).String()
-		shared.ExpandTilde(&rulePath)
+		err := shared.ExpandTilde(&rulePath)
+		if err != nil {
+			importLoopData.ErrChan <- err
+			panic(nil)
+		}
 
 		if err := L.DoFile(rulePath); err != nil {
 			importLoopData.ErrChan <- err

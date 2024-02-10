@@ -40,7 +40,7 @@ func (packageTracker PackageConflictTracker) RemovePackage(packageName string) e
 func (packageTracker PackageConflictTracker) GetPackagesToInstall() []string {
 	result := make([]string, len(packageTracker.packagesInstalled))
 	i := 0
-	for packageName, _ := range packageTracker.packagesInstalled {
+	for packageName := range packageTracker.packagesInstalled {
 		result[i] = packageName
 		i++
 	}
@@ -50,7 +50,7 @@ func (packageTracker PackageConflictTracker) GetPackagesToInstall() []string {
 func (packageTracker PackageConflictTracker) GetPackagesToRemove() []string {
 	result := make([]string, len(packageTracker.packagesRemoved))
 	i := 0
-	for packageName, _ := range packageTracker.packagesRemoved {
+	for packageName := range packageTracker.packagesRemoved {
 		result[i] = packageName
 		i++
 	}
