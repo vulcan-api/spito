@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-var EnvironmentDataPath = filepath.Join(shared.UserHomeDir, shared.LocalStateSpitoPath, "environment-data.json")
+var EnvironmentDataPath = filepath.Join(shared.LocalStateSpitoPath, "environment-data.json")
 var NotEnvironmentErr = errors.New("called environment only parts of code with rule which is not an environment")
 
 type AppliedEnvironments []*AppliedEnvironment
@@ -84,6 +84,8 @@ func (e *AppliedEnvironments) RevertOther(envIdentifierOrPath string) error {
 		if err := revertSteps.Apply(); err != nil {
 			return err
 		}
+
+		env.IsApplied = false
 	}
 
 	return nil
@@ -150,6 +152,7 @@ func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string
 	if err != nil {
 		return err
 	}
+
 	if err := appliedEnvironments.RevertOther(scriptPath); err != nil {
 		return err
 	}

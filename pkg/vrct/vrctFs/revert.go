@@ -220,7 +220,7 @@ func (r *RevertSteps) Deserialize(revertNum int) error {
 		return err
 	}
 
-	// Now Unmarshall bson into r
+	// Unmarshall bson into r
 
 	bsonPath := filepath.Join(r.RevertTempDir, revertStepsBsonName)
 	bsonContent, err := os.ReadFile(bsonPath)
@@ -228,9 +228,13 @@ func (r *RevertSteps) Deserialize(revertNum int) error {
 		return err
 	}
 
+	// Save revertTempDir
+	revertTempDir := r.RevertTempDir
+
 	if err := bson.Unmarshal(bsonContent, r); err != nil {
 		return err
 	}
+	r.RevertTempDir = revertTempDir
 
 	return os.Remove(bsonPath)
 }

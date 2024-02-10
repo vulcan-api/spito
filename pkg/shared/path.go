@@ -2,6 +2,7 @@ package shared
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -82,4 +83,15 @@ func GetEnvWithDefaultValue(environmentVariable string, defaultValue string) str
 		return val
 	}
 	return defaultValue
+}
+
+func RandomLetters(length int) string {
+	letters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	result := make([]byte, length)
+	for i := range result {
+		result[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(result)
 }

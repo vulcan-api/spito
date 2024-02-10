@@ -66,28 +66,21 @@ func TestRevertingPreviousEnv(t *testing.T) {
 		t.Fatalf("File %s should be reverted\n", firstEnvTemplate.Path)
 	}
 
-	secondFileExists, err := shared.PathExists(secondEnvTemplate.Path)
+	secondFileContent, err := os.ReadFile(secondEnvTemplate.Path)
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatal(err)
 	}
-	if secondFileExists {
-		t.Fatalf("File %s should be reverted\n", secondEnvTemplate.Path)
+	if string(secondFileContent) != secondEnvTemplate.Content {
+		t.Fatalf("File %s has \"%s\" content instead of \"%s\"\n",
+			secondEnvTemplate.Path,
+			secondFileContent,
+			secondEnvTemplate.Content,
+		)
 	}
 }
 
 func applyRule(templateData templateDataT, t *testing.T) templateDataT {
-	testFile, err := os.CreateTemp("/tmp", "test-file-")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	defer func() {
-		if err := testFile.Close(); err != nil {
-			t.Fatal("Failed to close file\n " + err.Error())
-		}
-	}()
-
-	templateData.Path = testFile.Name()
+	templateData.Path = "/tmp/test-file-" + shared.RandomLetters(10)
 
 	ruleSourceCode := getSourceCode(t, templateData)
 	importLoopData := getImportLoopData(t)
