@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/internal/checker"
+	"github.com/avorty/spito/pkg/shared"
 	"net/url"
 	"os"
 	"regexp"
@@ -53,7 +54,7 @@ var newRulesetCommand = &cobra.Command{
 
 		gitUsername := getGitUsername()
 		rulesetIdentifier := gitUsername + "/" + rulesetName
-		newRulesetLocation := checker.NewRulesetLocation(rulesetIdentifier)
+		newRulesetLocation := checker.NewRulesetLocation(rulesetIdentifier, false)
 
 		// Because we create RulesetLocation based on git identifier, we can be sure that full url is not nil
 		repositoryUrl := *newRulesetLocation.GetFullUrl()
@@ -118,7 +119,7 @@ var newRulesetCommand = &cobra.Command{
 		_, err = git.PlainInit(rulesetName, false)
 		handleError(err)
 
-		filesToBeCreated := []string{"README.md", checker.LockFilename}
+		filesToBeCreated := []string{"README.md", shared.LockFilename}
 		for _, fileName := range filesToBeCreated {
 			file, err := os.Create(rulesetName + "/" + fileName)
 			handleError(err)
@@ -126,13 +127,13 @@ var newRulesetCommand = &cobra.Command{
 			handleError(err)
 		}
 
-		configFile, err := os.Create(rulesetName + "/" + checker.ConfigFilename)
+		configFile, err := os.Create(rulesetName + "/" + shared.ConfigFilename)
 		handleError(err)
-		config := ConfigFileLayout{
+		config := shared.ConfigFileLayout{
 			RepoUrl:    repositoryUrl,
 			GitPrefix:  hostingProvider,
 			Identifier: rulesetIdentifier,
-			Rules:      map[string]Rule{},
+			Rules:      map[string]shared.RuleConfigLayout{},
 		}
 		configFileContents, err := yaml.Marshal(config)
 		handleError(err)

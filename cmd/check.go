@@ -3,14 +3,17 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/avorty/spito/pkg/api"
+	"github.com/avorty/spito/pkg/package_conflict"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode"
 
-	cmdApi "github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
 	"github.com/avorty/spito/internal/checker"
-	shared "github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/godbus/dbus"
 	"github.com/spf13/cobra"
@@ -35,6 +38,16 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 		runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
 		handleError(err)
 	}
+
+	runtimeData.InfoApi.Log("executing pacman commands...")
+
+	runtimeData.InfoApi.Log("installing packages...")
+	err = api.InstallPackage(strings.Join(runtimeData.PackageTracker.GetPackagesToInstall(), " "))
+	handleError(err)
+
+	runtimeData.InfoApi.Log("removing packages...")
+	err = api.RemovePackage(strings.Join(runtimeData.PackageTracker.GetPackagesToRemove(), " "))
+	handleError(err)
 
 	revertCommand := fmt.Sprintf("spito revert %d", revertNum)
 	runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
@@ -82,11 +95,15 @@ var checkFileCmd = &cobra.Command{
 }
 
 var checkCmd = &cobra.Command{
-	Use:   "check {ruleset identifier or path} {rule}",
+	Use:   "check {ruleset identifier} {rule} or check -p {ruleset path} {rule}",
 	Short: "Check whether your machine pass rule",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		runtimeData := getInitialRuntimeData(cmd)
+
+		isPath, err := cmd.Flags().GetBool("path")
+		handleError(err)
+
 		identifierOrPath := args[0]
 		ruleName := args[1]
 
@@ -98,23 +115,13 @@ var checkCmd = &cobra.Command{
 			}
 		}()
 
-		if executionPath, err := os.Getwd(); err == nil {
-			localRulesetPath := identifierOrPath
-			if filepath.IsLocal(identifierOrPath) {
-				localRulesetPath = filepath.Join(executionPath, identifierOrPath)
-			}
-
-			pathExists, err := shared.DoesPathExist(localRulesetPath)
-			if err == nil && pathExists {
-				identifierOrPath = localRulesetPath
-			}
+		var doesRulePass bool
+		if isPath {
+			doesRulePass, err = checker.CheckRuleByPath(&runtimeData, identifierOrPath, ruleName)
+		} else {
+			doesRulePass, err = checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
 		}
-
-		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%s", err.Error())
-			os.Exit(1)
-		}
+		handleError(err)
 
 		communicateRuleResult(ruleName, doesRulePass)
 		if doesRulePass {
@@ -151,10 +158,11 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 	}
 
 	return shared.ImportLoopData{
-		VRCT:         *ruleVRCT,
-		RulesHistory: shared.RulesHistory{},
-		ErrChan:      make(chan error),
-		InfoApi:      infoApi,
+		VRCT:           *ruleVRCT,
+		RulesHistory:   shared.RulesHistory{},
+		ErrChan:        make(chan error),
+		InfoApi:        infoApi,
+		PackageTracker: package_conflict.NewPackageConflictTracker(),
 	}
 }
 

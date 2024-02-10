@@ -10,7 +10,7 @@ import (
 
 const rulesetDirConstantName = "RULESET_DIR"
 
-func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf, rulesetPath string) (bool, error) {
+func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, rulesetPath string) (bool, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	defer L.Close()
 
@@ -37,12 +37,12 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua.LState) {
+func attachRuleRequiring(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	L.SetGlobal("require_remote", L.NewFunction(func(state *lua.LState) int {
 		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		rulesetLocation := NewRulesetLocation(rulesetIdentifier)
+		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
 		err := FetchRuleset(&rulesetLocation)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 

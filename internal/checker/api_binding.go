@@ -1,7 +1,7 @@
 package checker
 
 import (
-	api "github.com/avorty/spito/pkg/api"
+	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
@@ -9,10 +9,10 @@ import (
 )
 
 // Every cmdApi needs to be attached here in order to be available:
-func attachApi(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua.LState) {
+func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
-	apiNamespace.AddField("pkg", getPackageNamespace(L))
+	apiNamespace.AddField("pkg", getPackageNamespace(L, importLoopData))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
@@ -24,9 +24,17 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua
 	apiNamespace.setGlobal(L, "api")
 }
 
-func getPackageNamespace(L *lua.LState) lua.LValue {
+func getPackageNamespace(L *lua.LState, importLoopData *shared.ImportLoopData) lua.LValue {
 	pkgNamespace := newLuaNamespace()
 	pkgNamespace.AddFn("Get", api.GetPackage)
+	pkgNamespace.AddFn("Install", func(packageName string) error {
+		err := importLoopData.PackageTracker.AddPackage(packageName)
+		return err
+	})
+	pkgNamespace.AddFn("Remove", func(packageName string) error {
+		err := importLoopData.PackageTracker.RemovePackage(packageName)
+		return err
+	})
 
 	return pkgNamespace.createTable(L)
 }

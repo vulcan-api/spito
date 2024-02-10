@@ -4,11 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/oleiade/reflections"
+	"os"
 	"os/exec"
 	"strings"
 )
 
 const packageManager = "pacman" // Currently we only support arch pacman
+const installCommand = "-S"
+const removeCommand = "-Rns"
+const rootExecutionCommand = "sudo"
 
 type Package struct {
 	Name          string
@@ -131,4 +135,26 @@ func GetPackage(name string) (Package, error) {
 		p.setField(key, value)
 	}
 	return p, nil
+}
+
+func bindStandardStreams(cmd *exec.Cmd) {
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+}
+
+func InstallPackage(packageName string) error {
+	pacmanCommand := exec.Command(rootExecutionCommand, packageManager, installCommand, packageName)
+	bindStandardStreams(pacmanCommand)
+
+	err := pacmanCommand.Run()
+	return err
+}
+
+func RemovePackage(packageName string) error {
+	pacmanCommand := exec.Command(rootExecutionCommand, packageManager, removeCommand, packageName)
+	bindStandardStreams(pacmanCommand)
+
+	err := pacmanCommand.Run()
+	return err
 }

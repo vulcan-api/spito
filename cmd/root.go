@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/avorty/spito/cmd/cmdApi"
-	"github.com/avorty/spito/internal/checker"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -21,23 +21,8 @@ func printErrorAndExit(errorToBePrinted error) {
 	os.Exit(1)
 }
 
-type Rule struct {
-	Path        string `yaml:"path"`
-	Description string `yaml:"description"`
-	Unsafe      bool   `yaml:"unsafe"`
-}
-
-type ConfigFileLayout struct {
-	RepoUrl     string `yaml:"repo_url"`
-	GitPrefix   string `yaml:"git_prefix"`
-	Identifier  string
-	Rules       map[string]Rule
-	Description string
-	Branch      string
-}
-
-func readConfigFile(rulesetPath string, output *ConfigFileLayout) {
-	configFileContents, err := os.ReadFile(filepath.Join(rulesetPath, checker.ConfigFilename))
+func readConfigFile(rulesetPath string, output *shared.ConfigFileLayout) {
+	configFileContents, err := os.ReadFile(filepath.Join(rulesetPath, shared.ConfigFilename))
 	handleError(err)
 
 	err = yaml.Unmarshal(configFileContents, &output)
@@ -73,6 +58,8 @@ func init() {
 
 	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
+	checkCmd.Flags().BoolP("path", "p", false, "Use ruleset path instead of ruleset identifier")
+
 	newRulesetCommand.Flags().BoolP("non-interactive", "y", false, "If true assume default values for spito.yaml")
 	loginCommand.Flags().BoolP("local", "l", false, "If true, save login credentials inside a spito ruleset")
 	publishCommand.Flags().BoolP("local", "l", false, "If true, get login token from a local ruleset")

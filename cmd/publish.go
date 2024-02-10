@@ -140,7 +140,7 @@ func onPublishCommand(cmd *cobra.Command, args []string) {
 		handleError(err)
 	}
 
-	var configFileValues ConfigFileLayout
+	var configFileValues shared.ConfigFileLayout
 	readConfigFile(rulesetPath, &configFileValues)
 
 	if configFileValues.RepoUrl == "" || configFileValues.Branch == "" {

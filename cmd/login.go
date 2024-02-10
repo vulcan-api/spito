@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/avorty/spito/cmd/cmdApi"
-	"github.com/avorty/spito/internal/checker"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/mgo.v2/bson"
@@ -46,7 +45,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("the token cannot be empty"))
 	}
 
-	if exists, _ := shared.DoesPathExist(checker.ConfigFilename); isLoggingInLocally && !exists {
+	if exists, _ := shared.DoesPathExist(shared.ConfigFilename); isLoggingInLocally && !exists {
 		printErrorAndExit(errors.New("please run this command inside a spito ruleset"))
 	}
 
