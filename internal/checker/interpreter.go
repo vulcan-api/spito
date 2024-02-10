@@ -19,7 +19,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 
 	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
 	attachApi(importLoopData, ruleConf, L)
-	attachRuleRequiring(importLoopData, ruleConf, L)
+	attachRuleRequiring(importLoopData, L)
 
 	if err := L.DoString(script); err != nil {
 		return false, err
