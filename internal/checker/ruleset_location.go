@@ -40,7 +40,7 @@ type RulesetLocation struct {
 }
 
 type DependencyTreeLayout struct {
-	Dependencies map[string][]string `yaml:"dependencies", omitempty`
+	Dependencies map[string][]string `yaml:"dependencies"`
 }
 
 // NewRulesetLocation e.g. from: https://github.com/avorty/spito-ruleset.git to avorty/spito-ruleset
