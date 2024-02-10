@@ -13,10 +13,19 @@ jobs:
         os: [arch, artix-openrc, artix-runit]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Docker Setup Buildx
         uses: docker/setup-buildx-action@v3.0.0
+
+      - name: docker pull archlinux
+        run: docker pull archlinux
+
+      - name: docker pull archlinux/openrc
+        run: docker pull archlinux/openrc
+
+      - name: docker pull archlinux/runit
+        run: docker pull archlinux/runit
+
+      - uses: actions/checkout@v4
 
       - name: Add permissions to execute scripts
         run: chmod +x -R test
