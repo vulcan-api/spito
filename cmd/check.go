@@ -149,7 +149,10 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 			panic(err)
 		}
 
-		busObject := conn.Object("org.spito.gui", "/org/spito/gui")
+		dbusId := os.Getenv("DBUS_INTERFACE_ID")
+		dbusPath := os.Getenv("DBUS_OBJECT_PATH")
+
+		busObject := conn.Object(dbusId, dbus.ObjectPath(dbusPath))
 		infoApi = guiApi.InfoApi{
 			BusObject: busObject,
 		}

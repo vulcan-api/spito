@@ -39,7 +39,7 @@ func SaveBsonMap(toSave map[string]interface{}, pathToFile string) error {
 	return nil
 }
 
-func GetMapFromBytes(content []byte, configType int) (map[string]interface{}, error) {
+func GetMapFromBytes(content []byte, configType FileType) (map[string]interface{}, error) {
 	var err error
 	var resultMap map[string]interface{}
 	switch configType {
@@ -71,6 +71,7 @@ func GetMapFromBytes(content []byte, configType int) (map[string]interface{}, er
 
 	return resultMap, err
 }
+
 func getBoolMap(value interface{}, option interface{}) (map[string]interface{}, map[string]interface{}, error) {
 	valueKind := reflect.ValueOf(value).Kind()
 	optionKind := reflect.ValueOf(option).Kind()
@@ -93,4 +94,21 @@ func getBoolMap(value interface{}, option interface{}) (map[string]interface{}, 
 	}
 
 	return mappedValue, mappedOption, nil
+}
+
+func CompareConfigs(received, desired []byte, configType FileType) error {
+	receivedMap, err := GetMapFromBytes(received, configType)
+	if err != nil {
+		return err
+	}
+
+	desiredMap, err := GetMapFromBytes(desired, configType)
+	if err != nil {
+		return err
+	}
+
+	if eq := reflect.DeepEqual(receivedMap, desiredMap); !eq {
+		return fmt.Errorf("Configs doesn't match!\nReceived content: >>>%s<<<\n\nDesired content: >>>%s<<<\n", received, desired)
+	}
+	return nil
 }

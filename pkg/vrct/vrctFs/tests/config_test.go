@@ -5,7 +5,6 @@ import (
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 )
 
@@ -13,7 +12,7 @@ type ConfigsSetup struct {
 	configs         []Config
 	resultPath      string
 	destinationPath string
-	configType      int
+	configType      vrctFs.FileType
 }
 
 type Config struct {
@@ -54,14 +53,12 @@ func TestConfigsMatrix(t *testing.T) {
 		{
 			configs: []Config{
 				{
-					path:        "yaml/extrepo-default.yaml",
-					optionsPath: "yaml/default-options.json",
-					isOptional:  false,
+					path:       "yaml/extrepo-default.yaml",
+					isOptional: true,
 				},
 				{
-					path:        "yaml/extrepo-full.yaml",
-					optionsPath: "yaml/full-options.yaml",
-					isOptional:  false,
+					path:       "yaml/extrepo-full.yaml",
+					isOptional: false,
 				},
 			},
 			resultPath:      "yaml/extrepo-full.yaml",
@@ -117,7 +114,7 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 			}
 		}
 
-		err = vrct.CreateFile(setup.destinationPath, configTestData, options, config.isOptional, setup.configType)
+		err = vrct.CreateConfig(setup.destinationPath, configTestData, options, config.isOptional, setup.configType)
 		if err != nil {
 			t.Fatal("Failed trying to override file "+setup.destinationPath+"\n", err)
 		}
@@ -130,7 +127,7 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 
 	obtainedRawResult, err := vrct.ReadFile(setup.destinationPath)
 	if err != nil {
-		t.Fatalf("Failed to read file destinationPath %s: %s\n", setup.destinationPath, err)
+		t.Fatalf("Failed to read file destinationPath %s: %s", setup.destinationPath, err)
 	}
 
 	_, err = vrct.Apply()
@@ -140,31 +137,17 @@ func testConfigs(t *testing.T, vrct *vrctFs.VRCTFs, setup ConfigsSetup) {
 
 	obtainedRealRawResult, err := os.ReadFile(setup.destinationPath)
 	if err != nil {
-		t.Fatal("Failed to read from real fs file "+setup.destinationPath+"\n", err)
+		t.Fatalf("Failed to read from real fs file '%s': %s", setup.destinationPath, err)
 	}
 
-	desiredResult, err := vrctFs.GetMapFromBytes(desiredRawResult, setup.configType)
+	err = vrctFs.CompareConfigs(obtainedRawResult, desiredRawResult, setup.configType)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to properly merge virtual fs file '%s': %s", setup.destinationPath, err)
 	}
 
-	obtainedResult, err := vrctFs.GetMapFromBytes(obtainedRawResult, setup.configType)
+	err = vrctFs.CompareConfigs(obtainedRealRawResult, desiredRawResult, setup.configType)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to properly save real fs file '%s': %s", setup.destinationPath, err)
 	}
 
-	obtainedRealResult, err := vrctFs.GetMapFromBytes(obtainedRealRawResult, setup.configType)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	eq := reflect.DeepEqual(desiredResult, obtainedResult)
-	if !eq {
-		t.Fatal("Failed to properly simulate " + setup.destinationPath + " file content")
-	}
-
-	eq = reflect.DeepEqual(desiredResult, obtainedRealResult)
-	if !eq {
-		t.Fatal("Failed to properly simulate " + setup.destinationPath + " file content")
-	}
 }

@@ -1,7 +1,7 @@
 function main()
-	 initSystem, err = api.sys.GetInitSystem()
+	 initSystem, err = api.sys.getInitSystem()
 	 if err ~= nil then return false end
-	 distro = api.sys.GetDistro()
+	 distro = api.sys.getDistro()
 	
 	 return initSystem ~= "" and distro.Name ~= ""
 end

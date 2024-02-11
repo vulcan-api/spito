@@ -3,6 +3,7 @@ package checker
 import (
 	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
 	"reflect"
@@ -26,12 +27,12 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 
 func getPackageNamespace(L *lua.LState, importLoopData *shared.ImportLoopData) lua.LValue {
 	pkgNamespace := newLuaNamespace()
-	pkgNamespace.AddFn("Get", api.GetPackage)
-	pkgNamespace.AddFn("Install", func(packageName string) error {
+	pkgNamespace.AddFn("get", api.GetPackage)
+	pkgNamespace.AddFn("install", func(packageName string) error {
 		err := importLoopData.PackageTracker.AddPackage(packageName)
 		return err
 	})
-	pkgNamespace.AddFn("Remove", func(packageName string) error {
+	pkgNamespace.AddFn("remove", func(packageName string) error {
 		err := importLoopData.PackageTracker.RemovePackage(packageName)
 		return err
 	})
@@ -42,9 +43,9 @@ func getPackageNamespace(L *lua.LState, importLoopData *shared.ImportLoopData) l
 func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	sysInfoNamespace := newLuaNamespace()
 
-	sysInfoNamespace.AddFn("GetDistro", api.GetDistro)
-	sysInfoNamespace.AddFn("GetDaemon", api.GetDaemon)
-	sysInfoNamespace.AddFn("GetInitSystem", api.GetInitSystem)
+	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
+	sysInfoNamespace.AddFn("getDaemon", api.GetDaemon)
+	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
 
 	return sysInfoNamespace.createTable(L)
 }
@@ -56,36 +57,52 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 		FsVRCT: &importLoop.VRCT.Fs,
 	}
 
-	fsNamespace.AddFn("PathExists", apiFs.PathExists)
-	fsNamespace.AddFn("FileExists", apiFs.FileExists)
-	fsNamespace.AddFn("ReadFile", apiFs.ReadFile)
-	fsNamespace.AddFn("ReadDir", apiFs.ReadDir)
-	fsNamespace.AddFn("FileContains", apiFs.FileContains)
-	fsNamespace.AddFn("RemoveComments", api.RemoveComments)
-	fsNamespace.AddFn("Find", apiFs.Find)
-	fsNamespace.AddFn("FindAll", apiFs.FindAll)
-	fsNamespace.AddFn("GetProperLines", apiFs.GetProperLines)
-	fsNamespace.AddFn("CreateFile", apiFs.CreateFile)
+	fsNamespace.AddFn("pathExists", apiFs.PathExists)
+	fsNamespace.AddFn("fileExists", apiFs.FileExists)
+	fsNamespace.AddFn("readFile", apiFs.ReadFile)
+	fsNamespace.AddFn("readDir", apiFs.ReadDir)
+	fsNamespace.AddFn("fileContains", apiFs.FileContains)
+	fsNamespace.AddFn("removeComments", api.RemoveComments)
+	fsNamespace.AddFn("find", apiFs.Find)
+	fsNamespace.AddFn("findAll", apiFs.FindAll)
+	fsNamespace.AddFn("getProperLines", apiFs.GetProperLines)
+	fsNamespace.AddFn("createFile", apiFs.CreateFile)
+	fsNamespace.AddFn("createConfig", apiFs.CreateConfig)
+	fsNamespace.AddFn("updateConfig", apiFs.UpdateConfig)
+	fsNamespace.AddFn("compareConfigs", apiFs.CompareConfigs)
+	fsNamespace.AddFn("apply", apiFs.Apply)
+	fsNamespace.AddField("config", getConfigEnums(L))
 
 	return fsNamespace.createTable(L)
+}
+
+func getConfigEnums(L *lua.LState) lua.LValue {
+	infoNamespace := newLuaNamespace()
+
+	infoNamespace.AddField("json", lua.LNumber(vrctFs.JsonConfig))
+	infoNamespace.AddField("yaml", lua.LNumber(vrctFs.YamlConfig))
+	infoNamespace.AddFn("toml", lua.LNumber(vrctFs.TomlConfig))
+
+	return infoNamespace.createTable(L)
 }
 
 func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	infoApi := importLoopData.InfoApi
 	infoNamespace := newLuaNamespace()
 
-	infoNamespace.AddFn("Log", infoApi.Log)
-	infoNamespace.AddFn("Debug", infoApi.Debug)
-	infoNamespace.AddFn("Error", infoApi.Error)
-	infoNamespace.AddFn("Warn", infoApi.Warn)
-	infoNamespace.AddFn("Important", infoApi.Important)
+	infoNamespace.AddFn("log", infoApi.Log)
+	infoNamespace.AddFn("debug", infoApi.Debug)
+	infoNamespace.AddFn("warn", infoApi.Warn)
+	infoNamespace.AddFn("error", infoApi.Error)
+	infoNamespace.AddFn("important", infoApi.Important)
 
 	return infoNamespace.createTable(L)
 }
+
 func getShNamespace(L *lua.LState) lua.LValue {
 	shellNamespace := newLuaNamespace()
 
-	shellNamespace.AddFn("Command", api.ShellCommand)
+	shellNamespace.AddFn("command", api.ShellCommand)
 
 	return shellNamespace.createTable(L)
 }
