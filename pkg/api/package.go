@@ -9,10 +9,12 @@ import (
 	"strings"
 )
 
-const packageManager = "pacman" // Currently we only support arch pacman
-const installCommand = "-S"
-const removeCommand = "-Rns"
-const rootExecutionCommand = "sudo"
+const (
+	packageManager       = "pacman" // Currently we only support arch pacman
+	installCommand       = "-S"
+	removeCommand        = "-Rns"
+	rootExecutionCommand = "sudo"
+)
 
 type Package struct {
 	Name          string
@@ -143,12 +145,24 @@ func bindStandardStreams(cmd *exec.Cmd) {
 	cmd.Stderr = os.Stderr
 }
 
-func InstallPackage(packageName string) error {
-	pacmanCommand := exec.Command(rootExecutionCommand, packageManager, installCommand, packageName)
-	bindStandardStreams(pacmanCommand)
+func InstallPackage(packageString string) error {
+	packageName, version, _ := strings.Cut(packageString, "@")
+	packageToBeInstalled, err := GetPackage(packageName)
 
-	err := pacmanCommand.Run()
-	return err
+	expectedVersion := version[1:]
+
+	var pacmanCommand *exec.Cmd
+	doesPackageNeedToBeUpgraded := err == nil && packageToBeInstalled.Version < expectedVersion
+	isPackageNotInstalled := err != nil
+
+	if version == "" || version == "*" || isPackageNotInstalled || doesPackageNeedToBeUpgraded {
+		pacmanCommand = exec.Command(rootExecutionCommand, packageManager, installCommand, packageName)
+
+		bindStandardStreams(pacmanCommand)
+		err = pacmanCommand.Run()
+		return err
+	}
+	return nil
 }
 
 func RemovePackage(packageName string) error {

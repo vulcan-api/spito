@@ -39,15 +39,20 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 		handleError(err)
 	}
 
-	runtimeData.InfoApi.Log("executing pacman commands...")
+	packagesToInstall := runtimeData.PackageTracker.GetPackagesToInstall()
+	packagesToRemove := runtimeData.PackageTracker.GetPackagesToRemove()
 
-	runtimeData.InfoApi.Log("installing packages...")
-	err = api.InstallPackage(strings.Join(runtimeData.PackageTracker.GetPackagesToInstall(), " "))
-	handleError(err)
+	if len(packagesToInstall) > 0 {
+		runtimeData.InfoApi.Log("installing packages...")
+		err = api.InstallPackage(strings.Join(packagesToInstall, " "))
+		handleError(err)
+	}
 
-	runtimeData.InfoApi.Log("removing packages...")
-	err = api.RemovePackage(strings.Join(runtimeData.PackageTracker.GetPackagesToRemove(), " "))
-	handleError(err)
+	if len(packagesToRemove) > 0 {
+		runtimeData.InfoApi.Log("removing packages...")
+		err = api.RemovePackage(strings.Join(packagesToRemove, " "))
+		handleError(err)
+	}
 
 	revertCommand := fmt.Sprintf("spito revert %d", revertNum)
 	runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
@@ -95,17 +100,17 @@ var checkFileCmd = &cobra.Command{
 }
 
 var checkCmd = &cobra.Command{
-	Use:   "check {ruleset identifier} {rule} or check -p {ruleset path} {rule}",
+	Use:   "check {ruleset identifier or path} {rule}",
 	Short: "Check whether your machine pass rule",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		runtimeData := getInitialRuntimeData(cmd)
 
-		isPath, err := cmd.Flags().GetBool("path")
-		handleError(err)
-
 		identifierOrPath := args[0]
 		ruleName := args[1]
+
+		isPath, err := shared.DoesPathExist(identifierOrPath)
+		handleError(err)
 
 		defer func() {
 			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
