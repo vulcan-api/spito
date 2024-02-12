@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [arch]
+        os: [arch, artix-openrc, artix-runit]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
