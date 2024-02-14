@@ -10,31 +10,48 @@ import (
 	"unicode"
 )
 
-func processScript(script string, ruleConf *shared.RuleConfigLayout) string {
-	newScript, decorators := GetDecorators(script)
+type DecoratorType uint
+
+const (
+	UnsafeDecorator = iota
+	DescriptionDecorator
+	OptionsDecorator
+	UnknownDecorator
+)
+
+type RawDecorator struct {
+	Type    DecoratorType
+	Content string
+}
+
+func processScript(script string, ruleConf *shared.RuleConfigLayout) (string, error) {
+	newScript, decorators, err := GetDecorators(script)
+	if err != nil {
+		return newScript, err
+	}
 
 	for _, decorator := range decorators {
-		lowerDecorator := strings.ToLower(decorator)
-
-		switch lowerDecorator {
-		case "unsafe":
+		switch decorator.Type {
+		case UnsafeDecorator:
 			ruleConf.Unsafe = true
 			break
-		case "environment":
-			ruleConf.Environment = true
+		case OptionsDecorator:
+			ruleConf.Options, err = AppendOptions(ruleConf.Options, decorator.Content)
+			if err != nil {
+				return newScript, err
+			}
 			break
-		case "sudo":
-			ruleConf.Sudo = true
+		default:
 			break
 		}
 	}
 
-	return newScript
+	return newScript, nil
 }
 
 // GetDecorators Returns script without decorators and array of decorator values
-func GetDecorators(script string) (string, []string) {
-	var fileScopeDecorators []string
+func GetDecorators(script string) (string, []RawDecorator, error) {
+	var fileScopeDecorators []RawDecorator
 
 	fileScopeRegex := regexp.MustCompile(`#!\[[^]]+]`)
 	decoratorMatches := fileScopeRegex.FindAllString(script, -1)
@@ -42,16 +59,51 @@ func GetDecorators(script string) (string, []string) {
 	for _, decorator := range decoratorMatches {
 		script = strings.Replace(script, decorator, "", 1)
 
-		decorator = api.RemoveComments(decorator, "--", "--[[", "]]")
-		decorator = removeWhitespaces(decorator)
+		processedDecorator := api.RemoveComments(decorator, "--", "--[[", "]]")
+		processedDecorator = removeWhitespaces(processedDecorator)
 
-		decorator = strings.TrimPrefix(decorator, "#![")
-		decorator = strings.TrimSuffix(decorator, "]")
+		processedDecorator = strings.TrimPrefix(processedDecorator, "#![")
+		processedDecorator = strings.TrimSuffix(processedDecorator, "]")
 
-		fileScopeDecorators = append(fileScopeDecorators, decorator)
+		var finalDecorator RawDecorator
+		bracketIndex := strings.Index(processedDecorator, "(")
+		rawDecoratorName := processedDecorator[0:bracketIndex]
+
+		var err error
+		finalDecorator.Type, err = GetDecoratorType(rawDecoratorName)
+		if err != nil {
+			return script, fileScopeDecorators, err
+		}
+
+		betweenParenthesesRegex := regexp.MustCompile(`\(.*\)`)
+		decoratorContent := betweenParenthesesRegex.FindString(processedDecorator)
+		decoratorContent = strings.TrimPrefix(decoratorContent, "(")
+		decoratorContent = strings.TrimSuffix(decoratorContent, ")")
+		finalDecorator.Content = decoratorContent
+
+		fileScopeDecorators = append(fileScopeDecorators, finalDecorator)
 	}
 
-	return script, fileScopeDecorators
+	return script, fileScopeDecorators, nil
+}
+
+func GetDecoratorType(name string) (DecoratorType, error) {
+	var decoratorType DecoratorType
+
+	processedName := strings.ToLower(name)
+	switch processedName {
+	case "unsafe":
+		decoratorType = UnsafeDecorator
+		break
+	case "description":
+		decoratorType = DescriptionDecorator
+		break
+	case "options":
+		decoratorType = OptionsDecorator
+	default:
+		return UnknownDecorator, fmt.Errorf("unknown decorator: %s", name)
+	}
+	return decoratorType, nil
 }
 
 func removeQuotes(text *string) {
@@ -60,23 +112,17 @@ func removeQuotes(text *string) {
 }
 
 func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, error) {
-	betweenParenthesesRegex := regexp.MustCompile(`\(.*\)`)
-	argumentCode := betweenParenthesesRegex.FindString(decoratorCode)
-	argumentCode = strings.TrimPrefix(argumentCode, "(")
-	argumentCode = strings.TrimSuffix(argumentCode, ")")
-
-	arguments := strings.Split(argumentCode, ",")
+	// TODO: escape it first
+	arguments := strings.Split(decoratorCode, ",")
 
 	var positionalArguments []string
 	namedArguments := make(map[string]string)
 
 	for argumentIndex, argument := range arguments {
 		argumentTokens := strings.Split(argument, "=")
-		if len(argumentTokens) > 2 {
+		if argTokenLen := len(argumentTokens); argTokenLen > 2 {
 			return nil, nil, errors.New(fmt.Sprintf("syntax error in argument number %d", argumentIndex))
-		}
-
-		if len(argumentTokens) == 1 {
+		} else if argTokenLen == 1 {
 			removeQuotes(&argumentTokens[0])
 
 			positionalArguments = append(positionalArguments, argumentTokens[0])

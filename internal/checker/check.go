@@ -66,7 +66,10 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scrip
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := shared.RuleConfigLayout{}
-		script = processScript(script, &ruleConf)
+		script, err := processScript(script, &ruleConf)
+		if err != nil {
+			return false, err
+		}
 		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
 	})
 }
@@ -180,7 +183,11 @@ func _internalCheckRule(
 	}
 
 	ruleConf := rulesetConf.Rules[ruleName]
-	script = processScript(script, &ruleConf)
+	processedScript, err := processScript(script, &ruleConf)
+	if err != nil {
+		errChan <- fmt.Errorf("Failed to process script >>>\n%s<<< from %s: %s\n", script, ruleConf.Path, err.Error())
+		panic(nil)
+	}
 
 	if previousRuleConf != nil {
 		if !previousRuleConf.Unsafe && ruleConf.Unsafe {
@@ -201,7 +208,7 @@ func _internalCheckRule(
 	}
 
 	rulesHistory.SetProgress(identifier, ruleName, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
+	doesRulePass, err := ExecuteLuaMain(processedScript, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
 		errChan <- err
 		panic(nil)
