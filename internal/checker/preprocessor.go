@@ -1,7 +1,6 @@
 package checker
 
 import (
-	"errors"
 	"fmt"
 	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
@@ -67,7 +66,10 @@ func GetDecorators(script string) (string, []RawDecorator, error) {
 
 		var finalDecorator RawDecorator
 		bracketIndex := strings.Index(processedDecorator, "(")
-		rawDecoratorName := processedDecorator[0:bracketIndex]
+		rawDecoratorName := processedDecorator
+		if bracketIndex != -1 {
+			rawDecoratorName = processedDecorator[0:bracketIndex]
+		}
 
 		var err error
 		finalDecorator.Type, err = GetDecoratorType(rawDecoratorName)
@@ -77,8 +79,10 @@ func GetDecorators(script string) (string, []RawDecorator, error) {
 
 		betweenParenthesesRegex := regexp.MustCompile(`\(.*\)`)
 		decoratorContent := betweenParenthesesRegex.FindString(processedDecorator)
-		decoratorContent = strings.TrimPrefix(decoratorContent, "(")
-		decoratorContent = strings.TrimSuffix(decoratorContent, ")")
+		if len(decoratorContent) > 2 {
+			decoratorContent = strings.TrimPrefix(decoratorContent, "(")
+			decoratorContent = strings.TrimSuffix(decoratorContent, ")")
+		}
 		finalDecorator.Content = decoratorContent
 
 		fileScopeDecorators = append(fileScopeDecorators, finalDecorator)
@@ -121,7 +125,7 @@ func GetDecoratorArguments(decoratorCode string) ([]string, map[string]string, e
 	for argumentIndex, argument := range arguments {
 		argumentTokens := strings.Split(argument, "=")
 		if argTokenLen := len(argumentTokens); argTokenLen > 2 {
-			return nil, nil, errors.New(fmt.Sprintf("syntax error in argument number %d", argumentIndex))
+			return nil, nil, fmt.Errorf("syntax error in argument number %d", argumentIndex)
 		} else if argTokenLen == 1 {
 			removeQuotes(&argumentTokens[0])
 
