@@ -27,9 +27,7 @@ func ParseOptions(rawOptions string) ([]option.Option, error) {
 			return nil, err
 		}
 		options = append(options, processedOption)
-		println(trimmedOptions)
 	}
-	fmt.Printf("%+v\n%s\n\n", options, trimmedOptions)
 
 	return nil, nil
 }
@@ -91,7 +89,7 @@ func GetOptionType(rawType string) (option.Type, error) {
 	var optionType option.Type
 	processedType := strings.ToLower(rawType)
 	switch processedType {
-	case "int", "number":
+	case "int":
 		optionType = option.Int
 		break
 	case "uint":
@@ -100,10 +98,10 @@ func GetOptionType(rawType string) (option.Type, error) {
 	case "float":
 		optionType = option.Float
 		break
-	case "bool", "boolean":
+	case "bool":
 		optionType = option.Bool
 		break
-	case "string", "text":
+	case "string":
 		optionType = option.String
 		break
 	// TODO: requires more effort
@@ -136,13 +134,15 @@ func ParseDefaultValue(rawValue string, valueType option.Type) (any, error) {
 	case option.Bool:
 		parsedValue, err = strconv.ParseBool(rawValue)
 		break
-	default:
+	case option.String:
 		parsedValue = rawValue
-		if rawValue[0] == '"' && rawValue[len(rawValue)-1] == '"' {
+		if len(rawValue) > 0 && rawValue[0] == '"' && rawValue[len(rawValue)-1] == '"' {
 			partiallyParsedValue := strings.TrimSuffix(rawValue, "\"")
 			parsedValue = strings.TrimPrefix(partiallyParsedValue, "\"")
 		}
 		break
+	default:
+		parsedValue = nil
 	}
 	return parsedValue, err
 }
