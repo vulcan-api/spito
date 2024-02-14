@@ -10,6 +10,7 @@
 
 function main()
     -- implement global variables
+    api.info.log(age)
 
     return true
 end

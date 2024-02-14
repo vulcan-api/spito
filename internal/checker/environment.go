@@ -122,7 +122,11 @@ func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identif
 func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		ruleConf := shared.RuleConfigLayout{}
-		script = processScript(script, &ruleConf)
+		var err error
+		script, err = processScript(script, &ruleConf)
+		if err != nil {
+			return false, err
+		}
 		if !ruleConf.Environment {
 			return false, NotEnvironmentErr
 		}
