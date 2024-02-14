@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/shared/option"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,8 +67,9 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scrip
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := shared.RuleConfigLayout{
-			Path:   "",
-			Unsafe: false,
+			Path:    "",
+			Unsafe:  false,
+			Options: make([]option.Option, 0),
 		}
 		script, err := processScript(script, &ruleConf)
 		if err != nil {

@@ -24,12 +24,12 @@ func ParseOptions(rawOptions string) ([]option.Option, error) {
 		var processedOption option.Option
 		processedOption, trimmedOptions, err = GetOption(trimmedOptions)
 		if err != nil {
-			return nil, err
+			return options, err
 		}
 		options = append(options, processedOption)
 	}
 
-	return nil, nil
+	return options, nil
 }
 
 func GetOption(rawOptions string) (option.Option, string, error) {

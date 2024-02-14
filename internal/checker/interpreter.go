@@ -2,10 +2,10 @@ package checker
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/shared/option"
 	"github.com/yuin/gopher-lua"
+	"path/filepath"
 )
 
 const rulesetDirConstantName = "RULESET_DIR"
@@ -18,6 +18,9 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	lua.OpenString(L)
 
 	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
+	//fmt.Printf("%+v", *ruleConf)
+
+	attachOptions(ruleConf, L)
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
@@ -35,6 +38,33 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	}
 
 	return bool(L.Get(-1).(lua.LBool)), nil
+}
+
+func attachOptions(ruleConf *shared.RuleConfigLayout, L *lua.LState) {
+	for _, ruleOption := range ruleConf.Options {
+		var value lua.LValue
+		switch ruleOption.Type {
+		case option.Int:
+			value = lua.LNumber(ruleOption.DefaultValue.(int))
+			break
+		case option.UInt:
+			value = lua.LNumber(ruleOption.DefaultValue.(uint))
+			break
+		case option.Float:
+			value = lua.LNumber(ruleOption.DefaultValue.(float64))
+			break
+		case option.String:
+			value = lua.LString(ruleOption.DefaultValue.(string))
+			break
+		case option.Bool:
+			value = lua.LBool(ruleOption.DefaultValue.(bool))
+			break
+		default:
+			// TODO: handle any
+			break
+		}
+		L.SetGlobal(ruleOption.Name, value)
+	}
 }
 
 func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
