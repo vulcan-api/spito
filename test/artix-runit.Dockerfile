@@ -1,4 +1,4 @@
-FROM artixlinux/runit
+FROM artixlinux/artixlinux:runit
 
 RUN pacman -Sy go --noconfirm
 

@@ -122,6 +122,9 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 	}
 
 	for _, entry := range entries {
+		if destPath == "" {
+			destPath = "/"
+		}
 		realFsEntryPath := filepath.Join(destPath, entry.Name())
 		mergeDirEntryPath := filepath.Join(mergeDirPath, entry.Name())
 

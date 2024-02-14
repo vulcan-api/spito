@@ -1,4 +1,4 @@
-FROM artixlinux/openrc
+FROM artixlinux/artixlinux:openrc
 
 RUN pacman -Sy go --noconfirm
 
