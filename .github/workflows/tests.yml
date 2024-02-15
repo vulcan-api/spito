@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [arch, artix-openrc, artix-runit]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
