@@ -18,6 +18,11 @@ jobs:
         uses: ScribeMD/docker-cache@0.3.7
         with:
          key: docker-${{ matrix.os }}
+      - name: Pull docker images
+        run:  |
+           docker pull archlinux
+           docker pull artixlinux/artixlinux:openrc
+           docker pull artixlinux/artixlinux:runit
       - name: Docker Setup Buildx
         uses: docker/setup-buildx-action@v3.0.0
       - name: Add permissions to execute scripts
