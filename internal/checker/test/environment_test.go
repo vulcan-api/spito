@@ -18,20 +18,20 @@ function main ()
     local path = "{{ .Path }}"
     local defaultContent = "{{ .Content }}"
 
-    local err = api.fs.CreateFile(path, defaultContent, {})
+    local err = api.fs.createFile(path, defaultContent, {})
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
-    local content, err = api.fs.ReadFile(path)
+    local content, err = api.fs.readFile(path)
     if err ~= nil then
-        api.info.Error(err)
+        api.info.error(err)
         return false
     end
 
     if content ~= defaultContent then
-        api.info.Error("Content of file: " .. path .. "is: " .. content .. "instead of: " .. defaultContent)
+        api.info.error("Content of file: " .. path .. "is: " .. content .. "instead of: " .. defaultContent)
         return false
     end
 
