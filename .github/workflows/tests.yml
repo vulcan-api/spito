@@ -17,7 +17,7 @@ jobs:
       - name: Cache Docker images.
         uses: ScribeMD/docker-cache@0.3.7
         with:
-         key: docker-${{ matrix.os }}
+         key: docker-${{ runner.os }}
       - name: Pull docker images
         run:  |
            docker pull archlinux
