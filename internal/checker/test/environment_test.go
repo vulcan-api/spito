@@ -18,7 +18,7 @@ function main ()
     local path = "{{ .Path }}"
     local defaultContent = "{{ .Content }}"
 
-    local err = api.fs.createFile(path, defaultContent, {})
+    local err = api.fs.createFile(path, defaultContent, false)
     if err ~= nil then
         api.info.error(err)
         return false
@@ -86,6 +86,9 @@ func applyRule(templateData templateDataT, t *testing.T) templateDataT {
 	importLoopData := getImportLoopData(t)
 
 	scriptDir, err := os.MkdirTemp("/tmp", "spito-rules-")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	ruleFile, err := os.Create(filepath.Join(scriptDir, "rule.lua"))
 	if err != nil {
