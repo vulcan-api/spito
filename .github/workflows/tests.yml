@@ -19,7 +19,7 @@ jobs:
       - name: Cache Docker images.
         uses: ScribeMD/docker-cache@0.3.7
         with:
-         key: docker-${{ runner.os }}-${{ hashFiles(paths) }}
+         key: docker-${{ runner.os }}
       - name: Add permissions to execute scripts
         run: chmod +x -R test
       - name: Run docker test
