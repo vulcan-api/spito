@@ -14,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Docker Setup Buildx
-        uses: docker/setup-buildx-action@v3.0.0
       - name: Cache Docker images.
         uses: ScribeMD/docker-cache@0.3.7
         with:
-         key: docker-${{ runner.os }}
+         key: docker-${{ matrix.os }}
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v3.0.0
       - name: Add permissions to execute scripts
         run: chmod +x -R test
       - name: Run docker test
