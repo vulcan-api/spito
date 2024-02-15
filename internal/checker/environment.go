@@ -10,7 +10,7 @@ import (
 )
 
 var EnvironmentDataPath = filepath.Join(shared.LocalStateSpitoPath, "environment-data.json")
-var NotEnvironmentErr = errors.New("called environment only parts of code with rule which is not an environment")
+var NotEnvironmentErr = errors.New("called rule is not an environment")
 
 type AppliedEnvironments []*AppliedEnvironment
 type AppliedEnvironment struct {
