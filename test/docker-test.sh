@@ -1,7 +1,8 @@
 #!/bin/bash
 
 parent_dir=$( cd "$(dirname "${BASH_SOURCE[0]}")"; cd ..; pwd -P )
-if [[ "$1" == "" ]]
+
+if [[ $1 == "" ]]
 then
   image_id=$(docker buildx build -q --load $parent_dir -f "test/arch.Dockerfile")
 else
