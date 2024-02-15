@@ -47,7 +47,7 @@ type templateDataT struct {
 
 func TestRevertingPreviousEnv(t *testing.T) {
 	firstEnvTemplate := templateDataT{
-		Content:   "it should be reverted after applying other env",
+		Content:   "it should be reverted after applying other environment",
 		Decorator: "#![environment]",
 	}
 	firstEnvTemplate = applyRule(firstEnvTemplate, t)
