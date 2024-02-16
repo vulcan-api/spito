@@ -47,7 +47,7 @@ type templateDataT struct {
 
 func TestRevertingPreviousEnv(t *testing.T) {
 	firstEnvTemplate := templateDataT{
-		Content:   "it should be reverted after applying other env",
+		Content:   "it should be reverted after applying other environment",
 		Decorator: "#![environment]",
 	}
 	firstEnvTemplate = applyRule(firstEnvTemplate, t)
@@ -137,7 +137,7 @@ func getImportLoopData(t *testing.T) *shared.ImportLoopData {
 func getSourceCode(t *testing.T, templateData templateDataT) string {
 	tmpl, err := template.New("").Parse(testTemplate)
 	if err != nil {
-		t.Fatal("Failed to render parse template, error: \n" + err.Error())
+		t.Fatal("Failed to render parsed template, error: \n" + err.Error())
 	}
 
 	var sourceCode bytes.Buffer
