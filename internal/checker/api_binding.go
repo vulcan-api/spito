@@ -13,7 +13,7 @@ import (
 func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
-	apiNamespace.AddField("pkg", getPackageNamespace(L, importLoopData))
+	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
@@ -25,7 +25,7 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 	apiNamespace.setGlobal(L, "api")
 }
 
-func getPackageNamespace(L *lua.LState, importLoopData *shared.ImportLoopData) lua.LValue {
+func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	pkgNamespace := newLuaNamespace()
 	pkgNamespace.AddFn("get", api.GetPackage)
 	pkgNamespace.AddFn("install", func(packageName string) error {

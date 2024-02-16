@@ -149,7 +149,12 @@ func InstallPackage(packageString string) error {
 	packageName, version, _ := strings.Cut(packageString, "@")
 	packageToBeInstalled, err := GetPackage(packageName)
 
-	expectedVersion := version[1:]
+	var expectedVersion string
+	if len(version) > 0 {
+		expectedVersion = version[1:]
+	} else {
+		expectedVersion = ""
+	}
 
 	var pacmanCommand *exec.Cmd
 	doesPackageNeedToBeUpgraded := err == nil && packageToBeInstalled.Version < expectedVersion
