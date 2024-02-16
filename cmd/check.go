@@ -17,7 +17,7 @@ import (
 )
 
 func askAndExecuteRule(runtimeData shared.ImportLoopData) {
-	fmt.Printf("Would you like to apply this rule changes? [y/N]: ")
+	fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
 
 	reader := bufio.NewReader(os.Stdin)
 	answer, _, err := reader.ReadRune()
@@ -71,8 +71,7 @@ var checkFileCmd = &cobra.Command{
 		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
 		handleError(err)
 
-		err = panicIfEnvironment(&ruleConf, "file", inputPath)
-		handleError(err)
+		panicIfEnvironment(&ruleConf, "file", inputPath)
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
@@ -121,8 +120,7 @@ var checkCmd = &cobra.Command{
 		ruleConf, err := checker.GetRuleConf(&rulesetLocation, ruleName)
 		handleError(err)
 
-		err = panicIfEnvironment(&ruleConf, ruleName, identifierOrPath)
-		handleError(err)
+		panicIfEnvironment(&ruleConf, ruleName, identifierOrPath)
 
 		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
 		if err != nil {
@@ -183,7 +181,7 @@ func communicateRuleResult(ruleName string, doesRulePass bool) {
 	}
 }
 
-func panicIfEnvironment(ruleConf *checker.RuleConf, rulesetIdentifier, ruleName string) error {
+func panicIfEnvironment(ruleConf *checker.RuleConf, rulesetIdentifier, ruleName string) {
 	if ruleConf.Environment {
 		fmt.Println("Rule which you were trying to check is an environment")
 		fmt.Println("In order to apply environment use command:")
@@ -191,6 +189,4 @@ func panicIfEnvironment(ruleConf *checker.RuleConf, rulesetIdentifier, ruleName 
 
 		os.Exit(1)
 	}
-
-	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -57,22 +58,15 @@ func GetRuleConfFromScript(scriptPath string) (RuleConf, error) {
 }
 
 func (s *RulesetConfYaml) GetRuleConfBasedOnYaml(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, error) {
-	False := false // I did it in order to get pointer to false
 	var ruleConf RuleConf
 
 	if ruleConfYaml, ok := s.Rules[ruleName].(RuleConfYaml); ok {
 		ruleConfYaml.Path = filepath.Clean(ruleConfYaml.Path)
-		if ruleConfYaml.Unsafe == nil {
-			ruleConfYaml.Unsafe = &False
-		}
-		if ruleConfYaml.Environment == nil {
-			ruleConfYaml.Environment = &False
-		}
 
 		ruleConf = RuleConf{
 			Path:        ruleConfYaml.Path,
-			Unsafe:      *ruleConfYaml.Unsafe,
-			Environment: *ruleConfYaml.Environment,
+			Unsafe:      ruleConfYaml.Unsafe,
+			Environment: ruleConfYaml.Environment,
 		}
 	} else if rulePath, ok := s.Rules[ruleName].(string); ok {
 		ruleConf = RuleConf{
@@ -80,7 +74,7 @@ func (s *RulesetConfYaml) GetRuleConfBasedOnYaml(rulesetLocation *RulesetLocatio
 			Unsafe: false,
 		}
 	} else {
-		return RuleConf{}, fmt.Errorf("rule %s in "+ConfigFilename+" is neither string nor RuleConfYaml", ruleName)
+		return RuleConf{}, fmt.Errorf("rule %s in %s is neither string nor RuleConfYaml", ruleName, ConfigFilename)
 	}
 
 	scriptPath := filepath.Join(rulesetLocation.GetRulesetPath(), ruleConf.Path)
@@ -149,12 +143,14 @@ func getRulesetConfYaml(rulesetLocation *RulesetLocation) (RulesetConfYaml, erro
 }
 
 func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
-	spitoRulesDataBytes, err := os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito.yml")
+	spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yml")
+	spitoRulesDataBytes, err := os.ReadFile(spitoYamlPath)
+	
 	if os.IsNotExist(err) {
-		var err2 error
-		spitoRulesDataBytes, err2 = os.ReadFile(rulesetLocation.GetRulesetPath() + "/spito.yaml")
-		if err2 != nil {
-			return nil, err2
+		spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yaml")
+		spitoRulesDataBytes, err = os.ReadFile(spitoYamlPath)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return spitoRulesDataBytes, err
@@ -166,8 +162,8 @@ type RulesetConfYaml struct {
 
 type RuleConfYaml struct {
 	Path        string `yaml:"path"`
-	Unsafe      *bool  `yaml:"unsafe,omitempty"`
-	Environment *bool  `yaml:"environment,omitempty"`
+	Unsafe      bool   `yaml:"unsafe,omitempty"`
+	Environment bool   `yaml:"environment,omitempty"`
 }
 
 type RulesetConf struct {

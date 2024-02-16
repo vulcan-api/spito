@@ -40,7 +40,7 @@ func (e *AppliedEnvironments) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(EnvironmentDataPath, newContent, os.ModePerm)
+	return os.WriteFile(EnvironmentDataPath, newContent, shared.FilePermissions)
 }
 
 func (e *AppliedEnvironments) SetAsApplied(envIdentifierOrPath string, revertNum int) {
@@ -111,21 +111,7 @@ func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identif
 		return errors.New("environment didn't passed, cannot apply")
 	}
 
-	appliedEnvironments, err := ReadAppliedEnvironments()
-	if err != nil {
-		return err
-	}
-	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
-		return err
-	}
-
-	revertNum, err := importLoopData.VRCT.Apply()
-	if err != nil {
-		return err
-	}
-
-	appliedEnvironments.SetAsApplied(identifierOrPath, revertNum)
-	return appliedEnvironments.Save()
+	return applyEnvironment(importLoopData, identifierOrPath)
 }
 
 func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) error {
@@ -145,15 +131,19 @@ func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string
 		return err
 	}
 	if !doesEnvPass {
-		return errors.New("environment didn't passed, cannot apply")
+		return errors.New("the environment has not passed, cannot apply")
 	}
 
+	return applyEnvironment(importLoopData, scriptPath)
+}
+
+func applyEnvironment(importLoopData *shared.ImportLoopData, identifierOrPath string) error {
 	appliedEnvironments, err := ReadAppliedEnvironments()
 	if err != nil {
 		return err
 	}
 
-	if err := appliedEnvironments.RevertOther(scriptPath); err != nil {
+	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
 		return err
 	}
 
@@ -162,6 +152,6 @@ func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string
 		return err
 	}
 
-	appliedEnvironments.SetAsApplied(scriptPath, revertNum)
+	appliedEnvironments.SetAsApplied(identifierOrPath, revertNum)
 	return appliedEnvironments.Save()
 }

@@ -44,7 +44,7 @@ func CreateIfNotExists(path, defaultContent string) error {
 	}
 
 	if !pathExists {
-		if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), DirectoryPermissions); err != nil {
 			return err
 		}
 
