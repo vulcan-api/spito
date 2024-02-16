@@ -29,7 +29,7 @@ func (packageTracker PackageConflictTracker) AddPackage(packageName string) erro
 func (packageTracker PackageConflictTracker) RemovePackage(packageName string) error {
 
 	if _, isPackageInstalled := packageTracker.packagesInstalled[packageName]; isPackageInstalled {
-		return fmt.Errorf(fmt.Sprintf("[PACKAGE_CONFLICT] the package %s is required to be installed by a dependency", packageName))
+		return fmt.Errorf("[PACKAGE_CONFLICT] the package %s is required to be installed by a dependency", packageName)
 	}
 
 	packageTracker.packagesRemoved[packageName] = true
