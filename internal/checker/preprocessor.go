@@ -16,6 +16,9 @@ func processScript(script string, ruleConf *RuleConf) string {
 		if strings.ToLower(decorator) == "unsafe" {
 			ruleConf.Unsafe = true
 		}
+		if strings.ToLower(decorator) == "environment" {
+			ruleConf.Environment = true
+		}
 	}
 
 	return newScript

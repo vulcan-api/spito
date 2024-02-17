@@ -45,7 +45,7 @@ func anyToError(val any) error {
 	if err, ok := val.(string); ok {
 		return errors.New(err)
 	}
-	return fmt.Errorf("panic: %v", val)
+	return fmt.Errorf("panic: %+v", val)
 }
 
 func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
@@ -56,7 +56,6 @@ func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier str
 
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := RuleConf{
 			Path:   "",
 			Unsafe: false,
@@ -152,7 +151,7 @@ func _internalCheckRule(
 		panic(nil)
 	}
 
-	rulesetConf, err := getRulesetConf(&rulesetLocation)
+	rulesetConf, err := GetRulesetConf(&rulesetLocation)
 	if err != nil {
 		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
 		panic(nil)

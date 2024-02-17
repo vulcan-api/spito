@@ -8,7 +8,7 @@ import (
 )
 
 func getScript(ruleSetLocation *RulesetLocation, ruleName string) (string, error) {
-	rulesetConf, err := getRulesetConf(ruleSetLocation)
+	rulesetConf, err := GetRulesetConf(ruleSetLocation)
 	if err != nil {
 		return "", err
 	}

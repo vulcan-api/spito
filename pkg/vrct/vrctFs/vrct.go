@@ -128,14 +128,14 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 		realFsEntryPath := filepath.Join(destPath, entry.Name())
 		mergeDirEntryPath := filepath.Join(mergeDirPath, entry.Name())
 
-		if entry.IsDir() {
-			_, err := os.Stat(realFsEntryPath)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+		doesRealFsEntryExists, err := pathExists(realFsEntryPath)
+		if err != nil {
+			return err
+		}
 
+		if entry.IsDir() {
 			// If originally dir does not exist, then revert should delete it
-			if os.IsNotExist(err) {
+			if !doesRealFsEntryExists {
 				v.revertSteps.RemoveDirAll(realFsEntryPath)
 			}
 			if err := os.MkdirAll(realFsEntryPath, os.ModePerm); err != nil {
@@ -148,13 +148,17 @@ func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
 		}
 
 		filePrototype := FilePrototype{}
-		err := filePrototype.Read(v.virtualFSPath, realFsEntryPath)
+		err = filePrototype.Read(v.virtualFSPath, realFsEntryPath)
 		if err != nil {
 			return err
 		}
 
-		if err := v.revertSteps.BackupOldContent(realFsEntryPath); err != nil {
-			return err
+		if doesRealFsEntryExists {
+			if err := v.revertSteps.BackupOldContent(realFsEntryPath); err != nil {
+				return err
+			}
+		} else {
+			v.revertSteps.RemoveFile(realFsEntryPath)
 		}
 
 		err = os.Remove(realFsEntryPath)
@@ -214,4 +218,13 @@ func mergePrototypes(prototypesDirPath, destPath string) error {
 	}
 
 	return nil
+}
+
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err != nil && !os.IsNotExist(err) {
+		return false, err
+	}
+
+	return !os.IsNotExist(err), nil
 }

@@ -16,10 +16,9 @@ import (
 )
 
 const (
-	tokenVerificationRoute            = "token/verify"
-	secretDirectoryName               = "secret"
-	tokenStorageFilename              = "user-tokens.json"
-	secretGlobalDirectoryDefaultValue = "~/.local/state/spito"
+	tokenVerificationRoute = "token/verify"
+	secretDirectoryName    = "secret"
+	tokenStorageFilename   = "user-tokens.json"
 )
 
 type TokenValidationResponse struct {
@@ -46,7 +45,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("the token cannot be empty"))
 	}
 
-	if exists, _ := shared.DoesPathExist(checker.ConfigFilename); isLoggingInLocally && !exists {
+	if exists, _ := shared.PathExists(checker.ConfigFilename); isLoggingInLocally && !exists {
 		printErrorAndExit(errors.New("please run this command inside a spito ruleset"))
 	}
 
@@ -77,7 +76,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("your token is invalid. Please check if the token really belongs to your account"))
 	}
 	secretFilePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", secretGlobalDirectoryDefaultValue),
+		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
 		secretDirectoryName,
 		tokenStorageFilename)
 	err = shared.ExpandTilde(&secretFilePath)
@@ -92,7 +91,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 
 	tokenData := TokenStorageLayout{}
 
-	if doesTokenFileExists, _ := shared.DoesPathExist(secretFilePath); doesTokenFileExists {
+	if doesTokenFileExists, _ := shared.PathExists(secretFilePath); doesTokenFileExists {
 		tokenFileRaw, err := os.ReadFile(secretFilePath)
 		handleError(err)
 		err = bson.Unmarshal(tokenFileRaw, &tokenData)

@@ -2,6 +2,7 @@ package checker
 
 import (
 	"errors"
+	"github.com/avorty/spito/pkg/shared"
 	"gopkg.in/yaml.v3"
 	"io/fs"
 	"os"
@@ -15,7 +16,7 @@ const LockFilename = "spito-lock.yml"
 
 func getRuleSetsDir() (string, error) {
 	dir, err := os.UserHomeDir()
-	return dir + "/.local/state/spito/rulesets", err
+	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets"), err
 }
 
 func initRequiredTmpDirs() error {
@@ -121,7 +122,7 @@ func (r *RulesetLocation) IsRuleSetDownloaded() bool {
 }
 
 func (r *RulesetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
-	configFileContents, err := ReadSpitoYaml(r)
+	configFileContents, err := ReadRawSpitoYaml(r)
 	if err != nil {
 		return []string{}, err
 	}

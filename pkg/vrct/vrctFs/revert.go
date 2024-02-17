@@ -24,7 +24,8 @@ func GetSerializedRevertStepsDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := homeDir + "/.local/state/spito/revert-steps-serialized"
+	// cannot use shared.LocalStateSpitoPath, because it creates incorrect golang import loop
+	dir := filepath.Join(homeDir, ".local/state/spito/revert-steps-serialized")
 
 	// Ensure exist
 	err = os.MkdirAll(dir, os.ModePerm)
@@ -219,7 +220,7 @@ func (r *RevertSteps) Deserialize(revertNum int) error {
 		return err
 	}
 
-	// Now Unmarshall bson into r
+	// Unmarshall bson into r
 
 	bsonPath := filepath.Join(r.RevertTempDir, revertStepsBsonName)
 	bsonContent, err := os.ReadFile(bsonPath)
@@ -227,9 +228,13 @@ func (r *RevertSteps) Deserialize(revertNum int) error {
 		return err
 	}
 
+	// Save revertTempDir
+	revertTempDir := r.RevertTempDir
+
 	if err := bson.Unmarshal(bsonContent, r); err != nil {
 		return err
 	}
+	r.RevertTempDir = revertTempDir
 
 	return os.Remove(bsonPath)
 }
