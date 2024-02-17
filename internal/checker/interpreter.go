@@ -45,6 +45,13 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 		doesRulePass, err := CheckRuleByIdentifier(importLoopData, rulesetIdentifier, ruleName)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 
+		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
+
+		if err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", ruleName+".lua")); err != nil {
+			importLoopData.ErrChan <- err
+			panic(nil)
+		}
+
 		if !doesRulePass {
 			importLoopData.ErrChan <- fmt.Errorf("rule %s/%s did not pass requirements", rulesetIdentifier, ruleName)
 			panic(nil)
@@ -63,6 +70,11 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 
 		script, err := os.ReadFile(rulePath)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
+
+		if err = L.DoString(string(script)); err != nil {
+			importLoopData.ErrChan <- err
+			panic(nil)
+		}
 
 		doesRulePass, err := CheckRuleScript(importLoopData, string(script), filepath.Dir(rulePath))
 		handleErrorAndPanic(importLoopData.ErrChan, err)
