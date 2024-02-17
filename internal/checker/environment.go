@@ -93,8 +93,13 @@ func (e *AppliedEnvironments) RevertOther(envIdentifierOrPath string) error {
 
 func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identifierOrPath string, envName string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		rulesetLocation := NewRulesetLocation(identifierOrPath)
-		ruleConf, err := GetRuleConf(&rulesetLocation, envName)
+		rulesetLocation := NewRulesetLocation(identifierOrPath, false)
+		rulesetConfiguration, err := GetRulesetConf(&rulesetLocation)
+		if err != nil {
+			return false, err
+		}
+
+		ruleConf, err := rulesetConfiguration.GetRuleConf(envName)
 		if err != nil {
 			return false, err
 		}
@@ -102,7 +107,7 @@ func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identif
 		if !ruleConf.Environment {
 			return false, NotEnvironmentErr
 		}
-		return _internalCheckRule(importLoopData, identifierOrPath, envName, nil), nil
+		return _internalCheckRule(importLoopData, identifierOrPath, envName, nil, false), nil
 	})
 	if err != nil {
 		return err
@@ -116,7 +121,7 @@ func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identif
 
 func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		ruleConf := RuleConf{
+		ruleConf := shared.RuleConfigLayout{
 			Path:   "",
 			Unsafe: false,
 		}

@@ -5,7 +5,6 @@ import (
 	"github.com/avorty/spito/pkg/shared"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -64,4 +63,22 @@ func GetRulesetConf(rulesetLocation *RulesetLocation) (shared.ConfigFileLayout, 
 	}
 
 	return spitoRulesetYaml, nil
+}
+
+func GetRuleConfFromScript(scriptPath string) (shared.RuleConfigLayout, error) {
+	ruleConf := shared.RuleConfigLayout{
+		Path:        scriptPath,
+		Unsafe:      false,
+		Environment: false,
+	}
+
+	scriptRaw, err := os.ReadFile(scriptPath)
+	if err != nil {
+		return shared.RuleConfigLayout{}, err
+	}
+
+	// Get data from decorators
+	processScript(string(scriptRaw), &ruleConf)
+
+	return ruleConf, err
 }

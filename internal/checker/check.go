@@ -176,7 +176,7 @@ func _internalCheckRule(
 		panic(nil)
 	}
 
-	rulesetConf, err := getRulesetConf(&rulesetLocation)
+	rulesetConf, err := GetRulesetConf(&rulesetLocation)
 	if err != nil {
 		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", shared.ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
 		panic(nil)

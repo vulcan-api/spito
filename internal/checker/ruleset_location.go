@@ -128,6 +128,11 @@ func InstallDependency(ruleIdentifier string, waitGroup *sync.WaitGroup, errChan
 	if !dependencyLocation.IsRuleSetDownloaded() {
 		err = FetchRuleset(&dependencyLocation)
 	}
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+}
 
 func (r *RulesetLocation) getLockfileTree() (DependencyTreeLayout, error) {
 	fileContents, err := os.ReadFile(filepath.Join(r.GetRulesetPath(), shared.LockFilename))
@@ -165,7 +170,7 @@ func (r *RulesetLocation) createLockfile(errChan chan error) error {
 			dependencyRulesetName, dependencyRuleName, _ := strings.Cut(dependencyString, "@")
 			rulesetLocation := NewRulesetLocation(dependencyRulesetName, false)
 
-			doesLockfileExist, err := shared.DoesPathExist(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
+			doesLockfileExist, err := shared.PathExists(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
 			if err != nil {
 				return err
 			}
@@ -210,6 +215,11 @@ func (r *RulesetLocation) createLockfile(errChan chan error) error {
 	_, err = lockfile.Write(yamlOutput)
 	if err != nil {
 		return err
+	}
+
+	_, err = lockfile.Write(yamlOutput)
+	if err != nil {
+		return nil
 	}
 
 	return nil

@@ -69,6 +69,10 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
+		handleError(err)
+		panicIfEnvironment(&ruleConf, "file", inputPath)
+
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
@@ -91,7 +95,7 @@ var checkCmd = &cobra.Command{
 		identifierOrPath := args[0]
 		ruleName := args[1]
 
-		isPath, err := shared.DoesPathExist(identifierOrPath)
+		isPath, err := shared.PathExists(identifierOrPath)
 		handleError(err)
 
 		defer func() {
@@ -101,6 +105,14 @@ var checkCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
+
+		rulesetLocation := checker.NewRulesetLocation(identifierOrPath, isPath)
+		rulesetConfig, err := checker.GetRulesetConf(&rulesetLocation)
+		handleError(err)
+
+		ruleConf, err := rulesetConfig.GetRuleConf(ruleName)
+		handleError(err)
+		panicIfEnvironment(&ruleConf, identifierOrPath, ruleName)
 
 		var doesRulePass bool
 		if isPath {
@@ -164,7 +176,7 @@ func communicateRuleResult(ruleName string, doesRulePass bool) {
 	}
 }
 
-func panicIfEnvironment(ruleConf *checker.RuleConf, rulesetIdentifier, ruleName string) {
+func panicIfEnvironment(ruleConf *shared.RuleConfigLayout, rulesetIdentifier, ruleName string) {
 	if ruleConf.Environment {
 		fmt.Println("Rule which you were trying to check is an environment")
 		fmt.Println("In order to apply environment use command:")

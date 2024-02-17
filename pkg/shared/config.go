@@ -13,6 +13,7 @@ type RuleConfigLayout struct {
 	Path        string `yaml:"path"`
 	Description string `yaml:"description"`
 	Unsafe      bool   `yaml:"unsafe"`
+	Environment bool
 }
 
 type ConfigFileLayout struct {
