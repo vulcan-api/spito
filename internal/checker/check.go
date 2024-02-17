@@ -172,7 +172,7 @@ func _internalCheckRule(
 	}
 
 	if ruleConf.Sudo && !isRunAsRoot {
-		errChan <- errors.New("tried to execute spito rule which needs to be ran as root")
+		errChan <- errors.New("tried to execute a spito rule that requires root privileges")
 		panic(nil)
 	}
 
