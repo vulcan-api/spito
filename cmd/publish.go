@@ -71,7 +71,7 @@ func publishPostRequest(body PublishRequestBody, token string) int {
 
 func getToken(isLocal bool, rulesetPath string) string {
 	tokenFilenamePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", secretGlobalDirectoryDefaultValue),
+		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
 		secretDirectoryName,
 		tokenStorageFilename)
 	err := shared.ExpandTilde(&tokenFilenamePath)

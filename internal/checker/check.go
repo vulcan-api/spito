@@ -47,7 +47,7 @@ func anyToError(val any) error {
 	if err, ok := val.(string); ok {
 		return errors.New(err)
 	}
-	return fmt.Errorf("panic: %v", val)
+	return fmt.Errorf("panic: %+v", val)
 }
 
 func CheckRuleByPath(importLoopData *shared.ImportLoopData, rulesetPath string, ruleName string) (bool, error) {
@@ -176,7 +176,7 @@ func _internalCheckRule(
 		panic(nil)
 	}
 
-	rulesetConf, err := GetRulesetConf(&rulesetLocation)
+	rulesetConf, err := getRulesetConf(&rulesetLocation)
 	if err != nil {
 		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", shared.ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
 		panic(nil)

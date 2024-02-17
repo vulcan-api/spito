@@ -13,7 +13,7 @@ import (
 
 func getRuleSetsDir() (string, error) {
 	dir, err := os.UserHomeDir()
-	return dir + "/.local/state/spito/rulesets", err
+	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets"), err
 }
 
 func initRequiredTmpDirs() error {
@@ -128,11 +128,6 @@ func InstallDependency(ruleIdentifier string, waitGroup *sync.WaitGroup, errChan
 	if !dependencyLocation.IsRuleSetDownloaded() {
 		err = FetchRuleset(&dependencyLocation)
 	}
-	if err != nil {
-		errChan <- err
-		panic(nil)
-	}
-}
 
 func (r *RulesetLocation) getLockfileTree() (DependencyTreeLayout, error) {
 	fileContents, err := os.ReadFile(filepath.Join(r.GetRulesetPath(), shared.LockFilename))
