@@ -30,10 +30,18 @@ func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) l
 	pkgNamespace.AddFn("get", api.GetPackage)
 	pkgNamespace.AddFn("install", func(packageName string) error {
 		err := importLoopData.PackageTracker.AddPackage(packageName)
+		if err != nil {
+			return err
+		}
+		err = api.InstallPackage(packageName)
 		return err
 	})
 	pkgNamespace.AddFn("remove", func(packageName string) error {
 		err := importLoopData.PackageTracker.RemovePackage(packageName)
+		if err != nil {
+			return err
+		}
+		err = api.RemovePackage(packageName)
 		return err
 	})
 

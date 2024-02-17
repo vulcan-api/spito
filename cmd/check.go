@@ -3,11 +3,9 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/package_conflict"
 	"os"
 	"path/filepath"
-	"strings"
 	"unicode"
 
 	"github.com/avorty/spito/cmd/cmdApi"
@@ -36,21 +34,6 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 	if err != nil {
 		err = runtimeData.VRCT.Revert()
 		runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
-		handleError(err)
-	}
-
-	packagesToInstall := runtimeData.PackageTracker.GetPackagesToInstall()
-	packagesToRemove := runtimeData.PackageTracker.GetPackagesToRemove()
-
-	if len(packagesToInstall) > 0 {
-		runtimeData.InfoApi.Log("installing packages...")
-		err = api.InstallPackage(strings.Join(packagesToInstall, " "))
-		handleError(err)
-	}
-
-	if len(packagesToRemove) > 0 {
-		runtimeData.InfoApi.Log("removing packages...")
-		err = api.RemovePackage(strings.Join(packagesToRemove, " "))
 		handleError(err)
 	}
 
