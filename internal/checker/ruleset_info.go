@@ -40,11 +40,7 @@ func GetRuleConf(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, e
 }
 
 func GetRuleConfFromScript(scriptPath string) (RuleConf, error) {
-	ruleConf := RuleConf{
-		Path:        scriptPath,
-		Unsafe:      false,
-		Environment: false,
-	}
+	ruleConf := RuleConf{Path: scriptPath}
 
 	scriptRaw, err := os.ReadFile(scriptPath)
 	if err != nil {
@@ -67,6 +63,7 @@ func (s *RulesetConfYaml) GetRuleConfBasedOnYaml(rulesetLocation *RulesetLocatio
 			Path:        ruleConfYaml.Path,
 			Unsafe:      ruleConfYaml.Unsafe,
 			Environment: ruleConfYaml.Environment,
+			Sudo:        ruleConfYaml.Sudo,
 		}
 	} else if rulePath, ok := s.Rules[ruleName].(string); ok {
 		ruleConf = RuleConf{
@@ -145,7 +142,7 @@ func getRulesetConfYaml(rulesetLocation *RulesetLocation) (RulesetConfYaml, erro
 func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
 	spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yml")
 	spitoRulesDataBytes, err := os.ReadFile(spitoYamlPath)
-	
+
 	if os.IsNotExist(err) {
 		spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yaml")
 		spitoRulesDataBytes, err = os.ReadFile(spitoYamlPath)
@@ -164,6 +161,7 @@ type RuleConfYaml struct {
 	Path        string `yaml:"path"`
 	Unsafe      bool   `yaml:"unsafe,omitempty"`
 	Environment bool   `yaml:"environment,omitempty"`
+	Sudo        bool   `yaml:"sudo,omitempty"`
 }
 
 type RulesetConf struct {
@@ -174,4 +172,5 @@ type RuleConf struct {
 	Path        string
 	Unsafe      bool
 	Environment bool
+	Sudo        bool
 }

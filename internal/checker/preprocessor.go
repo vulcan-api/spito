@@ -13,11 +13,18 @@ func processScript(script string, ruleConf *RuleConf) string {
 	newScript, decorators := GetDecorators(script)
 
 	for _, decorator := range decorators {
-		if strings.ToLower(decorator) == "unsafe" {
+		lowerDecorator := strings.ToLower(decorator)
+
+		switch lowerDecorator {
+		case "unsafe":
 			ruleConf.Unsafe = true
-		}
-		if strings.ToLower(decorator) == "environment" {
+			break
+		case "environment":
 			ruleConf.Environment = true
+			break
+		case "sudo":
+			ruleConf.Sudo = true
+			break
 		}
 	}
 
