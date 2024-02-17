@@ -2,10 +2,10 @@ package checker
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/yuin/gopher-lua"
+	"os"
+	"path/filepath"
 )
 
 const rulesetDirConstantName = "RULESET_DIR"
@@ -42,25 +42,33 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
-		err := FetchRuleset(&rulesetLocation)
+		doesRulePass, err := CheckRuleByIdentifier(importLoopData, rulesetIdentifier, ruleName)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-		err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
-		handleErrorAndPanic(importLoopData.ErrChan, err)
+		if !doesRulePass {
+			importLoopData.ErrChan <- fmt.Errorf("rule %s/%s did not pass requirements", rulesetIdentifier, ruleName)
+			panic(nil)
+		}
 		return 0
 	}))
 
 	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
 		rulePath := L.Get(1).String()
+
 		err := shared.ExpandTilde(&rulePath)
 		if err != nil {
 			importLoopData.ErrChan <- err
 			panic(nil)
 		}
 
-		if err := L.DoFile(rulePath); err != nil {
-			importLoopData.ErrChan <- err
+		script, err := os.ReadFile(rulePath)
+		handleErrorAndPanic(importLoopData.ErrChan, err)
+
+		doesRulePass, err := CheckRuleScript(importLoopData, string(script), filepath.Dir(rulePath))
+		handleErrorAndPanic(importLoopData.ErrChan, err)
+
+		if !doesRulePass {
+			importLoopData.ErrChan <- fmt.Errorf("rule from %s did not pass requirements", rulePath)
 			panic(nil)
 		}
 
