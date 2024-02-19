@@ -1,9 +1,11 @@
 --[[
     #![options({
         age: int = 1,
-        name: string,
-        lastname,
+        ageO?: int = 1,
         position = "leader",
+        positionO? = "leader",
+        nameO?: string,
+        lastnameO?
     })]
 --]]
 

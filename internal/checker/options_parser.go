@@ -48,11 +48,26 @@ func GetOption(rawOptions string) (option.Option, string, error) {
 
 	var err error
 
-	// Possible edge cases:
+	// Possible HANDLED edge cases:
 	// name:type=val
 	// name=val
 	// name:type
 	// name
+
+	// Possible UNHANDLED cases:
+	//
+	// name:array=[false, "one", 2]
+	// name=[false, "one", 2,]
+	//
+	// name:struct={name:type=val}
+	// name={name:type=val}
+	//
+	// name?:type=val
+	// name?:type
+	// name?=val
+	// name?
+	//
+	// ""
 	processedOption.Type = option.Any
 	rawDefaultValue := ""
 
@@ -73,15 +88,35 @@ func GetOption(rawOptions string) (option.Option, string, error) {
 	} else {
 		processedOption.Name = rawOptions[0:commaPos]
 	}
-	processedOption.DefaultValue, err = ParseDefaultValue(rawDefaultValue, processedOption.Type)
+
+	obtainedDefaultValueType := processedOption.Type
+	if processedOption.Type == option.Any {
+		obtainedDefaultValueType = option.GetType(rawDefaultValue)
+		if processedOption.Type == option.Unknown {
+			return processedOption, rawOptions, fmt.Errorf("cannot convert option '%s' to any recognized type", processedOption.Name)
+		}
+	}
+	processedOption.DefaultValue, err = ParseDefaultValue(rawDefaultValue, obtainedDefaultValueType)
 	if err != nil {
 		return processedOption, rawOptions, err
+	}
+
+	name := processedOption.Name
+	lastChar := name[len(name)-1]
+
+	if lastChar == '?' {
+		processedOption.Optional = true
 	}
 
 	resultScript := ""
 	if commaPos < len(rawOptions) {
 		resultScript = rawOptions[commaPos+1:]
 	}
+
+	if !processedOption.Optional && processedOption.DefaultValue == nil {
+		return processedOption, resultScript, fmt.Errorf("option '%s' must be optional or provide default value", processedOption.Name)
+	}
+
 	return processedOption, resultScript, nil
 }
 
@@ -142,7 +177,8 @@ func ParseDefaultValue(rawValue string, valueType option.Type) (any, error) {
 		}
 		break
 	default:
-		parsedValue = nil
+		err = fmt.Errorf("unsupported option type '%s' of value '%s'", valueType, rawValue)
+		break
 	}
 	return parsedValue, err
 }
