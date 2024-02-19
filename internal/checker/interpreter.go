@@ -18,9 +18,10 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	lua.OpenString(L)
 
 	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
-	//fmt.Printf("%+v", *ruleConf)
 
-	attachOptions(ruleConf, L)
+	if err := attachOptions(ruleConf, L); err != nil {
+		return false, err
+	}
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
@@ -40,10 +41,14 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func attachOptions(ruleConf *shared.RuleConfigLayout, L *lua.LState) {
+func attachOptions(ruleConf *shared.RuleConfigLayout, L *lua.LState) error {
 	for _, ruleOption := range ruleConf.Options {
 		var value lua.LValue
-		switch ruleOption.Type {
+		ruleOptionType := ruleOption.Type
+		if ruleOptionType == option.Any {
+			ruleOptionType = option.GetType(ruleOption.DefaultValue)
+		}
+		switch ruleOptionType {
 		case option.Int:
 			value = lua.LNumber(ruleOption.DefaultValue.(int))
 			break
@@ -60,11 +65,11 @@ func attachOptions(ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 			value = lua.LBool(ruleOption.DefaultValue.(bool))
 			break
 		default:
-			// TODO: handle any
-			break
+			return fmt.Errorf("option '%s' cannot be parsed")
 		}
 		L.SetGlobal(ruleOption.Name, value)
 	}
+	return nil
 }
 
 func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
