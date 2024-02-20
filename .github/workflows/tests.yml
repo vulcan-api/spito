@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [arch, artix-openrc, artix-runit]
+        os: [arch, artix-openrc] #TODO: add previously removed artix-runit when artixlinux/artixlinux docker image will be fixed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
