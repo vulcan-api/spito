@@ -179,7 +179,8 @@ func _internalCheckRule(
 	rulesHistory.SetProgress(identifier, ruleName, false)
 	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
-		return false
+		errChan <- err
+		panic(nil)
 	}
 	return doesRulePass
 }
