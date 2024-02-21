@@ -20,9 +20,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 
 	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
 
-	if err := attachOptions(ruleConf, L); err != nil {
-		return false, err
-	}
+	L.SetGlobal("_O", getOptions(ruleConf.Options, L))
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
@@ -42,10 +40,24 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func attachOptions(ruleConf *shared.RuleConfigLayout, L *lua.LState) error {
-	for _, ruleOption := range ruleConf.Options {
-		var value lua.LValue
-		ruleOptionType := ruleOption.Type
+func getOptions(options []option.Option, L *lua.LState) lua.LValue {
+	structNamespace := newLuaNamespace()
+
+	for _, ruleOption := range options {
+		structNamespace.AddField(ruleOption.Name, getOptionLValue(ruleOption, L))
+	}
+
+	return structNamespace.createTable(L)
+}
+
+func getOptionLValue(ruleOption option.Option, L *lua.LState) lua.LValue {
+	var value lua.LValue
+	ruleOptionType := ruleOption.Type
+	if ruleOption.Type == option.Struct {
+		value = getOptions(ruleOption.Options, L)
+	} else if ruleOption.DefaultValue == nil {
+		value = lua.LNil
+	} else {
 		if ruleOptionType == option.Any {
 			ruleOptionType = option.GetType(ruleOption.DefaultValue)
 		}
@@ -66,11 +78,10 @@ func attachOptions(ruleConf *shared.RuleConfigLayout, L *lua.LState) error {
 			value = lua.LBool(ruleOption.DefaultValue.(bool))
 			break
 		default:
-			return fmt.Errorf("option '%s' cannot be parsed")
+			value = lua.LNil
 		}
-		L.SetGlobal(ruleOption.Name, value)
 	}
-	return nil
+	return value
 }
 
 func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
