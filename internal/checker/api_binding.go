@@ -81,7 +81,7 @@ func getConfigEnums(L *lua.LState) lua.LValue {
 
 	infoNamespace.AddField("json", lua.LNumber(vrctFs.JsonConfig))
 	infoNamespace.AddField("yaml", lua.LNumber(vrctFs.YamlConfig))
-	infoNamespace.AddFn("toml", lua.LNumber(vrctFs.TomlConfig))
+	infoNamespace.AddField("toml", lua.LNumber(vrctFs.TomlConfig))
 
 	return infoNamespace.createTable(L)
 }

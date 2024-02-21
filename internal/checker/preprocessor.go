@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/shared/option"
 	"regexp"
 	"strings"
 	"unicode"
@@ -35,7 +36,7 @@ func processScript(script string, ruleConf *shared.RuleConfigLayout) (string, er
 			ruleConf.Unsafe = true
 			break
 		case OptionsDecorator:
-			ruleConf.Options, err = AppendOptions(ruleConf.Options, decorator.Content)
+			ruleConf.Options, err = option.AppendOptions(ruleConf.Options, decorator.Content)
 			if err != nil {
 				return newScript, err
 			}
