@@ -14,6 +14,7 @@ type RuleConfigLayout struct {
 	Description string `yaml:"description"`
 	Unsafe      bool   `yaml:"unsafe"`
 	Environment bool
+	Sudo        bool
 }
 
 type ConfigFileLayout struct {

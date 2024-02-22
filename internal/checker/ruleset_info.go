@@ -5,7 +5,7 @@ import (
 	"github.com/avorty/spito/pkg/shared"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path/filepath"
+	"path"
 )
 
 func GetAllDownloadedRuleSets() ([]string, error) {
@@ -45,10 +45,18 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 	return ruleSets, nil
 }
 
-func ReadSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
-	spitoRulesDataBytes, err := os.ReadFile(
-		filepath.Join(rulesetLocation.GetRulesetPath(), shared.ConfigFilename))
-	return spitoRulesDataBytes, err
+func GetRuleConfFromScript(scriptPath string) (shared.RuleConfigLayout, error) {
+	ruleConf := shared.RuleConfigLayout{Path: scriptPath}
+
+	scriptRaw, err := os.ReadFile(scriptPath)
+	if err != nil {
+		return shared.RuleConfigLayout{}, err
+	}
+
+	// Get data from decorators
+	processScript(string(scriptRaw), &ruleConf)
+
+	return ruleConf, err
 }
 
 func GetRulesetConf(rulesetLocation *RulesetLocation) (shared.ConfigFileLayout, error) {
@@ -65,7 +73,7 @@ func GetRulesetConf(rulesetLocation *RulesetLocation) (shared.ConfigFileLayout, 
 	return spitoRulesetYaml, nil
 }
 
-func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
+func ReadSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
 	spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yml")
 	spitoRulesDataBytes, err := os.ReadFile(spitoYamlPath)
 
@@ -76,24 +84,5 @@ func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
 			return nil, err
 		}
 	}
-
-	// Get data from decorators
-	processScript(string(scriptRaw), &ruleConf)
-
-type RuleConfYaml struct {
-	Path        string `yaml:"path"`
-	Unsafe      bool   `yaml:"unsafe,omitempty"`
-	Environment bool   `yaml:"environment,omitempty"`
-	Sudo        bool   `yaml:"sudo,omitempty"`
-}
-
-type RulesetConf struct {
-	Rules map[string]RuleConf
-}
-
-type RuleConf struct {
-	Path        string
-	Unsafe      bool
-	Environment bool
-	Sudo        bool
+	return spitoRulesDataBytes, err
 }
