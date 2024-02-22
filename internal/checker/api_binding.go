@@ -15,7 +15,7 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 
 	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
-	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
+	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 
 	if ruleConf.Unsafe {
@@ -28,19 +28,23 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	pkgNamespace := newLuaNamespace()
 	pkgNamespace.AddFn("get", api.GetPackage)
-	pkgNamespace.AddFn("install", func(packageName string) error {
-		err := importLoopData.PackageTracker.AddPackage(packageName)
-		handleErrorAndPanic(importLoopData.ErrChan, err)
-		err = api.InstallPackage(packageName)
-		handleErrorAndPanic(importLoopData.ErrChan, err)
-		return nil
+	pkgNamespace.AddFn("install", func(packagesToInstall ...string) error {
+		for _, packageToCheck := range packagesToInstall {
+			err := importLoopData.PackageTracker.AddPackage(packageToCheck)
+			if err != nil {
+				return err
+			}
+		}
+		return api.InstallPackages(packagesToInstall...)
 	})
-	pkgNamespace.AddFn("remove", func(packageName string) error {
-		err := importLoopData.PackageTracker.RemovePackage(packageName)
-		handleErrorAndPanic(importLoopData.ErrChan, err)
-		err = api.RemovePackage(packageName)
-		handleErrorAndPanic(importLoopData.ErrChan, err)
-		return err
+	pkgNamespace.AddFn("remove", func(packagesToRemove ...string) error {
+		for _, packageToCheck := range packagesToRemove {
+			err := importLoopData.PackageTracker.RemovePackage(packageToCheck)
+			if err != nil {
+				return err
+			}
+		}
+		return api.RemovePackages(packagesToRemove...)
 	})
 
 	return pkgNamespace.createTable(L)
@@ -56,7 +60,7 @@ func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	return sysInfoNamespace.createTable(L)
 }
 
-func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue {
+func getFsNamespace(importLoop *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	fsNamespace := newLuaNamespace()
 
 	apiFs := api.FsApi{

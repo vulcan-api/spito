@@ -49,7 +49,7 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 
 	ruleFile, err := os.Create(filepath.Join(rulesDirectory, rulePath+".lua"))
 	handleError(err)
-	_, err = ruleFile.Write([]byte(exampleRuleContents))
+	_, err = ruleFile.WriteString(exampleRuleContents)
 	handleError(err)
 	err = ruleFile.Close()
 	handleError(err)

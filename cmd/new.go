@@ -8,6 +8,7 @@ import (
 	"github.com/avorty/spito/pkg/shared"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -132,7 +133,7 @@ var newRulesetCommand = &cobra.Command{
 			handleError(err)
 		}
 
-		configFile, err := os.Create(rulesetName + "/" + shared.ConfigFilename)
+		configFile, err := os.Create(filepath.Join(rulesetName, shared.ConfigFilename))
 		handleError(err)
 		config := shared.ConfigFileLayout{
 			RepoUrl:    repositoryUrl,

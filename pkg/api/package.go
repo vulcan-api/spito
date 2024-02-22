@@ -1,19 +1,47 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/avorty/spito/pkg/shared"
+	"github.com/go-git/go-git/v5"
 	"github.com/oleiade/reflections"
+	"github.com/schollz/progressbar/v3"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
 	"strings"
 )
 
+/* #cgo LDFLAGS: -lalpm
+   //#include "install_packages.h"
+   #include <alpm.h>
+*/
+import "C"
+
 const (
-	packageManager       = "pacman" // Currently we only support arch pacman
-	installCommand       = "-S"
-	removeCommand        = "-Rns"
-	rootExecutionCommand = "sudo"
+	packageManager         = "pacman" // Currently we only support arch pacman
+	installCommand         = "-S"
+	installFromFileOption  = "-U"
+	noConfirmOption        = "--noconfirm"
+	removeCommand          = "-Rns"
+	changeUserCommand      = "/usr/bin/sudo"
+	changeUserOption       = "-u"
+	commandOption          = "-c"
+	aurHelper              = "yay"
+	pacmanDatabaseLocation = "/var/lib/pacman"
+	rootLocation           = "/"
+	successStatus          = 0
+	aurAPIRequestURL       = "https://aur.archlinux.org/rpc/v5/info"
+	aurCloneTemplate       = "https://aur.archlinux.org/%s.git"
+	defaultCacheLocation   = "~/.cache"
+	makepkgCommand         = "makepkg"
+	makePkgOptions         = "-s"
 )
 
 type Package struct {
@@ -139,41 +167,238 @@ func GetPackage(name string) (Package, error) {
 	return p, nil
 }
 
-func bindStandardStreams(cmd *exec.Cmd) {
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+type AurPackage struct {
+	Name string
 }
 
-func InstallPackage(packageString string) error {
-	packageName, version, _ := strings.Cut(packageString, "@")
-	packageToBeInstalled, err := GetPackage(packageName)
+type AurResponseLayout struct {
+	Results []AurPackage
+}
 
-	var expectedVersion string
-	if len(version) > 0 {
-		expectedVersion = version[1:]
-	} else {
-		expectedVersion = ""
+func getListOfAURPackages(packages ...string) ([]string, error) {
+
+	requestValues := url.Values{
+		"arg[]": packages,
+	}
+	requestUrl := aurAPIRequestURL + "?" + requestValues.Encode()
+	response, err := http.Get(requestUrl)
+	if err != nil {
+		return []string{}, err
 	}
 
-	var pacmanCommand *exec.Cmd
-	doesPackageNeedToBeUpgraded := err == nil && packageToBeInstalled.Version < expectedVersion
-	isPackageNotInstalled := err != nil
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return []string{}, err
+	}
+	err = response.Body.Close()
+	if err != nil {
+		return []string{}, err
+	}
 
-	if version == "" || version == "*" || isPackageNotInstalled || doesPackageNeedToBeUpgraded {
-		pacmanCommand = exec.Command(rootExecutionCommand, packageManager, installCommand, packageName)
+	var jsonBody AurResponseLayout
+	err = json.Unmarshal(body, &jsonBody)
 
-		bindStandardStreams(pacmanCommand)
-		err = pacmanCommand.Run()
+	if err != nil {
+		return []string{}, err
+	}
+
+	result := []string{}
+	for _, aurPackage := range jsonBody.Results {
+		result = append(result, aurPackage.Name)
+	}
+	return result, nil
+}
+
+func installPackageFromFile(packageName string, workingDirectory string) error {
+	shared.ChangeToRoot()
+	const pacmanPackageFileExtension = ".tar.zst"
+	err := filepath.Walk(workingDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasPrefix(info.Name(), packageName) ||
+			!strings.HasSuffix(info.Name(), pacmanPackageFileExtension) {
+			return nil
+		}
+
+		packageManagerCommand :=
+			exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, info.Name()))
+		return packageManagerCommand.Run()
+	})
+	return err
+}
+
+func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
+	cachePath := filepath.Join(
+		shared.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
+		"spito")
+
+	shared.ChangeToUser()
+	err := shared.ExpandTilde(&cachePath)
+	if err != nil {
 		return err
 	}
+	err = os.MkdirAll(cachePath, shared.DirectoryPermissions)
+	if err != nil {
+		return err
+	}
+
+	for _, pkg := range packages {
+		repoPath := filepath.Join(cachePath, pkg)
+		if doesExist, _ := shared.PathExists(repoPath); doesExist {
+			err = os.RemoveAll(repoPath)
+			if err != nil {
+				return err
+			}
+		}
+		bar.Describe(fmt.Sprintf("Cloning AUR package %s...", pkg))
+		_, err = git.PlainClone(repoPath, false, &git.CloneOptions{
+			URL: fmt.Sprintf(aurCloneTemplate, pkg),
+		})
+		if err != nil {
+			return err
+		}
+
+		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
+		argv := []string{changeUserCommand, changeUserOption, shared.GetRegularUser().Username, makepkgCommand}
+		makePkgCommand, err := os.StartProcess(changeUserCommand, argv, &os.ProcAttr{
+			Dir: repoPath,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = makePkgCommand.Wait()
+		if err != nil {
+			return err
+		}
+		bar.Describe(fmt.Sprintf("Installing AUR package %s...", pkg))
+		err = installPackageFromFile(pkg, repoPath)
+		if err != nil {
+			return err
+		}
+	}
+	_ = bar.Add(1)
 	return nil
 }
 
-func RemovePackage(packageName string) error {
-	pacmanCommand := exec.Command(rootExecutionCommand, packageManager, removeCommand, packageName)
-	bindStandardStreams(pacmanCommand)
+func installRegularPackages(packages ...string) error {
+	packageManagerCommand := exec.Command(packageManager, installCommand, noConfirmOption, strings.Join(packages, " "))
+	packageManagerCommand.Stdout = os.Stdout
+	packageManagerCommand.Stderr = os.Stderr
+	packageManagerCommand.Stdin = os.Stdin
+	return packageManagerCommand.Run()
+	/*shared.ChangeToRoot()
 
+	alpmHandle := C.alpm_initialize(C.CString(rootLocation), C.CString(pacmanDatabaseLocation), err)
+	if alpmHandle == nil {
+		return fmt.Errorf("couldn't initialize the alpm library")
+	}
+
+	packageDatabases := C.alpm_get_syncdbs(alpmHandle)
+	if packageDatabases == nil {
+		C.alpm_release(alpmHandle)
+		return fmt.Errorf("couldn't fetch package databases")
+	}
+
+	C.alpm_trans_init(alpmHandle, 0)
+	for _, packageToInstall := range packages {
+		packageToInstallCString := C.CString(packageToInstall)
+		database := (*packageDatabases).data
+		pkg := C.alpm_db_get_pkg((*C.alpm_db_t)(database), packageToInstallCString)
+		for packageDatabases != nil && pkg == nil {
+			fmt.Println(database, pkg, packageDatabases)
+			database = (*packageDatabases).data
+			pkg = C.alpm_db_get_pkg((*C.alpm_db_t)(database), packageToInstallCString)
+			packageDatabases = C.alpm_list_next(packageDatabases)
+		}
+		if pkg == nil {
+			C.alpm_release(alpmHandle)
+			return fmt.Errorf("couldn't find the package %s in the pacman database", packageToInstall)
+		}
+		C.alpm_add_pkg(alpmHandle, pkg)
+	}
+
+	result := C.alpm_trans_prepare(alpmHandle, nil)
+	if result != successStatus {
+		C.alpm_release(alpmHandle)
+		return errors.New("couldn't prepare the pacman transaction")
+	}
+
+	result = C.alpm_trans_commit(alpmHandle, nil)
+	if result != successStatus {
+		C.alpm_release(alpmHandle)
+		return errors.New("couldn't install pacman packages")
+	}
+
+	result = C.alpm_trans_release(alpmHandle)
+	if result != successStatus {
+		C.alpm_release(alpmHandle)
+		return errors.New("couldn't release the pacman transaction")
+	}
+
+	C.alpm_release(alpmHandle)
+	return nil*/
+}
+
+func InstallPackages(packageStrings ...string) error {
+
+	/* Determine packages to install/update */
+	shared.ChangeToRoot()
+	var packagesToInstall []string //[]*C.char
+	for _, packageString := range packageStrings {
+		packageName, version, _ := strings.Cut(packageString, "@")
+		packageToBeInstalled, err := GetPackage(packageName)
+
+		var expectedVersion string
+		if len(version) > 0 {
+			expectedVersion = version[1:]
+		} else {
+			expectedVersion = ""
+		}
+
+		doesPackageNeedToBeUpgraded := err == nil && packageToBeInstalled.Version < expectedVersion
+		isPackageNotInstalled := err != nil
+
+		if version == "" || version == "*" || isPackageNotInstalled || doesPackageNeedToBeUpgraded {
+			packagesToInstall = append(packagesToInstall, packageName /*C.CString(packageName)*/)
+		}
+	}
+
+	/* Get list of AUR packages */
+	aurPackagesToInstall, err := getListOfAURPackages(packagesToInstall...)
+	if err != nil {
+		return err
+	}
+
+	/* Exclude AUR packages from the packagesToInstall slice */
+	packagesToInstall = slices.DeleteFunc(packagesToInstall, func(pkg string) bool {
+		return slices.Index(aurPackagesToInstall, pkg) != -1
+	})
+
+	if len(aurPackagesToInstall) > 0 {
+		aurBar := progressbar.NewOptions(len(aurPackagesToInstall),
+			progressbar.OptionSetDescription("Installing AUR packages..."),
+			progressbar.OptionSetPredictTime(false),
+			progressbar.OptionSetElapsedTime(false),
+			progressbar.OptionShowCount(),
+		)
+		err = installAurPackages(aurPackagesToInstall, aurBar)
+		if err != nil {
+			return err
+		}
+		fmt.Println()
+	}
+
+	if len(packagesToInstall) == 0 {
+		return nil
+	}
+
+	err = installRegularPackages(packagesToInstall...)
+	shared.ChangeToUser()
+	return err
+}
+
+func RemovePackages(packagesToRemove ...string) error {
+	shared.ChangeToRoot()
+	pacmanCommand := exec.Command(packageManager, removeCommand, noConfirmOption, strings.Join(packagesToRemove, " "))
 	err := pacmanCommand.Run()
+	shared.ChangeToUser()
 	return err
 }
