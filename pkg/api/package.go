@@ -18,30 +18,18 @@ import (
 	"strings"
 )
 
-/* #cgo LDFLAGS: -lalpm
-   //#include "install_packages.h"
-   #include <alpm.h>
-*/
-import "C"
-
 const (
-	packageManager         = "pacman" // Currently we only support arch pacman
-	installCommand         = "-S"
-	installFromFileOption  = "-U"
-	noConfirmOption        = "--noconfirm"
-	removeCommand          = "-Rns"
-	changeUserCommand      = "/usr/bin/sudo"
-	changeUserOption       = "-u"
-	commandOption          = "-c"
-	aurHelper              = "yay"
-	pacmanDatabaseLocation = "/var/lib/pacman"
-	rootLocation           = "/"
-	successStatus          = 0
-	aurAPIRequestURL       = "https://aur.archlinux.org/rpc/v5/info"
-	aurCloneTemplate       = "https://aur.archlinux.org/%s.git"
-	defaultCacheLocation   = "~/.cache"
-	makepkgCommand         = "makepkg"
-	makePkgOptions         = "-s"
+	packageManager        = "pacman" // Currently we only support arch pacman
+	installCommand        = "-S"
+	installFromFileOption = "-U"
+	noConfirmOption       = "--noconfirm"
+	removeCommand         = "-Rns"
+	changeUserCommand     = "/usr/bin/sudo"
+	changeUserOption      = "-u"
+	aurAPIRequestURL      = "https://aur.archlinux.org/rpc/v5/info"
+	aurCloneTemplate      = "https://aur.archlinux.org/%s.git"
+	defaultCacheLocation  = "~/.cache"
+	makepkgCommand        = "makepkg"
 )
 
 type Package struct {
@@ -284,57 +272,6 @@ func installRegularPackages(packages ...string) error {
 	packageManagerCommand.Stderr = os.Stderr
 	packageManagerCommand.Stdin = os.Stdin
 	return packageManagerCommand.Run()
-	/*shared.ChangeToRoot()
-
-	alpmHandle := C.alpm_initialize(C.CString(rootLocation), C.CString(pacmanDatabaseLocation), err)
-	if alpmHandle == nil {
-		return fmt.Errorf("couldn't initialize the alpm library")
-	}
-
-	packageDatabases := C.alpm_get_syncdbs(alpmHandle)
-	if packageDatabases == nil {
-		C.alpm_release(alpmHandle)
-		return fmt.Errorf("couldn't fetch package databases")
-	}
-
-	C.alpm_trans_init(alpmHandle, 0)
-	for _, packageToInstall := range packages {
-		packageToInstallCString := C.CString(packageToInstall)
-		database := (*packageDatabases).data
-		pkg := C.alpm_db_get_pkg((*C.alpm_db_t)(database), packageToInstallCString)
-		for packageDatabases != nil && pkg == nil {
-			fmt.Println(database, pkg, packageDatabases)
-			database = (*packageDatabases).data
-			pkg = C.alpm_db_get_pkg((*C.alpm_db_t)(database), packageToInstallCString)
-			packageDatabases = C.alpm_list_next(packageDatabases)
-		}
-		if pkg == nil {
-			C.alpm_release(alpmHandle)
-			return fmt.Errorf("couldn't find the package %s in the pacman database", packageToInstall)
-		}
-		C.alpm_add_pkg(alpmHandle, pkg)
-	}
-
-	result := C.alpm_trans_prepare(alpmHandle, nil)
-	if result != successStatus {
-		C.alpm_release(alpmHandle)
-		return errors.New("couldn't prepare the pacman transaction")
-	}
-
-	result = C.alpm_trans_commit(alpmHandle, nil)
-	if result != successStatus {
-		C.alpm_release(alpmHandle)
-		return errors.New("couldn't install pacman packages")
-	}
-
-	result = C.alpm_trans_release(alpmHandle)
-	if result != successStatus {
-		C.alpm_release(alpmHandle)
-		return errors.New("couldn't release the pacman transaction")
-	}
-
-	C.alpm_release(alpmHandle)
-	return nil*/
 }
 
 func InstallPackages(packageStrings ...string) error {
