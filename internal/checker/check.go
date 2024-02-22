@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"os/user"
 )
 
 type Rule struct {
@@ -65,10 +66,7 @@ func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier str
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		// TODO: implement preprocessing instead of hard coding ruleConf
-		ruleConf := shared.RuleConfigLayout{
-			Path:   "",
-			Unsafe: false,
-		}
+		ruleConf := shared.RuleConfigLayout{}
 		script = processScript(script, &ruleConf)
 		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
 	})
@@ -192,10 +190,27 @@ func _internalCheckRule(
 		}
 	}
 
+	isRunAsRoot, err := isRoot()
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+
+	if ruleConf.Sudo && !isRunAsRoot {
+		errChan <- errors.New("tried to execute a spito rule that requires root privileges")
+		panic(nil)
+	}
+
 	rulesHistory.SetProgress(identifier, ruleName, false)
 	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
-		return false
+		errChan <- err
+		panic(nil)
 	}
 	return doesRulePass
+}
+
+func isRoot() (bool, error) {
+	currentUser, err := user.Current()
+	return currentUser.Username == "root", err
 }

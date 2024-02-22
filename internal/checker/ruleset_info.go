@@ -65,20 +65,35 @@ func GetRulesetConf(rulesetLocation *RulesetLocation) (shared.ConfigFileLayout, 
 	return spitoRulesetYaml, nil
 }
 
-func GetRuleConfFromScript(scriptPath string) (shared.RuleConfigLayout, error) {
-	ruleConf := shared.RuleConfigLayout{
-		Path:        scriptPath,
-		Unsafe:      false,
-		Environment: false,
-	}
+func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
+	spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yml")
+	spitoRulesDataBytes, err := os.ReadFile(spitoYamlPath)
 
-	scriptRaw, err := os.ReadFile(scriptPath)
-	if err != nil {
-		return shared.RuleConfigLayout{}, err
+	if os.IsNotExist(err) {
+		spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yaml")
+		spitoRulesDataBytes, err = os.ReadFile(spitoYamlPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Get data from decorators
 	processScript(string(scriptRaw), &ruleConf)
 
-	return ruleConf, err
+type RuleConfYaml struct {
+	Path        string `yaml:"path"`
+	Unsafe      bool   `yaml:"unsafe,omitempty"`
+	Environment bool   `yaml:"environment,omitempty"`
+	Sudo        bool   `yaml:"sudo,omitempty"`
+}
+
+type RulesetConf struct {
+	Rules map[string]RuleConf
+}
+
+type RuleConf struct {
+	Path        string
+	Unsafe      bool
+	Environment bool
+	Sudo        bool
 }
