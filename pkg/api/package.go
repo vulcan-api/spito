@@ -170,6 +170,7 @@ type AurResponseLayout struct {
 
 func getListOfAURPackages(packages ...string) ([]string, error) {
 
+	shared.ChangeToRoot()
 	requestValues := url.Values{
 		"arg[]": packages,
 	}
@@ -364,7 +365,6 @@ func InstallPackages(packageStrings ...string) error {
 		}
 		fmt.Println()
 	}
-	fmt.Println("test")
 	if len(packagesToInstall) == 0 {
 		return nil
 	}
