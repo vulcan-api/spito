@@ -53,14 +53,26 @@ type appendOptionCase struct {
 }
 
 var appendOptionCases = []appendOptionCase{
+	{"{enum?:{ONE;TWO}=ONE}", []Option{
+		{"enum", "ONE", Enum, true, []string{"ONE", "TWO"}, nil},
+	}, false},
+	// TODO: find very good array
+	{"{array?:[]any=[1, 2, 3]}", []Option{
+		{"number", 0, Array, true, nil, nil},
+	}, true},
+	// TODO: find a way to escape a colon
+	{`{testString?:string=",testValue"}`, []Option{
+		{"testString", ",testValue", String, true, nil, nil},
+	}, true},
 	{"{number?:int=0}", []Option{
 		{"number", 0, Int, true, nil, nil},
 	}, false},
-	{"{sub={name=jarek,surname=goof},sibling?:string}", []Option{
+	{"{sub={name=jarek,surname=goof},gender:{male;female}=male,sibling?:string}", []Option{
 		{"sub", nil, Struct, false, nil, []Option{
 			{"name", "jarek", Any, false, nil, nil},
 			{"surname", "goof", Any, false, nil, nil}},
 		},
+		{"gender", "male", Enum, false, []string{"male", "female"}, nil},
 		{"sibling", nil, String, true, nil, nil}}, false,
 	},
 	{`{ageO?:int=1,position="leader",positionO?=2,nameO?:string,lastnameO?,dog={hairType?,smallDog={exists:bool=false},age:int=5},last?}`, []Option{
@@ -84,6 +96,9 @@ func TestAppendOptions(t *testing.T) {
 	for _, testCase := range appendOptionCases {
 		var obtained []Option
 		obtained, err := AppendOptions(obtained, testCase.raw)
+		if testCase.wantedError && err != nil {
+			continue
+		}
 		if err != nil {
 			t.Fatal(err.Error())
 		}

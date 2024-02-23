@@ -8,7 +8,8 @@
             hairType?,
             age: int = 5
         },
-        positionO? = "leader",
+        gender:{male;female}=male,
+        positionO? = "leader"
     })]
 --]]
 
@@ -20,6 +21,7 @@ function main()
         { name = "nameO" },
         { name = "lastnameO" },
         { name = "positionO", value = "leader" },
+        { name = "gender", value = "male" },
         { name = "dog", subOptions = { { name = "hairType", }, { name = "age", value = 5 } } }
     }
     return checkArray(testArray)

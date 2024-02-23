@@ -51,30 +51,36 @@ func getOptions(options []option.Option, L *lua.LState) lua.LValue {
 
 func getOptionLValue(ruleOption option.Option, L *lua.LState) lua.LValue {
 	var value lua.LValue
-	ruleOptionType := ruleOption.Type
 	if ruleOption.Type == option.Struct {
 		value = getOptions(ruleOption.Options, L)
-	} else if ruleOption.DefaultValue == nil {
-		value = lua.LNil
 	} else {
-		if ruleOptionType == option.Any {
-			ruleOptionType = option.GetType(ruleOption.DefaultValue)
+		value = getAnyLValue(ruleOption.DefaultValue, ruleOption.Type)
+	}
+	return value
+}
+
+func getAnyLValue(rawValue any, optionType option.Type) lua.LValue {
+	value := lua.LNil
+	realOptionType := optionType
+	if rawValue != nil {
+		if optionType == option.Any || optionType == option.Enum {
+			realOptionType = option.GetType(rawValue)
 		}
-		switch ruleOptionType {
+		switch realOptionType {
 		case option.Int:
-			value = lua.LNumber(ruleOption.DefaultValue.(int))
+			value = lua.LNumber(rawValue.(int))
 			break
 		case option.UInt:
-			value = lua.LNumber(ruleOption.DefaultValue.(uint))
+			value = lua.LNumber(rawValue.(uint))
 			break
 		case option.Float:
-			value = lua.LNumber(ruleOption.DefaultValue.(float64))
+			value = lua.LNumber(rawValue.(float64))
 			break
 		case option.String:
-			value = lua.LString(ruleOption.DefaultValue.(string))
+			value = lua.LString(rawValue.(string))
 			break
 		case option.Bool:
-			value = lua.LBool(ruleOption.DefaultValue.(bool))
+			value = lua.LBool(rawValue.(bool))
 			break
 		default:
 			value = lua.LNil
