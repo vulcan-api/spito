@@ -256,6 +256,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("JD")
 
 	for _, pkg := range packages {
 		shared.ChangeToUser()
@@ -275,7 +276,6 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 			return err
 		}
 
-		fmt.Println("JD")
 		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
 		argv := []string{changeUserCommand, changeUserOption, shared.GetRegularUser().Username, makepkgCommand}
 		makePkgCommand, err := os.StartProcess(changeUserCommand, argv, &os.ProcAttr{
