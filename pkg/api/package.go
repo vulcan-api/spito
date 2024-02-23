@@ -364,7 +364,7 @@ func InstallPackages(packageStrings ...string) error {
 		}
 		fmt.Println()
 	}
-
+	fmt.Println("test")
 	if len(packagesToInstall) == 0 {
 		return nil
 	}
