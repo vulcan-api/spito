@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"os/user"
 )
 
 type Rule struct {
@@ -190,7 +189,7 @@ func _internalCheckRule(
 		}
 	}
 
-	isRunAsRoot, err := isRoot()
+	isRunAsRoot, err := shared.IsRoot()
 	if err != nil {
 		errChan <- err
 		panic(nil)
@@ -208,9 +207,4 @@ func _internalCheckRule(
 		panic(nil)
 	}
 	return doesRulePass
-}
-
-func isRoot() (bool, error) {
-	currentUser, err := user.Current()
-	return currentUser.Username == "root", err
 }

@@ -28,6 +28,11 @@ func GetRegularUser() *user.User {
 	return userObject
 }
 
+func IsRoot() (bool, error) {
+	currentUser, err := user.Current()
+	return currentUser.Username == "root", err
+}
+
 func ChangeToUser() {
 
 	userObject := GetRegularUser()

@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -200,21 +201,31 @@ func getListOfAURPackages(packages ...string) ([]string, error) {
 }
 
 func installPackageFromFile(packageName string, workingDirectory string) error {
+	shared.ChangeToRoot()
 	const pacmanPackageFileExtension = ".tar.zst"
-	err := filepath.Walk(workingDirectory, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() || !strings.HasPrefix(info.Name(), packageName) ||
-			!strings.HasSuffix(info.Name(), pacmanPackageFileExtension) {
-			return nil
-		}
+	files, err := os.ReadDir(workingDirectory)
+	if err != nil {
+		return err
+	}
 
-		packageManagerCommand :=
-			exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, info.Name()))
-		return packageManagerCommand.Run()
+	packageRegex := fmt.Sprintf("^%s.*%s$", packageName, pacmanPackageFileExtension)
+	packageFileIndex := slices.IndexFunc(files, func(entry os.DirEntry) bool {
+		matches, _ := regexp.Match(packageRegex, []byte(entry.Name()))
+		return matches && !entry.IsDir()
 	})
-	return err
+
+	if packageFileIndex == -1 {
+		return errors.New("the AUR package wasn't built")
+	}
+
+	packageFilename := files[packageFileIndex].Name()
+	packageManagerCommand :=
+		exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, packageFilename))
+	return packageManagerCommand.Run()
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
+	shared.ChangeToUser()
 	cachePath := filepath.Join(
 		shared.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
@@ -236,6 +247,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 				return err
 			}
 		}
+
 		bar.Describe(fmt.Sprintf("Cloning AUR package %s...", pkg))
 		_, err = git.PlainClone(repoPath, false, &git.CloneOptions{
 			URL: fmt.Sprintf(aurCloneTemplate, pkg),
@@ -252,10 +264,12 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		if err != nil {
 			return err
 		}
+
 		_, err = makePkgCommand.Wait()
 		if err != nil {
 			return err
 		}
+
 		bar.Describe(fmt.Sprintf("Installing AUR package %s...", pkg))
 		err = installPackageFromFile(pkg, repoPath)
 		if err != nil {
@@ -263,6 +277,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 	}
 	_ = bar.Add(1)
+	shared.ChangeToRoot()
 	return nil
 }
 
@@ -276,6 +291,11 @@ func installRegularPackages(packages ...string) error {
 }
 
 func InstallPackages(packageStrings ...string) error {
+
+	if isRoot, err := shared.IsRoot(); !isRoot || err != nil {
+		fmt.Println("[error] Please run this rule as root")
+		os.Exit(1)
+	}
 
 	/* Determine packages to install/update */
 	var packagesToInstall []string //[]*C.char
@@ -353,6 +373,11 @@ func InstallPackages(packageStrings ...string) error {
 }
 
 func RemovePackages(packagesToRemove ...string) error {
+	if isRoot, err := shared.IsRoot(); !isRoot || err != nil {
+		fmt.Println("[error] Please run this rule as root")
+		os.Exit(1)
+	}
+
 	pacmanCommand := exec.Command(packageManager, removeCommand, noConfirmOption, strings.Join(packagesToRemove, " "))
 	err := pacmanCommand.Run()
 	return err
