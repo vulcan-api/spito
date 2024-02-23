@@ -6,9 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"syscall"
 )
 
 const (
@@ -66,7 +64,7 @@ func CreateIfNotExists(path, defaultContent string) error {
 }
 
 func ExpandTilde(path *string) error {
-	usr, err := user.LookupId(strconv.Itoa(syscall.Geteuid()))
+	usr, err := user.Current()
 	if err != nil {
 		return err
 	}

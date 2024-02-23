@@ -250,7 +250,6 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 
 	err := shared.ExpandTilde(&cachePath)
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 	err = os.MkdirAll(cachePath, shared.DirectoryPermissions)
