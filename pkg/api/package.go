@@ -239,7 +239,6 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 	packageFilename := files[packageFileIndex].Name()
 	packageManagerCommand :=
 		exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, packageFilename))
-	fmt.Println(packageManagerCommand.String())
 	return packageManagerCommand.Run()
 }
 
@@ -348,6 +347,7 @@ func InstallPackages(packageStrings ...string) error {
 		return err
 	}
 
+	fmt.Println("JD")
 	/* Exclude AUR packages from the packagesToInstall slice */
 	packagesToInstall = slices.DeleteFunc(packagesToInstall, func(pkg string) bool {
 		return slices.Index(aurPackagesToInstall, pkg) != -1
