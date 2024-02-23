@@ -275,6 +275,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 			return err
 		}
 
+		fmt.Println("JD")
 		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
 		argv := []string{changeUserCommand, changeUserOption, shared.GetRegularUser().Username, makepkgCommand}
 		makePkgCommand, err := os.StartProcess(changeUserCommand, argv, &os.ProcAttr{
@@ -366,7 +367,6 @@ func InstallPackages(packageStrings ...string) error {
 		fmt.Println()
 	}
 
-	fmt.Println("JD")
 	if len(packagesToInstall) == 0 {
 		return nil
 	}
