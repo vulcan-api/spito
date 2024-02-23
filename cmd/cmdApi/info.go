@@ -1,33 +1,31 @@
 package cmdApi
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type InfoApi struct{}
 
-func (_ InfoApi) Log(args ...string) {
-	_args := intoPrintArray("[log]", args)
+func (_ InfoApi) Log(args ...any) {
+	_args := intoPrintArray("log", args)
 	fmt.Println(_args...)
 }
 
-func (_ InfoApi) Debug(args ...string) {
-	_args := intoPrintArray("[debug]", args)
+func (_ InfoApi) Debug(args ...any) {
+	_args := intoPrintArray("debug", args)
 	fmt.Println(_args...)
 }
 
-func (_ InfoApi) Error(args ...string) {
-	_args := intoPrintArray("[error]", args)
+func (_ InfoApi) Error(args ...any) {
+	_args := intoPrintArray("error", args)
 	fmt.Println(_args...)
 }
 
-func (_ InfoApi) Warn(args ...string) {
-	_args := intoPrintArray("[warn]", args)
+func (_ InfoApi) Warn(args ...any) {
+	_args := intoPrintArray("warn", args)
 	fmt.Println(_args...)
 }
 
-func (_ InfoApi) Important(args ...string) {
-	_args := intoPrintArray("[important]", args)
+func (_ InfoApi) Important(args ...any) {
+	_args := intoPrintArray("important", args)
 	fmt.Println(_args...)
 }
 
@@ -35,9 +33,9 @@ func (_ InfoApi) ProgressBar(progress float32, description string) {
 	//bar := progressbar.(100, description)
 }
 
-func intoPrintArray(prefix string, args []string) []any {
+func intoPrintArray(prefix string, args []any) []any {
 	result := make([]any, len(args)+1)
-	result[0] = prefix
+	result[0] = "[" + prefix + "]"
 
 	for i, e := range args {
 		result[i+1] = e
