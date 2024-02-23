@@ -61,14 +61,13 @@ func GetOption(rawOptions string) (Option, string, error) {
 	// name=val
 	// name?
 	// name={name:type=val}
+	// enum:{FOOD;CAT;4}=FOOD
 
 	// Illegal cases:
 	// name:type
 	// name
 
 	// Possible UNHANDLED cases:
-	// name:array=[false, "one", 2]
-	// name=[false, "one", 2,]
 
 	processedOption.Type = Any
 	rawDefaultValue := ""
@@ -80,7 +79,7 @@ func GetOption(rawOptions string) (Option, string, error) {
 			typeSlice = rawOptions[colonPos+1 : equalPos]
 			rawDefaultValue = rawOptions[equalPos+1 : commaPos]
 		}
-		processedOption.Type, err = GetOptionType(typeSlice)
+		processedOption.Type, processedOption.PossibleValues, err = GetOptionType(typeSlice)
 		if err != nil {
 			return processedOption, rawOptions, err
 		}
@@ -93,13 +92,11 @@ func GetOption(rawOptions string) (Option, string, error) {
 
 	obtainedDefaultValueType := processedOption.Type
 	if processedOption.Type == Any {
-		isStruct, err := IsStruct(rawDefaultValue)
-		if err == nil {
-			if isStruct {
-				obtainedDefaultValueType = Struct
-			} else {
-				obtainedDefaultValueType = Array
-			}
+		isStruct := IsStruct(rawDefaultValue)
+		if isStruct {
+			obtainedDefaultValueType = Struct
+		} else {
+			obtainedDefaultValueType = Array
 		}
 	}
 
@@ -144,9 +141,10 @@ func GetOption(rawOptions string) (Option, string, error) {
 	return processedOption, resultScript, nil
 }
 
-func GetOptionType(rawType string) (Type, error) {
+func GetOptionType(rawType string) (Type, []string, error) {
 	var optionType Type
 	processedType := strings.ToLower(rawType)
+	var possibleValues []string
 	switch processedType {
 	case "int":
 		optionType = Int
@@ -163,29 +161,24 @@ func GetOptionType(rawType string) (Type, error) {
 	case "string":
 		optionType = String
 		break
-	//case "array":
-	//	optionType = option.Array
-	//	break
-	//case "struct":
-	//	optionType = option.Struct
-	//case "enum":
-	//	optionType = option.Struct
 	default:
-		return Unknown, fmt.Errorf("unknown option type in Options decorator: '%s'", rawType)
+		if isStruct := IsStruct(rawType); isStruct {
+			possibleValues = strings.Split(rawType[1:len(rawType)-1], ";")
+			optionType = Enum
+			break
+		}
+		return Unknown, nil, fmt.Errorf("unknown option type in options: '%s'", rawType)
 	}
-	return optionType, nil
+	return optionType, possibleValues, nil
 }
 
-func IsStruct(rawValue string) (bool, error) {
+func IsStruct(rawValue string) bool {
 	if rawValueLen := len(rawValue); rawValueLen > 2 {
-		if rawValue[0] == '[' && rawValue[rawValueLen-1] == ']' {
-			return false, nil
-		}
 		if rawValue[0] == '{' && rawValue[rawValueLen-1] == '}' {
-			return true, nil
+			return true
 		}
 	}
-	return false, fmt.Errorf("value '%s' is neither struct or array", rawValue)
+	return false
 }
 
 func GetIndexOutside(wholeString, toEscapeStart, toEscapeEnd, toFind string) (int, error) {

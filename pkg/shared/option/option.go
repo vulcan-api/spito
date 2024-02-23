@@ -51,7 +51,7 @@ type Option struct {
 	DefaultValue   any
 	Type           Type
 	Optional       bool
-	PossibleValues []any
+	PossibleValues []string
 	Options        []Option
 }
 
