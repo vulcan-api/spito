@@ -239,6 +239,7 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 	packageFilename := files[packageFileIndex].Name()
 	packageManagerCommand :=
 		exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, packageFilename))
+	fmt.Println(packageManagerCommand.String())
 	return packageManagerCommand.Run()
 }
 
