@@ -252,11 +252,11 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(cachePath)
 	err = os.MkdirAll(cachePath, shared.DirectoryPermissions)
 	if err != nil {
 		return err
 	}
-	fmt.Println("JD")
 
 	for _, pkg := range packages {
 		shared.ChangeToUser()
