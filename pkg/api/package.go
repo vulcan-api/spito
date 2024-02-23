@@ -33,6 +33,7 @@ const (
 	defaultCacheLocation  = "~/.cache"
 	makepkgCommand        = "makepkg"
 	nodeLikeSpinnerType   = 11
+	neededOption          = "--needed"
 )
 
 type Package struct {
@@ -159,7 +160,8 @@ func GetPackage(name string) (Package, error) {
 }
 
 type AurPackage struct {
-	Name string
+	Name    string
+	Depends []string
 }
 
 type AurResponseLayout struct {
@@ -193,9 +195,24 @@ func getListOfAURPackages(packages ...string) ([]string, error) {
 		return []string{}, err
 	}
 
-	result := []string{}
+	var result []string
 	for _, aurPackage := range jsonBody.Results {
 		result = append(result, aurPackage.Name)
+
+		aurDependencies, err := getListOfAURPackages(aurPackage.Depends...)
+		if err != nil {
+			return []string{}, err
+		}
+		aurPackage.Depends = slices.DeleteFunc(aurPackage.Depends, func(pkg string) bool {
+			return slices.Index(aurDependencies, pkg) != -1
+		})
+
+		result = append(result, aurDependencies...)
+		err = installRegularPackages(true, aurPackage.Depends...)
+
+		if err != nil {
+			return []string{}, nil
+		}
 	}
 	return result, nil
 }
@@ -240,6 +257,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 	}
 
 	for _, pkg := range packages {
+		shared.ChangeToUser()
 		repoPath := filepath.Join(cachePath, pkg)
 		if doesExist, _ := shared.PathExists(repoPath); doesExist {
 			err = os.RemoveAll(repoPath)
@@ -271,6 +289,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Installing AUR package %s...", pkg))
+		shared.ChangeToRoot()
 		err = installPackageFromFile(pkg, repoPath)
 		if err != nil {
 			return err
@@ -281,9 +300,12 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 	return nil
 }
 
-func installRegularPackages(packages ...string) error {
+func installRegularPackages(neededOnly bool, packages ...string) error {
 
 	argv := []string{installCommand, noConfirmOption}
+	if neededOnly {
+		argv = append(argv, neededOption)
+	}
 	argv = append(argv, packages...)
 
 	packageManagerCommand := exec.Command(packageManager, argv...)
@@ -365,7 +387,7 @@ func InstallPackages(packageStrings ...string) error {
 			}
 		}
 	}()
-	err = installRegularPackages(packagesToInstall...)
+	err = installRegularPackages(false, packagesToInstall...)
 	finishInstallChan <- true
 	fmt.Println()
 
