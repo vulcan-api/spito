@@ -347,7 +347,6 @@ func InstallPackages(packageStrings ...string) error {
 		return err
 	}
 
-	fmt.Println("JD")
 	/* Exclude AUR packages from the packagesToInstall slice */
 	packagesToInstall = slices.DeleteFunc(packagesToInstall, func(pkg string) bool {
 		return slices.Index(aurPackagesToInstall, pkg) != -1
@@ -366,6 +365,8 @@ func InstallPackages(packageStrings ...string) error {
 		}
 		fmt.Println()
 	}
+
+	fmt.Println("JD")
 	if len(packagesToInstall) == 0 {
 		return nil
 	}
