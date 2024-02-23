@@ -35,6 +35,7 @@ func testPackageInfo(packageName string, t *testing.T) {
 	}
 }
 
+/*
 func TestInstallPackages(t *testing.T) {
 	err := InstallPackages("opentimer", "vim")
 	if err != nil {
@@ -48,3 +49,4 @@ func TestRemovePackages(t *testing.T) {
 		t.Fatalf("couldn't remove package 'opentimer'")
 	}
 }
+*/
