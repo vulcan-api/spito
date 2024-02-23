@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 )
 
 const (
@@ -30,6 +31,7 @@ const (
 	aurCloneTemplate      = "https://aur.archlinux.org/%s.git"
 	defaultCacheLocation  = "~/.cache"
 	makepkgCommand        = "makepkg"
+	nodeLikeSpinnerType   = 11
 )
 
 type Package struct {
@@ -198,7 +200,6 @@ func getListOfAURPackages(packages ...string) ([]string, error) {
 }
 
 func installPackageFromFile(packageName string, workingDirectory string) error {
-	shared.ChangeToRoot()
 	const pacmanPackageFileExtension = ".tar.zst"
 	err := filepath.Walk(workingDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasPrefix(info.Name(), packageName) ||
@@ -218,7 +219,6 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		shared.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
 
-	shared.ChangeToUser()
 	err := shared.ExpandTilde(&cachePath)
 	if err != nil {
 		return err
@@ -267,17 +267,17 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 }
 
 func installRegularPackages(packages ...string) error {
-	packageManagerCommand := exec.Command(packageManager, installCommand, noConfirmOption, strings.Join(packages, " "))
-	packageManagerCommand.Stdout = os.Stdout
-	packageManagerCommand.Stderr = os.Stderr
-	packageManagerCommand.Stdin = os.Stdin
+
+	argv := []string{installCommand, noConfirmOption}
+	argv = append(argv, packages...)
+
+	packageManagerCommand := exec.Command(packageManager, argv...)
 	return packageManagerCommand.Run()
 }
 
 func InstallPackages(packageStrings ...string) error {
 
 	/* Determine packages to install/update */
-	shared.ChangeToRoot()
 	var packagesToInstall []string //[]*C.char
 	for _, packageString := range packageStrings {
 		packageName, version, _ := strings.Cut(packageString, "@")
@@ -327,15 +327,33 @@ func InstallPackages(packageStrings ...string) error {
 		return nil
 	}
 
+	bar := progressbar.NewOptions(-1,
+		progressbar.OptionSetDescription("Installing pacman packages..."),
+		progressbar.OptionSetElapsedTime(false),
+		progressbar.OptionSpinnerType(nodeLikeSpinnerType),
+	)
+	finishInstallChan := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-finishInstallChan:
+				return
+			default:
+				_ = bar.Add(1)
+				time.Sleep(500)
+			}
+		}
+	}()
 	err = installRegularPackages(packagesToInstall...)
-	shared.ChangeToUser()
+	finishInstallChan <- true
+	fmt.Println()
+
 	return err
 }
 
 func RemovePackages(packagesToRemove ...string) error {
-	shared.ChangeToRoot()
 	pacmanCommand := exec.Command(packageManager, removeCommand, noConfirmOption, strings.Join(packagesToRemove, " "))
 	err := pacmanCommand.Run()
-	shared.ChangeToUser()
 	return err
 }
