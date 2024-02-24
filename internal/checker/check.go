@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/avorty/spito/pkg/shared"
 	"os"
-	"os/user"
+	"path/filepath"
+	"strings"
 )
 
 type Rule struct {
@@ -49,15 +50,22 @@ func anyToError(val any) error {
 	return fmt.Errorf("panic: %+v", val)
 }
 
+func CheckRuleByPath(importLoopData *shared.ImportLoopData, rulesetPath string, ruleName string) (bool, error) {
+	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		return _internalCheckRule(importLoopData, rulesetPath, ruleName, nil, true), nil
+	})
+}
+
 func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier string, ruleName string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		return _internalCheckRule(importLoopData, identifier, ruleName, nil), nil
+		return _internalCheckRule(importLoopData, identifier, ruleName, nil, false), nil
 	})
 }
 
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		ruleConf := RuleConf{}
+		// TODO: implement preprocessing instead of hard coding ruleConf
+		ruleConf := shared.RuleConfigLayout{}
 		script = processScript(script, &ruleConf)
 
 		L, err := GetLuaState(script, importLoopData, &ruleConf, scriptDirectory)
@@ -113,9 +121,10 @@ func _internalCheckRule(
 	importLoopData *shared.ImportLoopData,
 	identifierOrPath string,
 	ruleName string,
-	previousRuleConf *RuleConf,
+	previousRuleConf *shared.RuleConfigLayout,
+	isPath bool,
 ) bool {
-	rulesetLocation := NewRulesetLocation(identifierOrPath)
+	rulesetLocation := NewRulesetLocation(identifierOrPath, isPath)
 	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory
@@ -138,27 +147,42 @@ func _internalCheckRule(
 			panic(nil)
 		}
 	}
-
-	lockfilePath := rulesetLocation.GetRulesetPath() + "/" + LockFilename
+	lockfilePath := filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename)
 	_, lockfileErr := os.ReadFile(lockfilePath)
 
 	if os.IsNotExist(lockfileErr) {
-		_, err := rulesetLocation.createLockfile(map[string]bool{})
+		err := rulesetLocation.createLockfile(importLoopData.ErrChan)
 		if err != nil {
 			errChan <- errors.New("Failed to create dependency tree for: " + identifier + "\n" + err.Error())
 			panic(nil)
 		}
 	}
 
+	dependencies, err := rulesetLocation.getLockfileTree()
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+
+	for _, dependencyString := range dependencies.Dependencies[ruleName] {
+		importLoopData.InfoApi.Log(fmt.Sprintf("Checking requirements for the dependency '%s'", dependencyString))
+		rulesetName, ruleName, _ := strings.Cut(dependencyString, "@")
+		doesDependencyPass := _internalCheckRule(importLoopData, rulesetName, ruleName, previousRuleConf, false)
+		if !doesDependencyPass {
+			errChan <- errors.New(fmt.Sprintf("Rule %s did not pass requirements", ruleName))
+			return false
+		}
+	}
+
 	script, err := getScript(&rulesetLocation, ruleName)
 	if err != nil {
-		errChan <- errors.New("Failed to read script called: " + ruleName + " from " + identifier + "\n" + err.Error())
+		errChan <- errors.New("Failed to read script called: " + ruleName + " from " + identifier + "\n" + err.Error() + "\n")
 		panic(nil)
 	}
 
 	rulesetConf, err := GetRulesetConf(&rulesetLocation)
 	if err != nil {
-		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
+		errChan <- fmt.Errorf("Failed to read %s config in git: %s \n%s", shared.ConfigFilename, *rulesetLocation.GetFullUrl(), err.Error())
 		panic(nil)
 	}
 
@@ -172,7 +196,7 @@ func _internalCheckRule(
 		}
 	}
 
-	isRunAsRoot, err := isRoot()
+	isRunAsRoot, err := shared.IsRoot()
 	if err != nil {
 		errChan <- err
 		panic(nil)
@@ -197,9 +221,4 @@ func _internalCheckRule(
 		panic(nil)
 	}
 	return doesRulePass
-}
-
-func isRoot() (bool, error) {
-	currentUser, err := user.Current()
-	return currentUser.Username == "root", err
 }

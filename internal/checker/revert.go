@@ -17,7 +17,12 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 			ErrChan:      make(chan error),
 		}
 
-		rulesetLocation := NewRulesetLocation(rule.Url)
+		isPath, err := shared.PathExists(rule.Url)
+		if err != nil {
+			isPath = false
+		}
+
+		rulesetLocation := NewRulesetLocation(rule.Url, isPath)
 
 		script, err := getScript(&rulesetLocation, rule.Name)
 		if err != nil {
@@ -30,7 +35,7 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 		}
 
 		// TODO: Passing here cwd is not the best idea
-		L, err := GetLuaState(script, &importLoopData, &RuleConf{}, cwd)
+		L, err := GetLuaState(script, &importLoopData, &shared.RuleConfigLayout{}, cwd)
 		if err != nil {
 			return err
 		}

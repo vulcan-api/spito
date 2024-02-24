@@ -34,3 +34,19 @@ func testPackageInfo(packageName string, t *testing.T) {
 		t.Fatalf("Couldn't resolve \"%s\" package install date", packageName)
 	}
 }
+
+/*
+func TestInstallPackages(t *testing.T) {
+	err := InstallPackages("opentimer", "vim")
+	if err != nil {
+		t.Fatalf("the installation of packages 'opentimer' and 'vim' failed")
+	}
+}
+
+func TestRemovePackages(t *testing.T) {
+	err := RemovePackages("opentimer")
+	if err != nil {
+		t.Fatalf("couldn't remove package 'opentimer'")
+	}
+}
+*/

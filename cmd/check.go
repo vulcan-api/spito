@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/avorty/spito/pkg/package_conflict"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"path/filepath"
@@ -79,7 +80,6 @@ var checkFileCmd = &cobra.Command{
 
 		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
 		handleError(err)
-
 		panicIfEnvironment(&ruleConf, "file", inputPath)
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
@@ -104,6 +104,9 @@ var checkCmd = &cobra.Command{
 		identifierOrPath := args[0]
 		ruleName := args[1]
 
+		isPath, err := shared.PathExists(identifierOrPath)
+		handleError(err)
+
 		defer func() {
 			if err := runtimeData.DeleteRuntimeTemp(); err != nil {
 				fmt.Printf("Failed to remove temporary VRCT files"+
@@ -112,30 +115,21 @@ var checkCmd = &cobra.Command{
 			}
 		}()
 
-		if executionPath, err := os.Getwd(); err == nil {
-			localRulesetPath := identifierOrPath
-			if filepath.IsLocal(identifierOrPath) {
-				localRulesetPath = filepath.Join(executionPath, identifierOrPath)
-			}
-
-			pathExists, err := shared.PathExists(localRulesetPath)
-			if err == nil && pathExists {
-				identifierOrPath = localRulesetPath
-			}
-		}
-
-		rulesetLocation := checker.NewRulesetLocation(identifierOrPath)
-
-		ruleConf, err := checker.GetRuleConf(&rulesetLocation, ruleName)
+		rulesetLocation := checker.NewRulesetLocation(identifierOrPath, isPath)
+		rulesetConfig, err := checker.GetRulesetConf(&rulesetLocation)
 		handleError(err)
 
-		panicIfEnvironment(&ruleConf, ruleName, identifierOrPath)
+		ruleConf, err := rulesetConfig.GetRuleConf(ruleName)
+		handleError(err)
+		panicIfEnvironment(&ruleConf, identifierOrPath, ruleName)
 
-		doesRulePass, err := checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%s", err.Error())
-			os.Exit(1)
+		var doesRulePass bool
+		if isPath {
+			doesRulePass, err = checker.CheckRuleByPath(&runtimeData, identifierOrPath, ruleName)
+		} else {
+			doesRulePass, err = checker.CheckRuleByIdentifier(&runtimeData, identifierOrPath, ruleName)
 		}
+		handleError(err)
 
 		communicateRuleResult(ruleName, doesRulePass)
 		if doesRulePass {
@@ -175,10 +169,11 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 	}
 
 	return shared.ImportLoopData{
-		VRCT:         *ruleVRCT,
-		RulesHistory: shared.RulesHistory{},
-		ErrChan:      make(chan error),
-		InfoApi:      infoApi,
+		VRCT:           *ruleVRCT,
+		RulesHistory:   shared.RulesHistory{},
+		ErrChan:        make(chan error),
+		InfoApi:        infoApi,
+		PackageTracker: package_conflict.NewPackageConflictTracker(),
 	}
 }
 
@@ -190,7 +185,7 @@ func communicateRuleResult(ruleName string, doesRulePass bool) {
 	}
 }
 
-func panicIfEnvironment(ruleConf *checker.RuleConf, rulesetIdentifier, ruleName string) {
+func panicIfEnvironment(ruleConf *shared.RuleConfigLayout, rulesetIdentifier, ruleName string) {
 	if ruleConf.Environment {
 		fmt.Println("Rule which you were trying to check is an environment")
 		fmt.Println("In order to apply environment use command:")

@@ -12,10 +12,8 @@ func getScript(ruleSetLocation *RulesetLocation, ruleName string) (string, error
 	if err != nil {
 		return "", err
 	}
-
 	ruleConf := rulesetConf.Rules[ruleName]
 	scriptPath := filepath.Join(ruleSetLocation.GetRulesetPath(), ruleConf.Path)
-
 	script, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return "", err

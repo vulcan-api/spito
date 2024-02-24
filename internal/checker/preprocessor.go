@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/pkg/api"
+	"github.com/avorty/spito/pkg/shared"
 	"regexp"
 	"strings"
 	"unicode"
 )
 
-func processScript(script string, ruleConf *RuleConf) string {
+func processScript(script string, ruleConf *shared.RuleConfigLayout) string {
 	newScript, decorators := GetDecorators(script)
 
 	for _, decorator := range decorators {

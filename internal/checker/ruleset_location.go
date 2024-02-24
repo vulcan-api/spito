@@ -11,9 +11,6 @@ import (
 	"sync"
 )
 
-const ConfigFilename = "spito.yml"
-const LockFilename = "spito-lock.yml"
-
 func getRuleSetsDir() (string, error) {
 	dir, err := os.UserHomeDir()
 	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets"), err
@@ -43,17 +40,20 @@ type RulesetLocation struct {
 }
 
 type DependencyTreeLayout struct {
-	Dependencies []string
+	Dependencies map[string][]string `yaml:"dependencies"`
 }
 
-// e.g. from: https://github.com/avorty/spito-ruleset.git to avorty/spito-ruleset
-func NewRulesetLocation(identifierOrPath string) RulesetLocation {
+// NewRulesetLocation e.g. from: https://github.com/avorty/spito-ruleset.git to avorty/spito-ruleset
+func NewRulesetLocation(identifierOrPath string, isPath bool) RulesetLocation {
 	r := RulesetLocation{}
-	r.IsPath = false
+	r.IsPath = isPath
 
-	if filepath.IsAbs(identifierOrPath) {
-		r.IsPath = true
-		r.simpleUrlOrPath = identifierOrPath
+	if isPath {
+		absolutePath, err := filepath.Abs(identifierOrPath)
+		if err != nil {
+			return RulesetLocation{}
+		}
+		r.simpleUrlOrPath = absolutePath
 		return r
 	}
 
@@ -121,66 +121,106 @@ func (r *RulesetLocation) IsRuleSetDownloaded() bool {
 	return !errors.Is(err, fs.ErrNotExist)
 }
 
-func (r *RulesetLocation) createLockfile(rulesInProgress map[string]bool) ([]string, error) {
-	configFileContents, err := ReadRawSpitoYaml(r)
+func InstallDependency(ruleIdentifier string, waitGroup *sync.WaitGroup, errChan chan error) {
+	var err error
+	defer waitGroup.Done()
+	dependencyLocation := NewRulesetLocation(strings.Split(ruleIdentifier, "@")[0], false)
+	if !dependencyLocation.IsRuleSetDownloaded() {
+		err = FetchRuleset(&dependencyLocation)
+	}
 	if err != nil {
-		return []string{}, err
+		errChan <- err
+		panic(nil)
+	}
+}
+
+func (r *RulesetLocation) getLockfileTree() (DependencyTreeLayout, error) {
+	fileContents, err := os.ReadFile(filepath.Join(r.GetRulesetPath(), shared.LockFilename))
+	if err != nil {
+		return DependencyTreeLayout{}, err
 	}
 
-	var basicDependencyTree DependencyTreeLayout
-
-	err = yaml.Unmarshal(configFileContents, &basicDependencyTree)
+	var output DependencyTreeLayout
+	err = yaml.Unmarshal(fileContents, &output)
 	if err != nil {
-		return []string{}, err
+		return DependencyTreeLayout{}, err
 	}
+	return output, nil
+}
 
-	var outputDependencyTree DependencyTreeLayout
-	outputDependencyTree.Dependencies = make([]string, len(basicDependencyTree.Dependencies))
-	copy(outputDependencyTree.Dependencies, basicDependencyTree.Dependencies)
+func (r *RulesetLocation) createLockfile(errChan chan error) error {
 
-	var firstDependencyLocation RulesetLocation
-
-	if len(basicDependencyTree.Dependencies) > 0 {
-		firstDependencyLocation = NewRulesetLocation(strings.Split(basicDependencyTree.Dependencies[0], "@")[0])
+	basicDependencyTree, err := GetRulesetConf(r)
+	if err != nil {
+		return err
 	}
 
 	var waitGroup sync.WaitGroup
 
-	for _, dependencyName := range basicDependencyTree.Dependencies {
-		waitGroup.Add(1)
-		go func(dependencyNameParameter string) {
-			defer waitGroup.Done()
-			dependencyLocation := NewRulesetLocation(strings.Split(dependencyNameParameter, "@")[0])
-			if _, exists := rulesInProgress[dependencyNameParameter]; !exists && !dependencyLocation.IsRuleSetDownloaded() {
-				rulesInProgress[dependencyNameParameter] = true
-				FetchRuleset(&dependencyLocation)
-			}
-		}(dependencyName)
-	}
-
-	waitGroup.Wait()
-	if firstDependencyLocation.simpleUrlOrPath != "" && !firstDependencyLocation.IsPath {
-		toBeAppended, err := firstDependencyLocation.createLockfile(rulesInProgress)
-		if err != nil {
-			return nil, err
+	for _, ruleDependencies := range basicDependencyTree.Dependencies {
+		for _, dependencyString := range ruleDependencies {
+			waitGroup.Add(1)
+			go InstallDependency(dependencyString, &waitGroup, errChan)
 		}
-		outputDependencyTree.Dependencies = append(outputDependencyTree.Dependencies, toBeAppended...)
+	}
+	waitGroup.Wait()
+
+	for ruleName, ruleDependencies := range basicDependencyTree.Dependencies {
+		for _, dependencyString := range ruleDependencies {
+			dependencyRulesetName, dependencyRuleName, _ := strings.Cut(dependencyString, "@")
+			rulesetLocation := NewRulesetLocation(dependencyRulesetName, false)
+
+			doesLockfileExist, err := shared.PathExists(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
+			if err != nil {
+				return err
+			}
+			if !doesLockfileExist {
+				err = rulesetLocation.createLockfile(errChan)
+			}
+			if err != nil {
+				return err
+			}
+
+			dependencyTree, err := rulesetLocation.getLockfileTree()
+			if err != nil {
+				return err
+			}
+
+			basicDependencyTree.Dependencies[ruleName] =
+				append(basicDependencyTree.Dependencies[ruleName], dependencyTree.Dependencies[dependencyRuleName]...)
+		}
 	}
 
-	lockfilePath := r.GetRulesetPath() + "/" + LockFilename
+	lockfilePath := filepath.Join(r.GetRulesetPath(), shared.LockFilename)
 	lockfile, err := os.Create(lockfilePath)
 
 	if err != nil {
-		return []string{}, err
+		return err
 	}
-	defer lockfile.Close()
+	defer func() {
+		err = lockfile.Close()
+		if err != nil {
+			errChan <- err
+			panic(nil)
+		}
+	}()
 
-	yamlOutput, err := yaml.Marshal(outputDependencyTree)
+	yamlOutput, err := yaml.Marshal(DependencyTreeLayout{
+		Dependencies: basicDependencyTree.Dependencies,
+	})
 	if err != nil {
-		return []string{}, err
+		return err
 	}
 
-	lockfile.Write(yamlOutput)
+	_, err = lockfile.Write(yamlOutput)
+	if err != nil {
+		return err
+	}
 
-	return outputDependencyTree.Dependencies, nil
+	_, err = lockfile.Write(yamlOutput)
+	if err != nil {
+		return nil
+	}
+
+	return nil
 }

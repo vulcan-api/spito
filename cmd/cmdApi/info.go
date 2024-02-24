@@ -1,6 +1,8 @@
 package cmdApi
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type InfoApi struct{}
 
@@ -27,6 +29,10 @@ func (_ InfoApi) Warn(args ...string) {
 func (_ InfoApi) Important(args ...string) {
 	_args := intoPrintArray("[important]", args)
 	fmt.Println(_args...)
+}
+
+func (_ InfoApi) ProgressBar(progress float32, description string) {
+	//bar := progressbar.(100, description)
 }
 
 func intoPrintArray(prefix string, args []string) []any {

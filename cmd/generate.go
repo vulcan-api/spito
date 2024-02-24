@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/cmd/cmdApi"
-	"github.com/avorty/spito/internal/checker"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,49 +21,53 @@ const rulesDirectory = "rules"
 
 func handleGenerate(cmd *cobra.Command, args []string) {
 	rulePath := strings.ReplaceAll(args[0], " ", "")
+	if strings.HasSuffix(rulePath, ".lua") {
+		rulePath = strings.TrimSuffix(rulePath, ".lua")
+	}
 
 	if rulePath == "" {
 		printErrorAndExit(errors.New("the rule path cannot be empty"))
 	}
 
-	configFileContents, err := os.ReadFile(checker.ConfigFilename)
+	configFileContents, err := os.ReadFile(shared.ConfigFilename)
 	if os.IsNotExist(err) {
 		printErrorAndExit(errors.New("please run this command inside an actual spito ruleset directory"))
 	}
 	handleError(err)
 
-	config := ConfigFileLayout{}
+	config := shared.ConfigFileLayout{}
 	err = yaml.Unmarshal(configFileContents, &config)
 	handleError(err)
 
-	err = os.Mkdir(rulesDirectory, 0700)
+	err = os.Mkdir(rulesDirectory, shared.DirectoryPermissions)
 	if err != nil && !os.IsExist(err) {
 		printErrorAndExit(err)
 	}
 
-	rulePathTokens := strings.Split(rulePath, "/")
-	if len(rulePathTokens) > 1 {
-		directoryPath := rulesDirectory + "/" + strings.Join(rulePathTokens[:len(rulePathTokens)-1], "/")
-		err = os.MkdirAll(directoryPath, 0700)
-		handleError(err)
-	}
-
-	ruleFile, err := os.Create(rulesDirectory + "/" + rulePath + ".lua")
+	err = os.MkdirAll(filepath.Dir(rulePath), shared.DirectoryPermissions)
 	handleError(err)
-	ruleFile.Write([]byte(exampleRuleContents))
-	ruleFile.Close()
 
-	config.Rules[rulePathTokens[len(rulePathTokens)-1]] = Rule{
-		Path:        "./rules/" + rulePath + ".lua",
+	ruleFile, err := os.Create(filepath.Join(rulesDirectory, rulePath+".lua"))
+	handleError(err)
+	_, err = ruleFile.WriteString(exampleRuleContents)
+	handleError(err)
+	err = ruleFile.Close()
+	handleError(err)
+
+	config.Rules[filepath.Base(rulePath)] = shared.RuleConfigLayout{
+		Path:        filepath.Join(rulesDirectory, rulePath+".lua"),
 		Description: "",
 	}
 
-	configFile, err := os.Create(checker.ConfigFilename)
-	defer configFile.Close()
+	configFile, err := os.Create(shared.ConfigFilename)
+	defer func() {
+		handleError(configFile.Close())
+	}()
 	handleError(err)
 	configFileContents, err = yaml.Marshal(config)
 	handleError(err)
-	configFile.Write(configFileContents)
+	_, err = configFile.Write(configFileContents)
+	handleError(err)
 
 	infoApi := cmdApi.InfoApi{}
 	infoApi.Log(fmt.Sprintf("Successfully created rule '%s'", rulePath))
