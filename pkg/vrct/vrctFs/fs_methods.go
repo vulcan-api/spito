@@ -178,3 +178,33 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 
 	return res, nil
 }
+
+// Move TODO: it doesn't handle situation when destination is not empty
+func (v *VRCTFs) Move(from, to string) error {
+	fromEntries, err := v.ReadDir(from)
+	if err != nil {
+		return err
+	}
+
+	for _, fromEntry := range fromEntries {
+		fromPath := filepath.Join(from, fromEntry.Name())
+		toPath := filepath.Join(to, fromEntry.Name())
+
+		if fromEntry.IsDir() {
+			if err := v.Move(fromPath, toPath); err != nil {
+				return err
+			}
+			continue
+		}
+		fileContent, err := v.ReadFile(fromPath)
+		if err != nil {
+			return err
+		}
+
+		if err := v.CreateFile(toPath, fileContent, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
