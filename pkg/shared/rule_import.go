@@ -11,6 +11,7 @@ type ImportLoopData struct {
 	RulesHistory   RulesHistory
 	ErrChan        chan error
 	PackageTracker package_conflict.PackageConflictTracker
+	Options        []string
 }
 
 func (i *ImportLoopData) DeleteRuntimeTemp() error {

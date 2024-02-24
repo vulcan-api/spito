@@ -141,6 +141,11 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 		isExecutedByGui = true
 	}
 
+	options, err := cmd.Flags().GetStringArray("options")
+	if err != nil {
+		options = nil
+	}
+
 	var infoApi shared.InfoInterface
 
 	if isExecutedByGui {
@@ -171,6 +176,7 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 		ErrChan:        make(chan error),
 		InfoApi:        infoApi,
 		PackageTracker: package_conflict.NewPackageConflictTracker(),
+		Options:        options,
 	}
 }
 
