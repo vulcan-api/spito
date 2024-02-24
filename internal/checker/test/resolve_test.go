@@ -1,6 +1,7 @@
-package checker
+package test
 
 import (
+	"github.com/avorty/spito/internal/checker"
 	"os"
 	"slices"
 	"strings"
@@ -8,13 +9,13 @@ import (
 )
 
 func TestFetchRuleSet(t *testing.T) {
-	ruleSetLocation := NewRulesetLocation("https://github.com/avorty/spito-ruleset/", false)
+	ruleSetLocation := checker.NewRulesetLocation("https://github.com/avorty/spito-ruleset/", false)
 
 	err := ruleSetLocation.CreateDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	sets, err := GetAllDownloadedRuleSets()
+	sets, err := checker.GetAllDownloadedRuleSets()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,7 @@ func TestFetchRuleSet(t *testing.T) {
 		t.SkipNow()
 	}
 
-	err = FetchRuleset(&ruleSetLocation)
+	err = checker.FetchRuleset(&ruleSetLocation)
 	if err != nil {
 		t.Fatal(err)
 	}

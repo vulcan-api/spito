@@ -13,9 +13,9 @@ import (
 func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
-	apiNamespace.AddField("pkg", getPackageNamespace(L, importLoopData))
+	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
-	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
+	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 
 	if ruleConf.Unsafe {
@@ -25,16 +25,26 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 	apiNamespace.setGlobal(L, "api")
 }
 
-func getPackageNamespace(L *lua.LState, importLoopData *shared.ImportLoopData) lua.LValue {
+func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	pkgNamespace := newLuaNamespace()
 	pkgNamespace.AddFn("get", api.GetPackage)
-	pkgNamespace.AddFn("install", func(packageName string) error {
-		err := importLoopData.PackageTracker.AddPackage(packageName)
-		return err
+	pkgNamespace.AddFn("install", func(packagesToInstall ...string) error {
+		for _, packageToCheck := range packagesToInstall {
+			err := importLoopData.PackageTracker.AddPackage(packageToCheck)
+			if err != nil {
+				return err
+			}
+		}
+		return api.InstallPackages(packagesToInstall...)
 	})
-	pkgNamespace.AddFn("remove", func(packageName string) error {
-		err := importLoopData.PackageTracker.RemovePackage(packageName)
-		return err
+	pkgNamespace.AddFn("remove", func(packagesToRemove ...string) error {
+		for _, packageToCheck := range packagesToRemove {
+			err := importLoopData.PackageTracker.RemovePackage(packageToCheck)
+			if err != nil {
+				return err
+			}
+		}
+		return api.RemovePackages(packagesToRemove...)
 	})
 
 	return pkgNamespace.createTable(L)
@@ -50,7 +60,7 @@ func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	return sysInfoNamespace.createTable(L)
 }
 
-func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue {
+func getFsNamespace(importLoop *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	fsNamespace := newLuaNamespace()
 
 	apiFs := api.FsApi{
@@ -61,11 +71,11 @@ func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue
 	fsNamespace.AddFn("fileExists", apiFs.FileExists)
 	fsNamespace.AddFn("readFile", apiFs.ReadFile)
 	fsNamespace.AddFn("readDir", apiFs.ReadDir)
-	fsNamespace.AddFn("fileContains", apiFs.FileContains)
+	fsNamespace.AddFn("fileContains", api.FileContains)
 	fsNamespace.AddFn("removeComments", api.RemoveComments)
-	fsNamespace.AddFn("find", apiFs.Find)
-	fsNamespace.AddFn("findAll", apiFs.FindAll)
-	fsNamespace.AddFn("getProperLines", apiFs.GetProperLines)
+	fsNamespace.AddFn("find", api.Find)
+	fsNamespace.AddFn("findAll", api.FindAll)
+	fsNamespace.AddFn("getProperLines", api.GetProperLines)
 	fsNamespace.AddFn("createFile", apiFs.CreateFile)
 	fsNamespace.AddFn("createConfig", apiFs.CreateConfig)
 	fsNamespace.AddFn("updateConfig", apiFs.UpdateConfig)

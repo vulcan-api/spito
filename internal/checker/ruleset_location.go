@@ -13,7 +13,7 @@ import (
 
 func getRuleSetsDir() (string, error) {
 	dir, err := os.UserHomeDir()
-	return dir + "/.local/state/spito/rulesets", err
+	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets"), err
 }
 
 func initRequiredTmpDirs() error {
@@ -170,7 +170,7 @@ func (r *RulesetLocation) createLockfile(errChan chan error) error {
 			dependencyRulesetName, dependencyRuleName, _ := strings.Cut(dependencyString, "@")
 			rulesetLocation := NewRulesetLocation(dependencyRulesetName, false)
 
-			doesLockfileExist, err := shared.DoesPathExist(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
+			doesLockfileExist, err := shared.PathExists(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
 			if err != nil {
 				return err
 			}
@@ -215,6 +215,11 @@ func (r *RulesetLocation) createLockfile(errChan chan error) error {
 	_, err = lockfile.Write(yamlOutput)
 	if err != nil {
 		return err
+	}
+
+	_, err = lockfile.Write(yamlOutput)
+	if err != nil {
+		return nil
 	}
 
 	return nil

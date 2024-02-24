@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/pkg/shared"
-	"github.com/avorty/spito/pkg/shared/option"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,7 +47,7 @@ func anyToError(val any) error {
 	if err, ok := val.(string); ok {
 		return errors.New(err)
 	}
-	return fmt.Errorf("panic: %v", val)
+	return fmt.Errorf("panic: %+v", val)
 }
 
 func CheckRuleByPath(importLoopData *shared.ImportLoopData, rulesetPath string, ruleName string) (bool, error) {
@@ -66,11 +65,7 @@ func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier str
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		// TODO: implement preprocessing instead of hard coding ruleConf
-		ruleConf := shared.RuleConfigLayout{
-			Path:    "",
-			Unsafe:  false,
-			Options: make([]option.Option, 0),
-		}
+		ruleConf := shared.RuleConfigLayout{}
 		script, err := processScript(script, &ruleConf)
 		if err != nil {
 			return false, err
@@ -201,10 +196,22 @@ func _internalCheckRule(
 		}
 	}
 
+	isRunAsRoot, err := shared.IsRoot()
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+
+	if ruleConf.Sudo && !isRunAsRoot {
+		errChan <- errors.New("tried to execute a spito rule that requires root privileges")
+		panic(nil)
+	}
+
 	rulesHistory.SetProgress(identifier, ruleName, false)
 	doesRulePass, err := ExecuteLuaMain(processedScript, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
 	if err != nil {
-		return false
+		errChan <- err
+		panic(nil)
 	}
 	return doesRulePass
 }

@@ -19,7 +19,7 @@ end
 
 const rulesDirectory = "rules"
 
-func handleGenerate(cmd *cobra.Command, args []string) {
+func handleGenerate(_ *cobra.Command, args []string) {
 	rulePath := strings.ReplaceAll(args[0], " ", "")
 	if strings.HasSuffix(rulePath, ".lua") {
 		rulePath = strings.TrimSuffix(rulePath, ".lua")
@@ -49,7 +49,7 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 
 	ruleFile, err := os.Create(filepath.Join(rulesDirectory, rulePath+".lua"))
 	handleError(err)
-	_, err = ruleFile.Write([]byte(exampleRuleContents))
+	_, err = ruleFile.WriteString(exampleRuleContents)
 	handleError(err)
 	err = ruleFile.Close()
 	handleError(err)

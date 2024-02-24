@@ -1,6 +1,8 @@
 package cmdApi
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type InfoApi struct{}
 

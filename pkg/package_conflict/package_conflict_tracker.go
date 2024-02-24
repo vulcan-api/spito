@@ -1,7 +1,6 @@
 package package_conflict
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -20,7 +19,7 @@ func NewPackageConflictTracker() PackageConflictTracker {
 func (packageTracker PackageConflictTracker) AddPackage(packageName string) error {
 
 	if _, isPackageUninstalled := packageTracker.packagesRemoved[packageName]; isPackageUninstalled {
-		return errors.New(fmt.Sprintf("[PACKAGE_CONFLICT] the package %s is required to be uninstalled by a dependency", packageName))
+		return fmt.Errorf("[PACKAGE_CONFLICT] the package %s is required to be uninstalled by a dependency", packageName)
 	}
 
 	packageTracker.packagesInstalled[packageName] = true
@@ -30,7 +29,7 @@ func (packageTracker PackageConflictTracker) AddPackage(packageName string) erro
 func (packageTracker PackageConflictTracker) RemovePackage(packageName string) error {
 
 	if _, isPackageInstalled := packageTracker.packagesInstalled[packageName]; isPackageInstalled {
-		return errors.New(fmt.Sprintf("[PACKAGE_CONFLICT] the package %s is required to be installed by a dependency", packageName))
+		return fmt.Errorf("[PACKAGE_CONFLICT] the package %s is required to be installed by a dependency", packageName)
 	}
 
 	packageTracker.packagesRemoved[packageName] = true

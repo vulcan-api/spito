@@ -16,6 +16,8 @@ const (
 	UnsafeDecorator = iota
 	DescriptionDecorator
 	OptionsDecorator
+	EnvironmentDecorator
+	SudoDecorator
 	UnknownDecorator
 )
 
@@ -40,6 +42,12 @@ func processScript(script string, ruleConf *shared.RuleConfigLayout) (string, er
 			if err != nil {
 				return newScript, err
 			}
+			break
+		case EnvironmentDecorator:
+			ruleConf.Environment = true
+			break
+		case SudoDecorator:
+			ruleConf.Sudo = true
 			break
 		default:
 			break
@@ -105,6 +113,11 @@ func GetDecoratorType(name string) (DecoratorType, error) {
 		break
 	case "options":
 		decoratorType = OptionsDecorator
+	case "environment":
+		decoratorType = EnvironmentDecorator
+		break
+	case "sudo":
+		decoratorType = SudoDecorator
 	default:
 		return UnknownDecorator, fmt.Errorf("unknown decorator: %s", name)
 	}

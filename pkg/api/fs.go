@@ -37,8 +37,27 @@ func (f *FsApi) ReadFile(path string) (string, error) {
 	return string(file), nil
 }
 
-func (f *FsApi) ReadDir(path string) ([]os.DirEntry, error) {
-	return f.FsVRCT.ReadDir(path)
+type DirData struct {
+	IsDir bool
+	Path  string
+}
+
+func (f *FsApi) ReadDir(path string) ([]DirData, error) {
+	dirEntries, err := f.FsVRCT.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var dirData []DirData
+
+	for _, entry := range dirEntries {
+		dirData = append(dirData, DirData{
+			entry.IsDir(),
+			entry.Name(),
+		})
+	}
+
+	return dirData, nil
 }
 
 func RemoveComments(fileContent, singleLineStart, multiLineStart, multiLineEnd string) string {
@@ -88,11 +107,11 @@ func RemoveComments(fileContent, singleLineStart, multiLineStart, multiLineEnd s
 	return result.String()
 }
 
-func (*FsApi) FileContains(fileContent string, content string) bool {
+func FileContains(fileContent string, content string) bool {
 	return strings.Contains(fileContent, content)
 }
 
-func (*FsApi) Find(regex string, fileContent string) ([]int, error) {
+func Find(regex string, fileContent string) ([]int, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
@@ -100,7 +119,7 @@ func (*FsApi) Find(regex string, fileContent string) ([]int, error) {
 	return r.FindStringIndex(fileContent), nil
 }
 
-func (*FsApi) FindAll(regex string, fileContent string) ([][]int, error) {
+func FindAll(regex string, fileContent string) ([][]int, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
@@ -108,8 +127,8 @@ func (*FsApi) FindAll(regex string, fileContent string) ([][]int, error) {
 	return r.FindAllStringIndex(fileContent, -1), nil
 }
 
-func (f *FsApi) GetProperLines(regex string, fileContent string) ([]string, error) {
-	indexesInLines, err := f.FindAll(regex, fileContent)
+func GetProperLines(regex string, fileContent string) ([]string, error) {
+	indexesInLines, err := FindAll(regex, fileContent)
 	if err != nil {
 		return nil, err
 	}

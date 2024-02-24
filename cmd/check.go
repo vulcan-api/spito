@@ -20,7 +20,7 @@ import (
 )
 
 func askAndExecuteRule(runtimeData shared.ImportLoopData) {
-	fmt.Printf("Would you like to execute this rule? [y/N]: ")
+	fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
 
 	reader := bufio.NewReader(os.Stdin)
 	answer, _, err := reader.ReadRune()
@@ -44,13 +44,13 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 
 	if len(packagesToInstall) > 0 {
 		runtimeData.InfoApi.Log("installing packages...")
-		err = api.InstallPackage(strings.Join(packagesToInstall, " "))
+		err = api.InstallPackages(strings.Join(packagesToInstall, " "))
 		handleError(err)
 	}
 
 	if len(packagesToRemove) > 0 {
 		runtimeData.InfoApi.Log("removing packages...")
-		err = api.RemovePackage(strings.Join(packagesToRemove, " "))
+		err = api.RemovePackages(strings.Join(packagesToRemove, " "))
 		handleError(err)
 	}
 
@@ -63,7 +63,7 @@ var checkFileCmd = &cobra.Command{
 	Short: "Check local lua rule file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		path := args[0]
+		inputPath := args[0]
 
 		runtimeData := getInitialRuntimeData(cmd)
 		defer func() {
@@ -74,24 +74,28 @@ var checkFileCmd = &cobra.Command{
 			}
 		}()
 
-		script, err := os.ReadFile(path)
+		script, err := os.ReadFile(inputPath)
 		if err != nil {
-			fmt.Printf("Failed to read file %s\n", path)
+			fmt.Printf("Failed to read file %s\n", inputPath)
 			os.Exit(1)
 		}
 
-		fileAbsolutePath, err := filepath.Abs(path)
+		fileAbsolutePath, err := filepath.Abs(inputPath)
 		if err != nil {
-			runtimeData.InfoApi.Error("Cannot create the absolute path to the file!")
+			runtimeData.InfoApi.Error("Cannot create the absolute inputPath to the file!")
 			os.Exit(1)
 		}
+
+		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
+		handleError(err)
+		panicIfEnvironment(&ruleConf, "file", inputPath)
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
 		}
 
-		communicateRuleResult(path, doesRulePass)
+		communicateRuleResult(inputPath, doesRulePass)
 
 		if doesRulePass {
 			askAndExecuteRule(runtimeData)
@@ -105,11 +109,10 @@ var checkCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		runtimeData := getInitialRuntimeData(cmd)
-
 		identifierOrPath := args[0]
 		ruleName := args[1]
 
-		isPath, err := shared.DoesPathExist(identifierOrPath)
+		isPath, err := shared.PathExists(identifierOrPath)
 		handleError(err)
 
 		defer func() {
@@ -119,6 +122,14 @@ var checkCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
+
+		rulesetLocation := checker.NewRulesetLocation(identifierOrPath, isPath)
+		rulesetConfig, err := checker.GetRulesetConf(&rulesetLocation)
+		handleError(err)
+
+		ruleConf, err := rulesetConfig.GetRuleConf(ruleName)
+		handleError(err)
+		panicIfEnvironment(&ruleConf, identifierOrPath, ruleName)
 
 		var doesRulePass bool
 		if isPath {
@@ -185,5 +196,15 @@ func communicateRuleResult(ruleName string, doesRulePass bool) {
 		fmt.Printf("Rule %s successfuly passed requirements\n", ruleName)
 	} else {
 		fmt.Printf("Rule %s did not pass requirements\n", ruleName)
+	}
+}
+
+func panicIfEnvironment(ruleConf *shared.RuleConfigLayout, rulesetIdentifier, ruleName string) {
+	if ruleConf.Environment {
+		fmt.Println("Rule which you were trying to check is an environment")
+		fmt.Println("In order to apply environment use command:")
+		fmt.Printf("spito env %s %s\n", rulesetIdentifier, ruleName)
+
+		os.Exit(1)
 	}
 }

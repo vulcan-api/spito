@@ -5,6 +5,7 @@ import (
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/shared/option"
 	"github.com/yuin/gopher-lua"
+	"os"
 	"path/filepath"
 	"strconv"
 )
@@ -116,12 +117,20 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 		rulesetIdentifier := L.Get(1).String()
 		ruleName := L.Get(2).String()
 
-		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
-		err := FetchRuleset(&rulesetLocation)
+		doesRulePass, err := CheckRuleByIdentifier(importLoopData, rulesetIdentifier, ruleName)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-		err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", fmt.Sprintf("%s.lua", ruleName)))
-		handleErrorAndPanic(importLoopData.ErrChan, err)
+		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
+
+		if err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", ruleName+".lua")); err != nil {
+			importLoopData.ErrChan <- err
+			panic(nil)
+		}
+
+		if !doesRulePass {
+			importLoopData.ErrChan <- fmt.Errorf("rule %s/%s did not pass requirements", rulesetIdentifier, ruleName)
+			panic(nil)
+		}
 		return 0
 	}))
 
@@ -133,8 +142,19 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 			panic(nil)
 		}
 
-		if err := L.DoFile(rulePath); err != nil {
+		script, err := os.ReadFile(rulePath)
+		handleErrorAndPanic(importLoopData.ErrChan, err)
+
+		if err = L.DoString(string(script)); err != nil {
 			importLoopData.ErrChan <- err
+			panic(nil)
+		}
+
+		doesRulePass, err := CheckRuleScript(importLoopData, string(script), filepath.Dir(rulePath))
+		handleErrorAndPanic(importLoopData.ErrChan, err)
+
+		if !doesRulePass {
+			importLoopData.ErrChan <- fmt.Errorf("rule from %s did not pass requirements", rulePath)
 			panic(nil)
 		}
 
