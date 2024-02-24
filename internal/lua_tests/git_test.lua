@@ -1,5 +1,3 @@
-#![Unsafe]
-
 function main()
     local destPath = "/tmp/spito-test/nfdsa321980"
     local err = api.git.clone("https://github.com/Avorty/.github", destPath)
@@ -20,12 +18,6 @@ function main()
         if string.find(file.Path, "README.md") then
             foundReadme = true
         end
-    end
-
-    local _, err = api.sh.command("rm -rf " .. destPath)
-    if err then
-        api.info.error(err)
-        return false
     end
 
     return foundReadme
