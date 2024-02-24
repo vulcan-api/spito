@@ -78,7 +78,7 @@ func TestLuaApi(t *testing.T) {
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
 		if err != nil {
-			t.Fatalf("Error occurred: %s", fmt.Sprint(err))
+			t.Fatalf("Error occurred in script '%s' : %s", script.file, fmt.Sprint(err))
 		}
 
 		if !doesRulePass {

@@ -1,7 +1,7 @@
 package checker
 
 import (
-	api "github.com/avorty/spito/pkg/api"
+	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/yuin/gopher-lua"
@@ -10,12 +10,12 @@ import (
 )
 
 // Every cmdApi needs to be attached here in order to be available:
-func attachApi(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua.LState) {
+func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
-	apiNamespace.AddField("pkg", getPackageNamespace(L))
+	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
-	apiNamespace.AddField("fs", getFsNamespace(L, importLoopData))
+	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 
 	if ruleConf.Unsafe {
@@ -25,9 +25,27 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *RuleConf, L *lua
 	apiNamespace.setGlobal(L, "api")
 }
 
-func getPackageNamespace(L *lua.LState) lua.LValue {
+func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	pkgNamespace := newLuaNamespace()
 	pkgNamespace.AddFn("get", api.GetPackage)
+	pkgNamespace.AddFn("install", func(packagesToInstall ...string) error {
+		for _, packageToCheck := range packagesToInstall {
+			err := importLoopData.PackageTracker.AddPackage(packageToCheck)
+			if err != nil {
+				return err
+			}
+		}
+		return api.InstallPackages(packagesToInstall...)
+	})
+	pkgNamespace.AddFn("remove", func(packagesToRemove ...string) error {
+		for _, packageToCheck := range packagesToRemove {
+			err := importLoopData.PackageTracker.RemovePackage(packageToCheck)
+			if err != nil {
+				return err
+			}
+		}
+		return api.RemovePackages(packagesToRemove...)
+	})
 
 	return pkgNamespace.createTable(L)
 }
@@ -42,7 +60,7 @@ func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	return sysInfoNamespace.createTable(L)
 }
 
-func getFsNamespace(L *lua.LState, importLoop *shared.ImportLoopData) lua.LValue {
+func getFsNamespace(importLoop *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	fsNamespace := newLuaNamespace()
 
 	apiFs := api.FsApi{

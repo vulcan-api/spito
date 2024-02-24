@@ -2,89 +2,11 @@ package checker
 
 import (
 	"fmt"
+	"github.com/avorty/spito/pkg/shared"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path"
-	"path/filepath"
 )
-
-func GetRulesetConf(rulesetLocation *RulesetLocation) (RulesetConf, error) {
-	spitoRulesetConf := RulesetConf{
-		Rules: make(map[string]RuleConf),
-	}
-
-	rulesetConfYaml, err := getRulesetConfYaml(rulesetLocation)
-	if err != nil {
-		return RulesetConf{}, err
-	}
-
-	for key := range rulesetConfYaml.Rules {
-		ruleConf, err := rulesetConfYaml.GetRuleConfBasedOnYaml(rulesetLocation, key)
-		if err != nil {
-			return RulesetConf{}, err
-		}
-
-		spitoRulesetConf.Rules[key] = ruleConf
-	}
-
-	return spitoRulesetConf, nil
-}
-
-func GetRuleConf(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, error) {
-	rulesetConfYaml, err := getRulesetConfYaml(rulesetLocation)
-	if err != nil {
-		return RuleConf{}, err
-	}
-
-	return rulesetConfYaml.GetRuleConfBasedOnYaml(rulesetLocation, ruleName)
-}
-
-func GetRuleConfFromScript(scriptPath string) (RuleConf, error) {
-	ruleConf := RuleConf{Path: scriptPath}
-
-	scriptRaw, err := os.ReadFile(scriptPath)
-	if err != nil {
-		return RuleConf{}, err
-	}
-
-	// Get data from decorators
-	processScript(string(scriptRaw), &ruleConf)
-
-	return ruleConf, err
-}
-
-func (s *RulesetConfYaml) GetRuleConfBasedOnYaml(rulesetLocation *RulesetLocation, ruleName string) (RuleConf, error) {
-	var ruleConf RuleConf
-
-	if ruleConfYaml, ok := s.Rules[ruleName].(RuleConfYaml); ok {
-		ruleConfYaml.Path = filepath.Clean(ruleConfYaml.Path)
-
-		ruleConf = RuleConf{
-			Path:        ruleConfYaml.Path,
-			Unsafe:      ruleConfYaml.Unsafe,
-			Environment: ruleConfYaml.Environment,
-			Sudo:        ruleConfYaml.Sudo,
-		}
-	} else if rulePath, ok := s.Rules[ruleName].(string); ok {
-		ruleConf = RuleConf{
-			Path:   filepath.Clean(rulePath),
-			Unsafe: false,
-		}
-	} else {
-		return RuleConf{}, fmt.Errorf("rule %s in %s is neither string nor RuleConfYaml", ruleName, ConfigFilename)
-	}
-
-	scriptPath := filepath.Join(rulesetLocation.GetRulesetPath(), ruleConf.Path)
-	scriptRaw, err := os.ReadFile(scriptPath)
-	if err != nil {
-		return RuleConf{}, err
-	}
-
-	// Get data from decorators
-	processScript(string(scriptRaw), &ruleConf)
-
-	return ruleConf, err
-}
 
 func GetAllDownloadedRuleSets() ([]string, error) {
 	ruleSetsDir, err := getRuleSetsDir()
@@ -123,23 +45,35 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 	return ruleSets, nil
 }
 
-func getRulesetConfYaml(rulesetLocation *RulesetLocation) (RulesetConfYaml, error) {
-	if err := FetchRuleset(rulesetLocation); err != nil {
-		return RulesetConfYaml{}, err
-	}
+func GetRuleConfFromScript(scriptPath string) (shared.RuleConfigLayout, error) {
+	ruleConf := shared.RuleConfigLayout{Path: scriptPath}
 
-	rawSpitoYaml, err := ReadRawSpitoYaml(rulesetLocation)
+	scriptRaw, err := os.ReadFile(scriptPath)
 	if err != nil {
-		return RulesetConfYaml{}, err
+		return shared.RuleConfigLayout{}, err
 	}
 
-	var spitoRulesYaml RulesetConfYaml
-	err = yaml.Unmarshal(rawSpitoYaml, &spitoRulesYaml)
+	// Get data from decorators
+	processScript(string(scriptRaw), &ruleConf)
 
-	return spitoRulesYaml, err
+	return ruleConf, err
 }
 
-func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
+func GetRulesetConf(rulesetLocation *RulesetLocation) (shared.ConfigFileLayout, error) {
+	spitoRulesetYamlRaw, err := ReadSpitoYaml(rulesetLocation)
+	if err != nil {
+		return shared.ConfigFileLayout{}, err
+	}
+
+	var spitoRulesetYaml shared.ConfigFileLayout
+	if err := yaml.Unmarshal(spitoRulesetYamlRaw, &spitoRulesetYaml); err != nil {
+		return shared.ConfigFileLayout{}, err
+	}
+
+	return spitoRulesetYaml, nil
+}
+
+func ReadSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
 	spitoYamlPath := path.Join(rulesetLocation.GetRulesetPath(), "spito.yml")
 	spitoRulesDataBytes, err := os.ReadFile(spitoYamlPath)
 
@@ -151,26 +85,4 @@ func ReadRawSpitoYaml(rulesetLocation *RulesetLocation) ([]byte, error) {
 		}
 	}
 	return spitoRulesDataBytes, err
-}
-
-type RulesetConfYaml struct {
-	Rules map[string]interface{} `yaml:"rules"`
-}
-
-type RuleConfYaml struct {
-	Path        string `yaml:"path"`
-	Unsafe      bool   `yaml:"unsafe,omitempty"`
-	Environment bool   `yaml:"environment,omitempty"`
-	Sudo        bool   `yaml:"sudo,omitempty"`
-}
-
-type RulesetConf struct {
-	Rules map[string]RuleConf
-}
-
-type RuleConf struct {
-	Path        string
-	Unsafe      bool
-	Environment bool
-	Sudo        bool
 }
