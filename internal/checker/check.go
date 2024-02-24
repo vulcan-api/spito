@@ -9,9 +9,9 @@ import (
 )
 
 type Rule struct {
-	url          string
-	name         string
-	isInProgress bool
+	Url          string `json:"Url" bson:"Url"`
+	Name         string `json:"Name" bson:"Name"`
+	IsInProgress bool   `json:"IsInProgress" bson:"IsInProgress"`
 }
 
 type RulesHistory map[string]Rule
@@ -23,20 +23,20 @@ func (r RulesHistory) Contains(url string, name string) bool {
 
 func (r RulesHistory) IsRuleInProgress(url string, name string) bool {
 	val := r[url+name]
-	return val.isInProgress
+	return val.IsInProgress
 }
 
 func (r RulesHistory) Push(url string, name string, isInProgress bool) {
 	r[url+name] = Rule{
-		url:          url,
-		name:         name,
-		isInProgress: isInProgress,
+		Url:          url,
+		Name:         name,
+		IsInProgress: isInProgress,
 	}
 }
 
 func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 	rule := r[url+name]
-	rule.isInProgress = isInProgress
+	rule.IsInProgress = isInProgress
 }
 
 func anyToError(val any) error {
@@ -59,7 +59,14 @@ func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scrip
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		ruleConf := RuleConf{}
 		script = processScript(script, &ruleConf)
-		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
+
+		L, err := GetLuaState(script, importLoopData, &ruleConf, scriptDirectory)
+		if err != nil {
+			return false, err
+		}
+		defer L.Close()
+
+		return ExecuteLuaMain(L)
 	})
 }
 
@@ -177,7 +184,14 @@ func _internalCheckRule(
 	}
 
 	rulesHistory.SetProgress(identifier, ruleName, false)
-	doesRulePass, err := ExecuteLuaMain(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
+
+	L, err := GetLuaState(script, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+
+	doesRulePass, err := ExecuteLuaMain(L)
 	if err != nil {
 		errChan <- err
 		panic(nil)

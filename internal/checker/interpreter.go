@@ -10,9 +10,8 @@ import (
 
 const rulesetDirConstantName = "RULESET_DIR"
 
-func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf, rulesetPath string) (bool, error) {
+func GetLuaState(script string, importLoopData *shared.ImportLoopData, ruleConf *RuleConf, rulesetPath string) (*lua.LState, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
-	defer L.Close()
 
 	// Standard libraries
 	lua.OpenString(L)
@@ -21,12 +20,30 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, ruleConf, L)
 
-	if err := L.DoString(script); err != nil {
+	return L, L.DoString(script)
+}
+
+func ExecuteLuaMain(L *lua.LState) (bool, error) {
+	err := L.CallByParam(lua.P{
+		Fn:      L.GetGlobal("main"),
+		Protect: true,
+		NRet:    1,
+	})
+	if err != nil {
 		return false, err
 	}
 
+	return bool(L.Get(-1).(lua.LBool)), nil
+}
+
+func ExecuteLuaRevert(L *lua.LState) (bool, error) {
+	revertFn := L.GetGlobal("revert")
+	if revertFn.Type() == lua.LTNil {
+		return true, nil
+	}
+
 	err := L.CallByParam(lua.P{
-		Fn:      L.GetGlobal("main"),
+		Fn:      L.GetGlobal("revert"),
 		Protect: true,
 		NRet:    1,
 	})

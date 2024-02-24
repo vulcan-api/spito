@@ -1,9 +1,13 @@
 package shared
 
 type Rule struct {
-	url          string
-	name         string
+	Url          string
+	Name         string
 	isInProgress bool
+}
+
+func (r Rule) GetIdentifier() string {
+	return r.Url + r.Name
 }
 
 type RulesHistory map[string]Rule
@@ -20,8 +24,8 @@ func (r RulesHistory) IsRuleInProgress(url string, name string) bool {
 
 func (r RulesHistory) Push(url string, name string, isInProgress bool) {
 	r[url+name] = Rule{
-		url:          url,
-		name:         name,
+		Url:          url,
+		Name:         name,
 		isInProgress: isInProgress,
 	}
 }

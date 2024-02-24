@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"path/filepath"
 	"unicode"
@@ -29,7 +30,15 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 		return
 	}
 
-	revertNum, err := runtimeData.VRCT.Apply()
+	var rulesToRevert []vrctFs.Rule
+	for _, rule := range runtimeData.RulesHistory {
+		rulesToRevert = append(rulesToRevert, vrctFs.Rule{
+			Url:  rule.Url,
+			Name: rule.Name,
+		})
+	}
+
+	revertNum, err := runtimeData.VRCT.Apply(rulesToRevert)
 	if err != nil {
 		err = runtimeData.VRCT.Revert()
 		runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")

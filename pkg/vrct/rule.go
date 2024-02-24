@@ -23,8 +23,8 @@ func (v RuleVRCT) DeleteRuntimeTemp() error {
 	return v.Fs.DeleteRuntimeTemp()
 }
 
-func (v RuleVRCT) Apply() (int, error) {
-	return v.Fs.Apply()
+func (v RuleVRCT) Apply(rulesHistory []vrctFs.Rule) (int, error) {
+	return v.Fs.Apply(rulesHistory)
 }
 
 func (v RuleVRCT) Revert() error {

@@ -85,7 +85,15 @@ func TestLuaApi(t *testing.T) {
 			t.Fatalf("Rule %s did not pass!", script.file)
 		}
 
-		_, err = ruleVRCT.Apply()
+		var ruleIdentifiers []vrctFs.Rule
+		for _, rule := range runtimeData.RulesHistory {
+			ruleIdentifiers = append(ruleIdentifiers, vrctFs.Rule{
+				Url:  rule.Url,
+				Name: rule.Name,
+			})
+		}
+		
+		_, err = ruleVRCT.Apply(ruleIdentifiers)
 		if err != nil {
 			return
 		}

@@ -159,8 +159,19 @@ func GetProperLines(regex string, fileContent string) ([]string, error) {
 	return properLines, nil
 }
 
-func (f *FsApi) Apply() (int, error) {
-	return f.FsVRCT.Apply()
+// Apply
+// 1st argument is tuple of rules, where 1st element is ruleset identifier and 2nd is Name
+func (f *FsApi) Apply(rulesHistory [][]string) (int, error) {
+	var rules []vrctFs.Rule
+
+	for _, rule := range rulesHistory {
+		rules = append(rules, vrctFs.Rule{
+			Url:  rule[0],
+			Name: rule[1],
+		})
+	}
+
+	return f.FsVRCT.Apply(rules)
 }
 
 func (f *FsApi) CreateFile(path, content string, optional bool) error {

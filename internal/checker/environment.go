@@ -67,7 +67,7 @@ func (e *AppliedEnvironments) SetAsApplied(envIdentifierOrPath string, revertNum
 	})
 }
 
-func (e *AppliedEnvironments) RevertOther(envIdentifierOrPath string) error {
+func (e *AppliedEnvironments) RevertOther(importLoopData *shared.ImportLoopData, envIdentifierOrPath string) error {
 	for _, env := range *e {
 		if env.IdentifierOrPath == envIdentifierOrPath || !env.IsApplied {
 			continue
@@ -81,7 +81,8 @@ func (e *AppliedEnvironments) RevertOther(envIdentifierOrPath string) error {
 			return err
 		}
 
-		if err := revertSteps.Apply(); err != nil {
+		err = revertSteps.Apply(GetRevertRuleFn(importLoopData.InfoApi))
+		if err != nil {
 			return err
 		}
 
@@ -122,7 +123,12 @@ func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string
 			return false, NotEnvironmentErr
 		}
 
-		return ExecuteLuaMain(script, importLoopData, &ruleConf, filepath.Dir(scriptPath))
+		L, err := GetLuaState(script, importLoopData, &ruleConf, filepath.Dir(scriptPath))
+		if err != nil {
+			return false, err
+		}
+
+		return ExecuteLuaMain(L)
 	})
 	if err != nil {
 		return err
@@ -140,11 +146,19 @@ func applyEnvironment(importLoopData *shared.ImportLoopData, identifierOrPath st
 		return err
 	}
 
-	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
+	if err := appliedEnvironments.RevertOther(importLoopData, identifierOrPath); err != nil {
 		return err
 	}
 
-	revertNum, err := importLoopData.VRCT.Apply()
+	var rulesHistory []vrctFs.Rule
+	for _, rule := range importLoopData.RulesHistory {
+		rulesHistory = append(rulesHistory, vrctFs.Rule{
+			Url:  rule.Url,
+			Name: rule.Name,
+		})
+	}
+
+	revertNum, err := importLoopData.VRCT.Apply(rulesHistory)
 	if err != nil {
 		return err
 	}
