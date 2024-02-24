@@ -25,7 +25,7 @@ var getIndexOutsideCases = []getIndexOutsideCase{
 	{`dog = { hairType?, age: int = 5 } age: int = 1 }`, -1, false},
 }
 
-func TestGetIndexOutisde(t *testing.T) {
+func TestGetIndexOutside(t *testing.T) {
 	for _, edgeCase := range getIndexOutsideCases {
 		position, err := GetIndexOutside(edgeCase.rawString, "{", "}", ",")
 		if edgeCase.wantedError {
@@ -57,9 +57,9 @@ var appendOptionCases = []appendOptionCase{
 		{"enum", "ONE", Enum, true, []string{"ONE", "TWO"}, nil},
 	}, false},
 	// TODO: find very good array
-	{"{array?:[]any=[1, 2, 3]}", []Option{
-		{"number", 0, Array, true, nil, nil},
-	}, true},
+	{"{array?:list={1;2;3}}", []Option{
+		{"array", []string{"1", "2", "3"}, List, true, nil, nil},
+	}, false},
 	// TODO: find a way to escape a colon
 	{`{testString?:string=",testValue"}`, []Option{
 		{"testString", ",testValue", String, true, nil, nil},

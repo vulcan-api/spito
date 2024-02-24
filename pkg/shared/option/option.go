@@ -15,9 +15,9 @@ const (
 	Float
 	String
 	Bool
-	Array // unhandled
+	List
 	Struct
-	Enum // unhandled
+	Enum
 	Unknown
 )
 
@@ -35,8 +35,8 @@ func (t Type) String() string {
 		return "string"
 	case Bool:
 		return "bool"
-	case Array:
-		return "array"
+	case List:
+		return "list"
 	case Struct:
 		return "struct"
 	case Enum:

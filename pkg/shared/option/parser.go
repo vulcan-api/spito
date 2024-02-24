@@ -92,18 +92,17 @@ func GetOption(rawOptions string) (Option, string, error) {
 
 	obtainedDefaultValueType := processedOption.Type
 	if processedOption.Type == Any {
-		isStruct := IsStruct(rawDefaultValue)
-		if isStruct {
+		if IsStruct(rawDefaultValue) {
 			obtainedDefaultValueType = Struct
-		} else {
-			obtainedDefaultValueType = Array
+		} else if IsArray(rawDefaultValue) {
+			obtainedDefaultValueType = List
 		}
 	}
 
 	switch obtainedDefaultValueType {
-	//case option.Array:
-	//	// array parsing
-	//	break;
+	case List:
+		processedOption.DefaultValue = UnwrapArray(rawDefaultValue)
+		break
 	case Struct:
 		processedOption.Options, err = ParseOptions(rawDefaultValue)
 		if err != nil {
@@ -161,9 +160,12 @@ func GetOptionType(rawType string) (Type, []string, error) {
 	case "string":
 		optionType = String
 		break
+	case "list":
+		optionType = List
+		break
 	default:
 		if isStruct := IsStruct(rawType); isStruct {
-			possibleValues = strings.Split(rawType[1:len(rawType)-1], ";")
+			possibleValues = UnwrapArray(rawType)
 			optionType = Enum
 			break
 		}
@@ -179,6 +181,17 @@ func IsStruct(rawValue string) bool {
 		}
 	}
 	return false
+}
+
+func IsArray(rawValue string) bool {
+	return IsStruct(rawValue) && !strings.ContainsAny(rawValue, ":=,")
+}
+
+func UnwrapArray(rawValue string) []string {
+	if len(rawValue) > 2 {
+		return strings.Split(rawValue[1:len(rawValue)-1], ";")
+	}
+	return nil
 }
 
 func GetIndexOutside(wholeString, toEscapeStart, toEscapeEnd, toFind string) (int, error) {
