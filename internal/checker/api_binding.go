@@ -17,6 +17,7 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
 	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
+	apiNamespace.AddField("git", getGitNamespace(importLoopData, L))
 
 	if ruleConf.Unsafe {
 		apiNamespace.AddField("sh", getShNamespace(L))
@@ -107,6 +108,16 @@ func getInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.
 	infoNamespace.AddFn("important", infoApi.Important)
 
 	return infoNamespace.createTable(L)
+}
+
+func getGitNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
+	gitNamespace := newLuaNamespace()
+
+	gitApi := api.GitApi{FsVrct: &importLoopData.VRCT.Fs}
+
+	gitNamespace.AddFn("clone", gitApi.GitClone)
+
+	return gitNamespace.createTable(L)
 }
 
 func getShNamespace(L *lua.LState) lua.LValue {
