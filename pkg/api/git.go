@@ -12,6 +12,10 @@ type GitApi struct {
 }
 
 func (g *GitApi) GitClone(repoUrl, destinationPath string) error {
+	if err := os.MkdirAll("/tmp/spito", os.ModePerm); err != nil {
+		return err
+	}
+
 	tmpDir, err := os.MkdirTemp("/tmp/spito", "git-clone-tmp-")
 	if err != nil {
 		return err
