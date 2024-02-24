@@ -21,7 +21,12 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 
 	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
 
-	L.SetGlobal("_O", getOptions(ruleConf.Options, L))
+	options, err := option.Compare(importLoopData.Options, ruleConf.Options)
+	if err != nil {
+		return false, err
+	}
+
+	L.SetGlobal("_O", getOptions(options, L))
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
@@ -29,7 +34,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 		return false, err
 	}
 
-	err := L.CallByParam(lua.P{
+	err = L.CallByParam(lua.P{
 		Fn:      L.GetGlobal("main"),
 		Protect: true,
 		NRet:    1,

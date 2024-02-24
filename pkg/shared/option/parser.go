@@ -55,19 +55,18 @@ func GetOption(rawOptions string) (Option, string, error) {
 	foundColon := colonPos != -1 && colonPos < commaPos
 	foundEqual := equalPos != -1 && equalPos < commaPos
 
-	// Possible HANDLED edge cases:
+	// Possible cases:
 	// name:type=val
 	// name?:type
 	// name=val
 	// name?
+	//
 	// name={name:type=val}
 	// enum:{FOOD;CAT;4}=FOOD
 
 	// Illegal cases:
 	// name:type
 	// name
-
-	// Possible UNHANDLED cases:
 
 	processedOption.Type = Any
 	rawDefaultValue := ""
@@ -92,10 +91,10 @@ func GetOption(rawOptions string) (Option, string, error) {
 
 	obtainedDefaultValueType := processedOption.Type
 	if processedOption.Type == Any {
-		if IsStruct(rawDefaultValue) {
-			obtainedDefaultValueType = Struct
-		} else if IsArray(rawDefaultValue) {
+		if IsArray(rawDefaultValue) {
 			obtainedDefaultValueType = List
+		} else if IsStruct(rawDefaultValue) {
+			obtainedDefaultValueType = Struct
 		}
 	}
 
@@ -142,34 +141,16 @@ func GetOption(rawOptions string) (Option, string, error) {
 
 func GetOptionType(rawType string) (Type, []string, error) {
 	var optionType Type
-	processedType := strings.ToLower(rawType)
 	var possibleValues []string
-	switch processedType {
-	case "int":
-		optionType = Int
-		break
-	case "uint":
-		optionType = UInt
-		break
-	case "float":
-		optionType = Float
-		break
-	case "bool":
-		optionType = Bool
-		break
-	case "string":
-		optionType = String
-		break
-	case "list":
-		optionType = List
-		break
-	default:
+
+	optionType = FromString(strings.ToLower(rawType))
+	if optionType == Unknown {
 		if isStruct := IsStruct(rawType); isStruct {
-			possibleValues = UnwrapArray(rawType)
 			optionType = Enum
-			break
+			possibleValues = UnwrapArray(rawType)
+		} else {
+			return Unknown, nil, fmt.Errorf("unknown option type in options: '%s'", rawType)
 		}
-		return Unknown, nil, fmt.Errorf("unknown option type in options: '%s'", rawType)
 	}
 	return optionType, possibleValues, nil
 }
