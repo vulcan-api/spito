@@ -7,6 +7,7 @@ import (
 	"github.com/yuin/gopher-lua"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 const rulesetDirConstantName = "RULESET_DIR"
@@ -52,12 +53,28 @@ func getOptions(options []option.Option, L *lua.LState) lua.LValue {
 
 func getOptionLValue(ruleOption option.Option, L *lua.LState) lua.LValue {
 	var value lua.LValue
-	if ruleOption.Type == option.Struct {
+	switch ruleOption.Type {
+	case option.Struct:
 		value = getOptions(ruleOption.Options, L)
-	} else {
+		break
+	case option.List:
+		value = getLList(ruleOption, L)
+		break
+	default:
 		value = getAnyLValue(ruleOption.DefaultValue, ruleOption.Type)
 	}
 	return value
+}
+
+// TODO: allow to access array element by int not string
+func getLList(ruleOption option.Option, L *lua.LState) lua.LValue {
+	list := newLuaNamespace()
+
+	for i, value := range ruleOption.DefaultValue.([]string) {
+		list.AddField(strconv.Itoa(i), getAnyLValue(value, option.String))
+	}
+
+	return list.createTable(L)
 }
 
 func getAnyLValue(rawValue any, optionType option.Type) lua.LValue {
