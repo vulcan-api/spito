@@ -59,8 +59,10 @@ func TestLuaApi(t *testing.T) {
 	for _, script := range scripts {
 		file, err := os.ReadFile(script.file)
 		if err != nil {
-			t.Fatal(err)
+			fmt.Println(script.file)
+			t.Fatal(err.Error())
 		}
+
 		if script.beforeTest != nil {
 			err = script.beforeTest()
 			if err != nil {
@@ -84,8 +86,6 @@ func TestLuaApi(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error occurred in script '%s' : %s", script.file, fmt.Sprint(err))
 		}
-
-		fmt.Println(script)
 
 		if !doesRulePass {
 			logAndFail(t, "Rule %s did not pass!", script.file)
