@@ -74,13 +74,13 @@ func TestLuaApi(t *testing.T) {
 			t.Fatal("Failed to initialized rule VRCT", err)
 		}
 
-		fmt.Println(script.file)
 		runtimeData := shared.ImportLoopData{
 			VRCT:         *ruleVRCT,
 			RulesHistory: shared.RulesHistory{},
 			ErrChan:      make(chan error),
 			InfoApi:      cmdApi.InfoApi{},
 		}
+		fmt.Println(script.file)
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
 		if err != nil {
 			t.Fatalf("Error occurred in script '%s' : %s", script.file, fmt.Sprint(err))
