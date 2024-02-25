@@ -59,8 +59,7 @@ func TestLuaApi(t *testing.T) {
 	for _, script := range scripts {
 		file, err := os.ReadFile(script.file)
 		if err != nil {
-			fmt.Println(script.file)
-			t.Fatal(err.Error())
+			t.Fatal(script.file + ": " + err.Error())
 		}
 
 		if script.beforeTest != nil {
