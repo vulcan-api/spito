@@ -16,6 +16,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 
 	// Standard libraries
 	lua.OpenString(L)
+	lua.OpenBase(L)
 
 	L.SetGlobal(rulesetDirConstantName, lua.LString(rulesetPath))
 	attachApi(importLoopData, ruleConf, L)

@@ -41,6 +41,10 @@ func finalizeFsTest() error {
 	return vrctFs.CompareConfigs(content, []byte(expectedExampleJsonContent), vrctFs.JsonConfig)
 }
 
+func finalizeGitTest() error {
+	return os.RemoveAll("/tmp/spito-test/nfdsa321980")
+}
+
 func TestLuaApi(t *testing.T) {
 	scripts := []luaTest{
 		{file: "daemon_test.lua"},
@@ -49,6 +53,7 @@ func TestLuaApi(t *testing.T) {
 		{file: "rule_require_test.lua"},
 		{file: "sh_test.lua"},
 		{file: "sysinfo_test.lua"},
+		{file: "git_test.lua", afterTest: finalizeGitTest},
 	}
 
 	for _, script := range scripts {
@@ -82,7 +87,7 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if !doesRulePass {
-			t.Fatalf("Rule %s did not pass!", script.file)
+			logAndFail(t, "Rule %s did not pass!", script.file)
 		}
 
 		_, err = ruleVRCT.Apply()
@@ -91,14 +96,19 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if err := ruleVRCT.DeleteRuntimeTemp(); err != nil {
-			t.Fatal("Failed to remove temporary VRCT files", err.Error())
+			logAndFail(t, "Failed to remove temporary VRCT files: %s", err.Error())
 		}
 
 		if script.afterTest != nil {
 			err = script.afterTest()
 			if err != nil {
-				t.Fatalf("error occured during finalization stage of test '%s': %s", script.file, err)
+				logAndFail(t, "error occured during finalization stage of test '%s': %s", script.file, err)
 			}
 		}
 	}
+}
+
+func logAndFail(t *testing.T, format string, args ...interface{}) {
+    t.Logf(format, args...)
+    t.Fail()
 }

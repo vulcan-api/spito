@@ -127,6 +127,7 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 
 func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 	dirEntries := make(map[string]os.DirEntry)
+
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -143,7 +144,7 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 		}
 	}
 
-	vrctEntries, err := os.ReadDir(fmt.Sprintf("%s%s", v.virtualFSPath, path))
+	vrctEntries, err := os.ReadDir(filepath.Join(v.virtualFSPath, path))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -151,7 +152,8 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 	} else {
 		for _, entry := range vrctEntries {
 			name := entry.Name()
-			if name[len(name)-15:] != ".prototype.bson" && !entry.IsDir() {
+
+			if !strings.HasSuffix(name, ".prototype.bson") && !entry.IsDir() {
 				continue
 			}
 			if !entry.IsDir() {
@@ -168,7 +170,6 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 			}
 		}
 	}
-
 	res := make([]os.DirEntry, 0, len(dirEntries))
 
 	for _, entry := range dirEntries {
@@ -176,4 +177,34 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 	}
 
 	return res, nil
+}
+
+// Move TODO: it doesn't handle situation when destination is not empty
+func (v *VRCTFs) Move(from, to string) error {
+	fromEntries, err := v.ReadDir(from)
+	if err != nil {
+		return err
+	}
+
+	for _, fromEntry := range fromEntries {
+		fromPath := filepath.Join(from, fromEntry.Name())
+		toPath := filepath.Join(to, fromEntry.Name())
+
+		if fromEntry.IsDir() {
+			if err := v.Move(fromPath, toPath); err != nil {
+				return err
+			}
+			continue
+		}
+		fileContent, err := v.ReadFile(fromPath)
+		if err != nil {
+			return err
+		}
+
+		if err := v.CreateFile(toPath, fileContent, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
