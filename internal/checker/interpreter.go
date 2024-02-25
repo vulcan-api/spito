@@ -31,6 +31,7 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 		Protect: true,
 		NRet:    1,
 	})
+	fmt.Println(err.Error())
 	if err != nil {
 		return false, err
 	}

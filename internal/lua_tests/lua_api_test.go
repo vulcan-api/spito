@@ -80,7 +80,6 @@ func TestLuaApi(t *testing.T) {
 			ErrChan:      make(chan error),
 			InfoApi:      cmdApi.InfoApi{},
 		}
-		fmt.Println(script.file)
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
 		if err != nil {
 			t.Fatalf("Error occurred in script '%s' : %s", script.file, fmt.Sprint(err))

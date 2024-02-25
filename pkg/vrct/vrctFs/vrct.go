@@ -54,9 +54,12 @@ func MoveFile(source string, destination string) error {
 
 func NewFsVRCT() (VRCTFs, error) {
 	err := os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
+	if err != nil {
+		return VRCTFs{}, err
+	}
 	revertSteps, err := NewRevertSteps()
 	if err != nil {
-		return VRCTFs{}, nil
+		return VRCTFs{}, err
 	}
 
 	err = os.MkdirAll(VirtualFsPathPrefix, os.ModePerm)
