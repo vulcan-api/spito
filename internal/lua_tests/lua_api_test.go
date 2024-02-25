@@ -61,6 +61,7 @@ func TestLuaApi(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		fmt.Println("I'm here")
 
 		if script.beforeTest != nil {
 			err = script.beforeTest()
@@ -109,6 +110,6 @@ func TestLuaApi(t *testing.T) {
 }
 
 func logAndFail(t *testing.T, format string, args ...interface{}) {
-    t.Logf(format, args...)
-    t.Fail()
+	t.Logf(format, args...)
+	t.Fail()
 }
