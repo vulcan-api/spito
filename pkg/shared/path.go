@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -64,10 +63,7 @@ func CreateIfNotExists(path, defaultContent string) error {
 }
 
 func ExpandTilde(path *string) error {
-	usr, err := user.Current()
-	if err != nil {
-		return err
-	}
+	usr := GetRegularUser()
 
 	if *path == "~" {
 		*path = usr.HomeDir
