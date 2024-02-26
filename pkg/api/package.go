@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/userinfo"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/go-git/go-git/v5"
 	"github.com/oleiade/reflections"
 	"github.com/schollz/progressbar/v3"
@@ -170,7 +171,7 @@ type AurResponseLayout struct {
 
 func getListOfAURPackages(packages ...string) ([]string, error) {
 
-	shared.ChangeToRoot()
+	userinfo.ChangeToRoot()
 	requestValues := url.Values{
 		"arg[]": packages,
 	}
@@ -219,7 +220,7 @@ func getListOfAURPackages(packages ...string) ([]string, error) {
 }
 
 func installPackageFromFile(packageName string, workingDirectory string) error {
-	shared.ChangeToRoot()
+	userinfo.ChangeToRoot()
 	const pacmanPackageFileExtension = ".tar.zst"
 	files, err := os.ReadDir(workingDirectory)
 	if err != nil {
@@ -243,24 +244,24 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
-	shared.ChangeToUser()
+	userinfo.ChangeToUser()
 	cachePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
+		path.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
 
-	err := shared.ExpandTilde(&cachePath)
+	err := path.ExpandTilde(&cachePath)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(cachePath, shared.DirectoryPermissions)
+	err = os.MkdirAll(cachePath, path.DirectoryPermissions)
 	if err != nil {
 		return err
 	}
 
 	for _, pkg := range packages {
-		shared.ChangeToUser()
+		userinfo.ChangeToUser()
 		repoPath := filepath.Join(cachePath, pkg)
-		if doesExist, _ := shared.PathExists(repoPath); doesExist {
+		if doesExist, _ := path.PathExists(repoPath); doesExist {
 			err = os.RemoveAll(repoPath)
 			if err != nil {
 				return err
@@ -276,7 +277,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
-		argv := []string{changeUserCommand, changeUserOption, shared.GetRegularUser().Username, makepkgCommand}
+		argv := []string{changeUserCommand, changeUserOption, userinfo.GetRegularUser().Username, makepkgCommand}
 		makePkgCommand, err := os.StartProcess(changeUserCommand, argv, &os.ProcAttr{
 			Dir: repoPath,
 		})
@@ -290,14 +291,14 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Installing AUR package %s...", pkg))
-		shared.ChangeToRoot()
+		userinfo.ChangeToRoot()
 		err = installPackageFromFile(pkg, repoPath)
 		if err != nil {
 			return err
 		}
 	}
 	_ = bar.Add(1)
-	shared.ChangeToRoot()
+	userinfo.ChangeToRoot()
 	return nil
 }
 
@@ -310,12 +311,14 @@ func installRegularPackages(neededOnly bool, packages ...string) error {
 	argv = append(argv, packages...)
 
 	packageManagerCommand := exec.Command(packageManager, argv...)
+	packageManagerCommand.Stderr = os.Stderr
+	packageManagerCommand.Stdout = os.Stdout
 	return packageManagerCommand.Run()
 }
 
 func InstallPackages(packageStrings ...string) error {
 
-	if isRoot, err := shared.IsRoot(); !isRoot || err != nil {
+	if isRoot, err := userinfo.IsRoot(); !isRoot || err != nil {
 		fmt.Println("[error] Please run this rule as root")
 		os.Exit(1)
 	}
@@ -396,7 +399,7 @@ func InstallPackages(packageStrings ...string) error {
 }
 
 func RemovePackages(packagesToRemove ...string) error {
-	if isRoot, err := shared.IsRoot(); !isRoot || err != nil {
+	if isRoot, err := userinfo.IsRoot(); !isRoot || err != nil {
 		fmt.Println("[error] Please run this rule as root")
 		os.Exit(1)
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ type AppliedEnvironment struct {
 }
 
 func ReadAppliedEnvironments() (AppliedEnvironments, error) {
-	if err := shared.CreateIfNotExists(EnvironmentDataPath, "[]"); err != nil {
+	if err := path.CreateIfNotExists(EnvironmentDataPath, "[]"); err != nil {
 		return nil, err
 	}
 
@@ -40,7 +41,7 @@ func (e *AppliedEnvironments) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(EnvironmentDataPath, newContent, shared.FilePermissions)
+	return os.WriteFile(EnvironmentDataPath, newContent, path.FilePermissions)
 }
 
 func (e *AppliedEnvironments) SetAsApplied(envIdentifierOrPath string, revertNum int) {

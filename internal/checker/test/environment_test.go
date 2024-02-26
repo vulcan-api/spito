@@ -58,7 +58,7 @@ func TestRevertingPreviousEnv(t *testing.T) {
 	}
 	secondEnvTemplate = applyRule(secondEnvTemplate, t)
 
-	firstFileExists, err := shared.PathExists(firstEnvTemplate.Path)
+	firstFileExists, err := path.PathExists(firstEnvTemplate.Path)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

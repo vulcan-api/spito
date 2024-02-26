@@ -1,11 +1,11 @@
-package shared
+package path
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"github.com/avorty/spito/pkg/userinfo"
 )
 
 const (
@@ -14,15 +14,11 @@ const (
 )
 
 var UserHomeDir = func() string {
-	dir, err := os.UserHomeDir()
+	user := userinfo.GetRegularUser()
 
 	// Exiting our program is only allowed because this function
 	// executes only once, at the program start
-	if err != nil {
-		fmt.Println("Failed to read UserHomeDir\n", err.Error())
-		os.Exit(1)
-	}
-	return dir
+	return user.HomeDir
 }()
 
 func PathExists(path string) (bool, error) {
@@ -63,7 +59,7 @@ func CreateIfNotExists(path, defaultContent string) error {
 }
 
 func ExpandTilde(path *string) error {
-	usr := GetRegularUser()
+	usr := userinfo.GetRegularUser()
 
 	if *path == "~" {
 		*path = usr.HomeDir

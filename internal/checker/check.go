@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/userinfo"
 	"os"
 	"path/filepath"
 	"strings"
@@ -189,7 +190,7 @@ func _internalCheckRule(
 		}
 	}
 
-	isRunAsRoot, err := shared.IsRoot()
+	isRunAsRoot, err := userinfo.IsRoot()
 	if err != nil {
 		errChan <- err
 		panic(nil)

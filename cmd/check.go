@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/avorty/spito/pkg/package_conflict"
+	"github.com/avorty/spito/pkg/path"
 	"os"
 	"path/filepath"
 	"unicode"
@@ -95,7 +96,7 @@ var checkCmd = &cobra.Command{
 		identifierOrPath := args[0]
 		ruleName := args[1]
 
-		isPath, err := shared.PathExists(identifierOrPath)
+		isPath, err := path.PathExists(identifierOrPath)
 		handleError(err)
 
 		defer func() {

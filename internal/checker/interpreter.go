@@ -3,6 +3,7 @@ package checker
 import (
 	"fmt"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/yuin/gopher-lua"
 	"os"
 	"path/filepath"
@@ -63,7 +64,7 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
 		rulePath := L.Get(1).String()
 
-		err := shared.ExpandTilde(&rulePath)
+		err := path.ExpandTilde(&rulePath)
 		if err != nil {
 			importLoopData.ErrChan <- err
 			panic(nil)
