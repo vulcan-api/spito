@@ -24,7 +24,7 @@ func GetRegularUser() (*user.User, error) {
 	lognameCommand := exec.Command("logname")
 	username, err := lognameCommand.Output()
 	if err != nil {
-		return nil, err
+		username = []byte("root")
 	}
 
 	username = username[:len(username)-1] // remove trailing '\n' byte
