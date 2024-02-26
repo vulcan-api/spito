@@ -130,7 +130,6 @@ var checkCmd = &cobra.Command{
 		}
 		handleError(err)
 
-		confirmed := false
 		if runtimeData.GuiMode {
 			err := runtimeData.DbusConn.AddMatchSignal(
 				dbus.WithMatchObjectPath(shared.DBusObjectPath()),
@@ -143,19 +142,13 @@ var checkCmd = &cobra.Command{
 			replyChan := make(chan *dbus.Signal)
 			runtimeData.DbusConn.Signal(replyChan)
 			reply := <-replyChan
-			if reply.Name == shared.DBusInterfaceId()+".Confirm" {
-				confirmed = true
-			} else if reply.Name == shared.DBusInterfaceId()+".Decline" {
-				confirmed = false
+			if reply.Name != shared.DBusInterfaceId()+".Confirm" {
+				os.Exit(0)
 			}
 		} else {
 			communicateCliRuleResult(ruleName, doesRulePass)
-			confirmed = true
 		}
-		if doesRulePass && confirmed {
-			askAndExecuteRule(runtimeData, confirmed)
-		}
-		os.Exit(0)
+		askAndExecuteRule(runtimeData, true)
 	},
 }
 
