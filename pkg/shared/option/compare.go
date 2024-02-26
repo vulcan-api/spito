@@ -7,9 +7,10 @@ import (
 
 func Compare(userInput []string, realOptions []Option) ([]Option, error) {
 	for _, userOption := range userInput {
-		splitPos := strings.Index(userOption, "=")
-		name := userOption[:splitPos]
-		value := userOption[splitPos+1:]
+		name, value, properlyPassed := strings.Cut(userOption, "=")
+		if properlyPassed != true {
+			return realOptions, fmt.Errorf("passed option without value (missing '='): '%s'", value)
+		}
 		foundOption := false
 		for i, realOption := range realOptions {
 			if realOption.Name == name {
