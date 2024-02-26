@@ -146,10 +146,10 @@ func applyEnvironment(importLoopData *shared.ImportLoopData, identifierOrPath st
 		return err
 	}
 
+	fmt.Println("I'm here")
 	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
 		return err
 	}
-	fmt.Println("I'm here")
 
 	revertNum, err := importLoopData.VRCT.Apply()
 	if err != nil {
