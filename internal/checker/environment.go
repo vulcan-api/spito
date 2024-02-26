@@ -3,6 +3,7 @@ package checker
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
@@ -148,6 +149,7 @@ func applyEnvironment(importLoopData *shared.ImportLoopData, identifierOrPath st
 	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
 		return err
 	}
+	fmt.Println("I'm here")
 
 	revertNum, err := importLoopData.VRCT.Apply()
 	if err != nil {
