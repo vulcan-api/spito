@@ -146,7 +146,7 @@ func applyEnvironment(importLoopData *shared.ImportLoopData, identifierOrPath st
 		return err
 	}
 
-	fmt.Println("I'm here")
+	fmt.Println(appliedEnvironments)
 	if err := appliedEnvironments.RevertOther(identifierOrPath); err != nil {
 		return err
 	}
