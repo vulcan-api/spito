@@ -19,23 +19,21 @@ func ChangeToRoot() {
 	}
 }
 
-func GetRegularUser() *user.User {
+func GetRegularUser() (*user.User, error) {
 
 	lognameCommand := exec.Command("logname")
 	username, err := lognameCommand.Output()
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return nil, err
 	}
 
 	username = username[:len(username)-1] // remove trailing '\n' byte
 
 	userObject, err := user.Lookup(string(username))
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return nil, err
 	}
-	return userObject
+	return userObject, nil
 }
 
 func IsRoot() (bool, error) {
@@ -43,18 +41,17 @@ func IsRoot() (bool, error) {
 	return currentUser.Username == "root", err
 }
 
-func ChangeToUser() {
+func ChangeToUser() error {
 
-	userObject := GetRegularUser()
+	userObject, err := GetRegularUser()
 	uid, err := strconv.Atoi(userObject.Uid)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	err = syscall.Seteuid(uid)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return err
 	}
+	return nil
 }
