@@ -243,12 +243,16 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
-	shared.ChangeToUser()
+	err := shared.ChangeToUser()
+	if err != nil {
+		return err
+	}
+
 	cachePath := filepath.Join(
 		shared.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
 
-	err := shared.ExpandTilde(&cachePath)
+	err = shared.ExpandTilde(&cachePath)
 	if err != nil {
 		return err
 	}
@@ -258,7 +262,10 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 	}
 
 	for _, pkg := range packages {
-		shared.ChangeToUser()
+		err = shared.ChangeToUser()
+		if err != nil {
+			return err
+		}
 		repoPath := filepath.Join(cachePath, pkg)
 		if doesExist, _ := shared.PathExists(repoPath); doesExist {
 			err = os.RemoveAll(repoPath)
@@ -276,7 +283,11 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
-		argv := []string{changeUserCommand, changeUserOption, shared.GetRegularUser().Username, makepkgCommand}
+		username, err := shared.GetRegularUser()
+		if err != nil {
+			return err
+		}
+		argv := []string{changeUserCommand, changeUserOption, username.Username, makepkgCommand}
 		makePkgCommand, err := os.StartProcess(changeUserCommand, argv, &os.ProcAttr{
 			Dir: repoPath,
 		})
