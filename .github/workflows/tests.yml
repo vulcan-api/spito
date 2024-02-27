@@ -22,5 +22,5 @@ jobs:
         run: chmod +x -R test
 
       - name: Run docker test
-        run: sudo ./test/docker-test.sh ${{ matrix.os }}
+        run: ./test/docker-test.sh ${{ matrix.os }}
 
