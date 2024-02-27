@@ -63,7 +63,10 @@ func CreateIfNotExists(path, defaultContent string) error {
 }
 
 func ExpandTilde(path *string) error {
-	usr := GetRegularUser()
+	usr, err := GetRegularUser()
+	if err != nil {
+		return err
+	}
 
 	if *path == "~" {
 		*path = usr.HomeDir
