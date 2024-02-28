@@ -1,12 +1,13 @@
 package checker
 
 import (
+	"reflect"
+
 	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
-	"reflect"
 )
 
 // Every cmdApi needs to be attached here in order to be available:
@@ -93,7 +94,7 @@ func getConfigEnums(L *lua.LState) lua.LValue {
 
 	infoNamespace.AddField("json", lua.LNumber(vrctFs.JsonConfig))
 	infoNamespace.AddField("yaml", lua.LNumber(vrctFs.YamlConfig))
-	infoNamespace.AddFn("toml", lua.LNumber(vrctFs.TomlConfig))
+	infoNamespace.AddField("toml", lua.LNumber(vrctFs.TomlConfig))
 
 	return infoNamespace.createTable(L)
 }
@@ -148,7 +149,7 @@ func (ln LuaNamespace) AddConstructor(name string, Obj reflect.Type) {
 }
 
 func (ln LuaNamespace) AddFn(name string, fn interface{}) {
-	ln.functions[name] = fn
+	ln.functions[name] = mapFunctionErrorReturnToString(fn)
 }
 
 func (ln LuaNamespace) AddField(name string, field lua.LValue) {
@@ -184,4 +185,75 @@ func constructorFunction(L *lua.LState, Obj reflect.Type) lua.LValue {
 		state.Push(luar.New(state, obj.Interface()))
 		return 1
 	})
+}
+
+func isTypeError(t reflect.Type) bool {
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	return t.Implements(errorType)
+}
+
+func mapFunctionErrorReturnToString(fn any) any {
+	fnType := reflect.TypeOf(fn)
+	reflectErrType := reflect.TypeOf((*error)(nil)).Elem()
+	reflectLValueType := reflect.TypeOf((*lua.LValue)(nil)).Elem()
+
+	if fnType.Kind() != reflect.Func {
+		// It thorws panic, because if I would avoid it, fnType.NumIn() would panic which would be harder to debug
+		panic("fn argument in `mapFunctionErrorReturnToString` must be a function")
+	}
+
+	var inTypes = make([]reflect.Type, fnType.NumIn())
+	var outTypes = make([]reflect.Type, fnType.NumOut())
+
+	for i := 0; i < fnType.NumIn(); i++ {
+		inTypes[i] = fnType.In(i)
+	}
+
+	for i := 0; i < fnType.NumOut(); i++ {
+		outType := fnType.Out(i)
+
+		// If retuns error, map it to string (lua.LString)
+		if isTypeError(outType) {
+			outTypes[i] = reflectLValueType
+		} else {
+			outTypes[i] = outType
+		}
+	}
+
+	// Create new function definition
+	newFnType := reflect.FuncOf(inTypes, outTypes, fnType.IsVariadic())
+
+	return reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		var fnResults []reflect.Value
+
+		// Idk why but .Call doesn't automatically detect if it is variadic
+		if newFnType.IsVariadic() {
+			fnResults = reflect.ValueOf(fn).CallSlice(args)
+		} else {
+			fnResults = reflect.ValueOf(fn).Call(args)
+		}
+
+		var newResults = make([]reflect.Value, len(fnResults))
+
+		for i, result := range fnResults {
+			// If not error - skip
+			if !result.Type().Implements(reflectErrType) {
+				newResults[i] = result
+				continue
+			}
+			var newErr lua.LValue
+
+			// If error is not nil, map it to string
+			if result.Interface() == nil {
+				newErr = lua.LNil
+			} else {
+				err := result.Interface().(error).Error()
+				newErr = lua.LString(err)
+			}
+
+			newResults[i] = reflect.ValueOf(newErr)
+		}
+
+		return newResults
+	}).Interface()
 }
