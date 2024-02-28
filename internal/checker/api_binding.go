@@ -237,7 +237,7 @@ func mapFunctionErrorReturnToString(fn any) any {
 
 		for i, result := range fnResults {
 			// If not error - skip
-			if !result.Type().Implements(reflectErrType) {
+			if !isTypeError(result) {
 				newResults[i] = result
 				continue
 			}
