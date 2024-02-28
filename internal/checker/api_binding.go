@@ -198,7 +198,7 @@ func mapFunctionErrorReturnToString(fn any) any {
 	reflectLValueType := reflect.TypeOf((*lua.LValue)(nil)).Elem()
 
 	if fnType.Kind() != reflect.Func {
-		// It thorws panic, because if I would avoid it, fnType.NumIn() would panic which would be harder to debug
+		// It throws panic, because if I would avoid it, fnType.NumIn() would panic which would be harder to debug
 		panic("fn argument in `mapFunctionErrorReturnToString` must be a function")
 	}
 
