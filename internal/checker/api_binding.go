@@ -194,7 +194,6 @@ func isTypeError(t reflect.Type) bool {
 
 func mapFunctionErrorReturnToString(fn any) any {
 	fnType := reflect.TypeOf(fn)
-	reflectErrType := reflect.TypeOf((*error)(nil)).Elem()
 	reflectLValueType := reflect.TypeOf((*lua.LValue)(nil)).Elem()
 
 	if fnType.Kind() != reflect.Func {
