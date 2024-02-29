@@ -10,7 +10,7 @@ import (
 	luar "layeh.com/gopher-luar"
 )
 
-// Every cmdApi needs to be attached here in order to be available:
+// Every cmdApi needs to be attached here to be available:
 func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
@@ -131,21 +131,15 @@ func getShNamespace(L *lua.LState) lua.LValue {
 }
 
 type LuaNamespace struct {
-	constructors map[string]reflect.Type
-	functions    map[string]interface{}
-	fields       map[string]lua.LValue
+	functions map[string]interface{}
+	fields    map[string]lua.LValue
 }
 
 func newLuaNamespace() LuaNamespace {
 	return LuaNamespace{
-		constructors: map[string]reflect.Type{},
-		functions:    make(map[string]interface{}),
-		fields:       make(map[string]lua.LValue),
+		functions: make(map[string]interface{}),
+		fields:    make(map[string]lua.LValue),
 	}
-}
-
-func (ln LuaNamespace) AddConstructor(name string, Obj reflect.Type) {
-	ln.constructors[name] = Obj
 }
 
 func (ln LuaNamespace) AddFn(name string, fn interface{}) {
@@ -167,24 +161,11 @@ func (ln LuaNamespace) createTable(L *lua.LState) *lua.LTable {
 	for fnName, fn := range ln.functions {
 		L.SetField(namespaceTable, fnName, luar.New(L, fn))
 	}
-	for constrName, constrInterface := range ln.constructors {
-		constr := constructorFunction(L, constrInterface)
-		L.SetField(namespaceTable, constrName, constr)
-	}
 	for fieldName, field := range ln.fields {
 		L.SetField(namespaceTable, fieldName, field)
 	}
 
 	return namespaceTable
-}
-
-func constructorFunction(L *lua.LState, Obj reflect.Type) lua.LValue {
-	return L.NewFunction(func(state *lua.LState) int {
-		obj := reflect.New(Obj)
-
-		state.Push(luar.New(state, obj.Interface()))
-		return 1
-	})
 }
 
 func isTypeError(t reflect.Type) bool {
