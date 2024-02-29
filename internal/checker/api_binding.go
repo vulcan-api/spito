@@ -211,7 +211,7 @@ func mapFunctionErrorReturnToString(fn any) any {
 	for i := 0; i < fnType.NumOut(); i++ {
 		outType := fnType.Out(i)
 
-		// If retuns error, map it to string (lua.LString)
+		// If returns error, map it to string (lua.LString)
 		if isTypeError(outType) {
 			outTypes[i] = reflectLValueType
 		} else {
@@ -225,7 +225,7 @@ func mapFunctionErrorReturnToString(fn any) any {
 	return reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
 		var fnResults []reflect.Value
 
-		// Idk why but .Call doesn't automatically detect if it is variadic
+		// IDK why but .Call doesn't automatically detect if it is variadic
 		if newFnType.IsVariadic() {
 			fnResults = reflect.ValueOf(fn).CallSlice(args)
 		} else {
@@ -236,7 +236,7 @@ func mapFunctionErrorReturnToString(fn any) any {
 
 		for i, result := range fnResults {
 			// If not error - skip
-			if !isTypeError(result) {
+			if !isTypeError(result.Type()) {
 				newResults[i] = result
 				continue
 			}
