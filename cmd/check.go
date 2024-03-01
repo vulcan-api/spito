@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/avorty/spito/pkg/package_conflict"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"unicode"
 
@@ -42,11 +43,12 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
 	}
 
 	if !guiMode {
+		shared.DBusMethodP(runtimeData.DbusConn, "Success", "cannot send success message", revertNum)
+	} else {
 		revertCommand := fmt.Sprintf("spito revert %d", revertNum)
-		runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
+		runtimeData.InfoApi.Log("In order to revert changes, use this command:", revertCommand)
 	}
 
-	shared.DBusMethodP(runtimeData.DbusConn, "Success", "cannot send success message", revertNum)
 }
 
 var checkFileCmd = &cobra.Command{
@@ -153,6 +155,7 @@ var checkCmd = &cobra.Command{
 }
 
 func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
+	detach(cmd)
 	isExecutedByGui, err := cmd.Flags().GetBool("gui-child-mode")
 	if err != nil {
 		isExecutedByGui = true
@@ -187,6 +190,30 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 		PackageTracker: package_conflict.NewPackageConflictTracker(),
 		DbusConn:       dbusConn,
 		GuiMode:        isExecutedByGui,
+	}
+}
+
+func detach(cmd *cobra.Command) {
+	isDetached, err := cmd.Flags().GetBool("detached")
+	if err != nil {
+		panic(err)
+	}
+
+	if !isDetached {
+		args := os.Args
+		if len(args) > 0 {
+			args = append(os.Args[1:], "--detached")
+		} else {
+			args = []string{"--detached"}
+		}
+		command := exec.Command(os.Args[0], args...)
+		command.Stdin = nil
+		command.Stdout = os.Stdout
+		err := command.Run()
+		if err != nil {
+			panic("failed to start spito: " + err.Error())
+		}
+		os.Exit(0)
 	}
 }
 
