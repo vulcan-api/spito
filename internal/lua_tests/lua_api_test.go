@@ -14,8 +14,8 @@ import (
 
 type luaTest struct {
 	file       string
-	beforeTest func() error
-	afterTest  func() error
+	beforeTest func(t *testing.T) error
+	afterTest  func(t *testing.T, revertNum int) error
 }
 
 const basePath = "/tmp/spito-lua-test/"
@@ -24,7 +24,7 @@ const expectedExampleJsonContent = `{"first-key": "first-val", "example-key": "e
 
 var exampleJsonPath = filepath.Join(basePath, exampleJsonName)
 
-func prepareFsTest() error {
+func prepareFsTest(_ *testing.T) error {
 	err := os.MkdirAll(basePath, 0755)
 	if err != nil {
 		return err
@@ -32,7 +32,7 @@ func prepareFsTest() error {
 	return os.WriteFile(exampleJsonPath, []byte(`{"first-key": "first-val"}`), 0755)
 }
 
-func finalizeFsTest() error {
+func finalizeFsTest(_ *testing.T, _ int) error {
 	content, err := os.ReadFile(exampleJsonPath)
 	if err != nil {
 		return err
@@ -41,8 +41,36 @@ func finalizeFsTest() error {
 	return vrctFs.CompareConfigs(content, []byte(expectedExampleJsonContent), vrctFs.JsonConfig)
 }
 
-func finalizeGitTest() error {
+func finalizeGitTest(_ *testing.T, _ int) error {
 	return os.RemoveAll("/tmp/spito-test/nfdsa321980")
+}
+
+func finalizeRevertFuncTest(t *testing.T, revertNum int) error {
+	revertSteps, err := vrctFs.NewRevertSteps()
+	if err != nil {
+		return err
+	}
+
+	if err := revertSteps.Deserialize(revertNum); err != nil {
+		return err
+	}
+
+	err = revertSteps.Apply(checker.GetRevertRuleFn(cmdApi.InfoApi{}))
+	if err != nil {
+		return err
+	}
+
+	path := "/tmp/spito-test/2fr4738gh5132"
+	exists, err := shared.PathExists(path)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		t.Fatalf("Revert function did not remove the `%s` file\n", path)
+	}
+
+	return nil
 }
 
 func TestLuaApi(t *testing.T) {
@@ -54,6 +82,7 @@ func TestLuaApi(t *testing.T) {
 		{file: "sh_test.lua"},
 		{file: "sysinfo_test.lua"},
 		{file: "git_test.lua", afterTest: finalizeGitTest},
+		{file: "revertFunc.lua", afterTest: finalizeRevertFuncTest},
 	}
 
 	for _, script := range scripts {
@@ -63,7 +92,7 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if script.beforeTest != nil {
-			err = script.beforeTest()
+			err = script.beforeTest(t)
 			if err != nil {
 				t.Fatalf("error occured during preparation stage of test '%s': %s", script.file, err)
 			}
@@ -97,8 +126,8 @@ func TestLuaApi(t *testing.T) {
 				Name: rule.Name,
 			})
 		}
-		
-		_, err = ruleVRCT.Apply(ruleIdentifiers)
+
+		revertNum, err := ruleVRCT.Apply(ruleIdentifiers)
 		if err != nil {
 			return
 		}
@@ -108,7 +137,7 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if script.afterTest != nil {
-			err = script.afterTest()
+			err = script.afterTest(t, revertNum)
 			if err != nil {
 				logAndFail(t, "error occured during finalization stage of test '%s': %s", script.file, err)
 			}
@@ -117,6 +146,6 @@ func TestLuaApi(t *testing.T) {
 }
 
 func logAndFail(t *testing.T, format string, args ...interface{}) {
-    t.Logf(format, args...)
-    t.Fail()
+	t.Logf(format, args...)
+	t.Fail()
 }
