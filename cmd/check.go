@@ -14,16 +14,20 @@ import (
 	"github.com/avorty/spito/internal/checker"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
-	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/v5"
 	"github.com/spf13/cobra"
 )
 
-func askAndExecuteRule(runtimeData shared.ImportLoopData) {
-	fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
+func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
+	answer := 'y'
+	if !guiMode {
+		fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
 
-	reader := bufio.NewReader(os.Stdin)
-	answer, _, err := reader.ReadRune()
-	handleError(err)
+		reader := bufio.NewReader(os.Stdin)
+		var err error
+		answer, _, err = reader.ReadRune()
+		handleError(err)
+	}
 
 	answer = unicode.ToLower(answer)
 
@@ -46,8 +50,12 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData) {
 		handleError(err)
 	}
 
-	revertCommand := fmt.Sprintf("spito revert %d", revertNum)
-	runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
+	if !guiMode {
+		revertCommand := fmt.Sprintf("spito revert %d", revertNum)
+		runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
+	}
+
+	shared.DBusMethodP(runtimeData.DbusConn, "Success", "cannot send success message", revertNum)
 }
 
 var checkFileCmd = &cobra.Command{
@@ -87,10 +95,10 @@ var checkFileCmd = &cobra.Command{
 			panic(err)
 		}
 
-		communicateRuleResult(inputPath, doesRulePass)
+		communicateCliRuleResult(inputPath, doesRulePass)
 
 		if doesRulePass {
-			askAndExecuteRule(runtimeData)
+			askAndExecuteRule(runtimeData, false)
 		}
 	},
 }
@@ -131,10 +139,25 @@ var checkCmd = &cobra.Command{
 		}
 		handleError(err)
 
-		communicateRuleResult(ruleName, doesRulePass)
-		if doesRulePass {
-			askAndExecuteRule(runtimeData)
+		if runtimeData.GuiMode {
+			err := runtimeData.DbusConn.AddMatchSignal(
+				dbus.WithMatchObjectPath(shared.DBusObjectPath()),
+				dbus.WithMatchInterface(shared.DBusInterfaceId()),
+				dbus.WithMatchSender(shared.DBusInterfaceId()))
+			if err != nil {
+				panic(err)
+			}
+			shared.DBusMethodP(runtimeData.DbusConn, "CheckFinished", "cannot connect to gui", doesRulePass)
+			replyChan := make(chan *dbus.Signal)
+			runtimeData.DbusConn.Signal(replyChan)
+			reply := <-replyChan
+			if reply.Name != shared.DBusInterfaceId()+".Confirm" {
+				os.Exit(0)
+			}
+		} else {
+			communicateCliRuleResult(ruleName, doesRulePass)
 		}
+		askAndExecuteRule(runtimeData, true)
 	},
 }
 
@@ -145,19 +168,16 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 	}
 
 	var infoApi shared.InfoInterface
+	var dbusConn *dbus.Conn
 
 	if isExecutedByGui {
-		conn, err := dbus.SessionBus()
+		dbusConn, err = dbus.SessionBus()
 		if err != nil {
 			panic(err)
 		}
 
-		dbusId := os.Getenv("DBUS_INTERFACE_ID")
-		dbusPath := os.Getenv("DBUS_OBJECT_PATH")
-
-		busObject := conn.Object(dbusId, dbus.ObjectPath(dbusPath))
 		infoApi = guiApi.InfoApi{
-			BusObject: busObject,
+			BusObject: shared.DBusObject(dbusConn),
 		}
 	} else {
 		infoApi = cmdApi.InfoApi{}
@@ -174,10 +194,12 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 		ErrChan:        make(chan error),
 		InfoApi:        infoApi,
 		PackageTracker: package_conflict.NewPackageConflictTracker(),
+		DbusConn:       dbusConn,
+		GuiMode:        isExecutedByGui,
 	}
 }
 
-func communicateRuleResult(ruleName string, doesRulePass bool) {
+func communicateCliRuleResult(ruleName string, doesRulePass bool) {
 	if doesRulePass {
 		fmt.Printf("Rule %s successfuly passed requirements\n", ruleName)
 	} else {
