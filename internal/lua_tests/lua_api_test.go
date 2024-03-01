@@ -67,6 +67,7 @@ func finalizeRevertFuncTest(t *testing.T, revertNum int) error {
 	}
 
 	if exists {
+		_ = os.Remove(path)
 		t.Fatalf("Revert function did not remove the `%s` file\n", path)
 	}
 
@@ -122,8 +123,9 @@ func TestLuaApi(t *testing.T) {
 		var ruleIdentifiers []vrctFs.Rule
 		for _, rule := range runtimeData.RulesHistory {
 			ruleIdentifiers = append(ruleIdentifiers, vrctFs.Rule{
-				Url:  rule.Url,
-				Name: rule.Name,
+				Url:          rule.Url,
+				NameOrScript: rule.NameOrScript,
+				IsScript:     rule.IsScript,
 			})
 		}
 
@@ -139,7 +141,7 @@ func TestLuaApi(t *testing.T) {
 		if script.afterTest != nil {
 			err = script.afterTest(t, revertNum)
 			if err != nil {
-				logAndFail(t, "error occured during finalization stage of test '%s': %s", script.file, err)
+				logAndFail(t, "error occurred during finalization stage of test '%s': %s", script.file, err)
 			}
 		}
 	}

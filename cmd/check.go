@@ -38,8 +38,9 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
 	var rulesToRevert []vrctFs.Rule
 	for _, rule := range runtimeData.RulesHistory {
 		rulesToRevert = append(rulesToRevert, vrctFs.Rule{
-			Url:  rule.Url,
-			Name: rule.Name,
+			Url:          rule.Url,
+			NameOrScript: rule.NameOrScript,
+			IsScript:     rule.IsScript,
 		})
 	}
 
@@ -86,7 +87,7 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
+		ruleConf, err := checker.GetRuleConfFromScriptPath(fileAbsolutePath)
 		handleError(err)
 		panicIfEnvironment(&ruleConf, "file", inputPath)
 

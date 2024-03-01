@@ -151,11 +151,12 @@ func (r *RevertSteps) DeleteRuntimeTemp() error {
 }
 
 type Rule struct {
-	Url  string `json:"Url" bson:"Url"`
-	Name string `json:"Name" bson:"Name"`
+	Url          string `json:"url" bson:"url"`
+	NameOrScript string `json:"nameOrScript" bson:"nameOrScript"`
+	IsScript     bool   `json:"isScript" bson:"isScript"`
 }
 
-// Serialize 1st return value is number which should be provided in order to deserialize propert RevertSteps
+// Serialize first return value is number which should be provided to deserialize propert RevertSteps
 func (r *RevertSteps) Serialize(rulesToRevert []Rule) (int, error) {
 	r.RulesToRevert = rulesToRevert
 

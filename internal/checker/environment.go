@@ -122,6 +122,8 @@ func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identif
 
 func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		importLoopData.RulesHistory.Push(scriptPath, script, true, true)
+	
 		ruleConf := shared.RuleConfigLayout{}
 		script = processScript(script, &ruleConf)
 		if !ruleConf.Environment {
@@ -158,8 +160,9 @@ func applyEnvironment(importLoopData *shared.ImportLoopData, identifierOrPath st
 	var rulesHistory []vrctFs.Rule
 	for _, rule := range importLoopData.RulesHistory {
 		rulesHistory = append(rulesHistory, vrctFs.Rule{
-			Url:  rule.Url,
-			Name: rule.Name,
+			Url:          rule.Url,
+			NameOrScript: rule.NameOrScript,
+			IsScript:     rule.IsScript,
 		})
 	}
 

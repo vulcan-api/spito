@@ -64,6 +64,8 @@ func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier str
 
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		importLoopData.RulesHistory.Push(scriptDirectory, script, true, true)
+
 		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := shared.RuleConfigLayout{}
 		script = processScript(script, &ruleConf)
@@ -138,7 +140,7 @@ func _internalCheckRule(
 			return true
 		}
 	}
-	rulesHistory.Push(identifier, ruleName, true)
+	rulesHistory.Push(identifier, ruleName, true, false)
 
 	if !rulesetLocation.IsPath {
 		err := FetchRuleset(&rulesetLocation)

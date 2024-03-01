@@ -24,9 +24,14 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 
 		rulesetLocation := NewRulesetLocation(rule.Url, isPath)
 
-		script, err := getScript(&rulesetLocation, rule.Name)
-		if err != nil {
-			return err
+		var script string
+		if rule.IsScript {
+			script = rule.NameOrScript
+		} else {
+			script, err = getScript(&rulesetLocation, rule.NameOrScript)
+			if err != nil {
+				return err
+			}
 		}
 
 		cwd, err := os.Getwd()
@@ -34,8 +39,11 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 			return err
 		}
 
+		ruleConfigLayout := shared.RuleConfigLayout{Path: cwd}
+		script = processScript(script, &ruleConfigLayout)
+
 		// TODO: Passing here cwd is not the best idea
-		L, err := GetLuaState(script, &importLoopData, &shared.RuleConfigLayout{}, cwd)
+		L, err := GetLuaState(script, &importLoopData, &ruleConfigLayout, cwd)
 		if err != nil {
 			return err
 		}
