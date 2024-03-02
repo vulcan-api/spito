@@ -1,6 +1,7 @@
 package path
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -59,7 +60,10 @@ func CreateIfNotExists(path, defaultContent string) error {
 }
 
 func ExpandTilde(path *string) error {
-	usr := userinfo.GetRegularUser()
+	usr, err := userinfo.GetRegularUser()
+	if err != nil {
+		return err
+	}
 
 	if *path == "~" {
 		*path = usr.HomeDir

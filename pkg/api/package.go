@@ -244,7 +244,11 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
-	userinfo.ChangeToUser()
+	err := userinfo.ChangeToUser()
+	if err != nil {
+		return err
+	}
+
 	cachePath := filepath.Join(
 		path.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
@@ -259,7 +263,10 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 	}
 
 	for _, pkg := range packages {
-		userinfo.ChangeToUser()
+		err = userinfo.ChangeToUser()
+		if err != nil {
+			return err
+		}
 		repoPath := filepath.Join(cachePath, pkg)
 		if doesExist, _ := path.PathExists(repoPath); doesExist {
 			err = os.RemoveAll(repoPath)
@@ -277,7 +284,11 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
-		argv := []string{changeUserCommand, changeUserOption, userinfo.GetRegularUser().Username, makepkgCommand}
+		username, err := userinfo.GetRegularUser()
+		if err != nil {
+			return err
+		}
+		argv := []string{changeUserCommand, changeUserOption, username.Username, makepkgCommand}
 		makePkgCommand, err := os.StartProcess(changeUserCommand, argv, &os.ProcAttr{
 			Dir: repoPath,
 		})
@@ -311,8 +322,6 @@ func installRegularPackages(neededOnly bool, packages ...string) error {
 	argv = append(argv, packages...)
 
 	packageManagerCommand := exec.Command(packageManager, argv...)
-	packageManagerCommand.Stderr = os.Stderr
-	packageManagerCommand.Stdout = os.Stdout
 	return packageManagerCommand.Run()
 }
 
