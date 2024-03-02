@@ -88,7 +88,7 @@ func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) int
 		t.Fatal("Failed to properly simulate " + testFilePath + " file content")
 	}
 
-	revertNum, err := fsVrct.Apply([]vrctFs.Rule{})
+	revertNum, err := fsVrct.Apply([]vrctFs.Rule{}, true)
 	if err != nil {
 		t.Fatal("Failed to apply VRCT\n", err)
 	}
