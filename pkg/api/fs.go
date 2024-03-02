@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"regexp"
@@ -164,31 +163,9 @@ func GetProperLines(regex string, fileContent string) ([]string, error) {
 	return properLines, nil
 }
 
-// Apply
-// 1st argument is tuple of rules, where 1st element is ruleset identifier, 2nd is Name and 3rd is `IsString` which takes true or false
-func (f *FsApi) Apply(rulesHistory [][]string) (int, error) {
-	var rules []vrctFs.Rule
-
-	for _, rule := range rulesHistory {
-		rule[2] = strings.ToLower(rule[2])
-
-		var isScript bool
-		if rule[2] == "true" {
-			isScript = true
-		} else if rule[2] == "false" {
-			isScript = false
-		} else {
-			return 0, errors.New("while applying VRCT 3rd argument of tuple should be \"true\" or \"false\"")
-		}
-		
-		rules = append(rules, vrctFs.Rule{
-			Url:          rule[0],
-			NameOrScript: rule[1],
-			IsScript:     isScript,
-		})
-	}
-
-	return f.FsVRCT.Apply(rules)
+func (f *FsApi) Apply() (int, error) {
+	// Because we expose it as lua api we can skip serializing revert steps
+	return f.FsVRCT.Apply([]vrctFs.Rule{}, false)
 }
 
 func (f *FsApi) CreateFile(path, content string, optional bool) error {

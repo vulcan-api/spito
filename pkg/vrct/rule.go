@@ -24,7 +24,7 @@ func (v RuleVRCT) DeleteRuntimeTemp() error {
 }
 
 func (v RuleVRCT) Apply(rulesHistory []vrctFs.Rule) (int, error) {
-	return v.Fs.Apply(rulesHistory)
+	return v.Fs.Apply(rulesHistory, true)
 }
 
 func (v RuleVRCT) Revert() error {
