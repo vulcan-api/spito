@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/avorty/spito/pkg/package_conflict"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -201,15 +203,19 @@ func detach(cmd *cobra.Command) {
 
 	if !isDetached {
 		args := os.Args
-		if len(args) > 0 {
-			args = append(os.Args[1:], "--detached")
-		} else {
-			args = []string{"--detached"}
-		}
-		command := exec.Command(os.Args[0], args...)
-		command.Stdin = nil
-		command.Stdout = os.Stdout
-		err := command.Run()
+		args = append(os.Args, "--detached")
+
+		command := exec.Command("nohup", args...)
+
+		var stdout bytes.Buffer
+		outWriter := io.MultiWriter(os.Stdout, &stdout)
+		command.Stdout = outWriter
+
+		var stderr bytes.Buffer
+		errWriter := io.MultiWriter(os.Stdout, &stderr)
+		command.Stdout = errWriter
+
+		err = command.Run()
 		if err != nil {
 			panic("failed to start spito: " + err.Error())
 		}
