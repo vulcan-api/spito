@@ -110,6 +110,6 @@ func TestLuaApi(t *testing.T) {
 }
 
 func logAndFail(t *testing.T, format string, args ...interface{}) {
-    t.Logf(format, args...)
-    t.Fail()
+	t.Logf(format, args...)
+	t.Fail()
 }

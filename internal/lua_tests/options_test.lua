@@ -26,7 +26,7 @@ function main()
         { name = "family", subOptions = { { name = "0", value = "1" }, { name = "1", value = "2" }, { name = "2", value = "3" } } },
         { name = "dog", subOptions = { { name = "hairType" }, { name = "age", value = 5 } } }
     }
-    return checkArray(testArray, _O)
+    return checkArray(testArray, OPTIONS)
 end
 
 function checkArray(array, rootVariable)

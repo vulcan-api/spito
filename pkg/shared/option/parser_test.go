@@ -53,6 +53,9 @@ type appendOptionCase struct {
 }
 
 var appendOptionCases = []appendOptionCase{
+	{"{enum?:{ONE;TWO;;}=ONE}", []Option{
+		{"enum", "ONE", Enum, true, []string{"ONE", "TWO", "", ""}, nil},
+	}, false},
 	{"{enum?:{ONE;TWO}=ONE}", []Option{
 		{"enum", "ONE", Enum, true, []string{"ONE", "TWO"}, nil},
 	}, false},

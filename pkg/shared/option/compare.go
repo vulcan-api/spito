@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// Compare checks if raw array of strings e.g. "name=Linus,lastname=Torvalds" are applicable
+// into rule's set of options e.g. {name?:string,lastname:int=0}
+// Returns user modified array of options
 func Compare(userInput []string, realOptions []Option) ([]Option, error) {
 	for _, userOption := range userInput {
 		name, value, properlyPassed := strings.Cut(userOption, "=")

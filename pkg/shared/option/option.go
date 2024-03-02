@@ -100,27 +100,20 @@ func (t Type) ToString() string {
 }
 
 func GetType(rawValue any) Type {
-	_, ok := rawValue.(int)
-	if ok {
+	switch rawValue.(type) {
+	case int:
 		return Int
-	}
-	_, ok = rawValue.(uint)
-	if ok {
+	case uint:
 		return UInt
-	}
-	_, ok = rawValue.(float64)
-	if ok {
+	case float64:
 		return Float
-	}
-	_, ok = rawValue.(bool)
-	if ok {
+	case bool:
 		return Bool
-	}
-	_, ok = rawValue.(string)
-	if ok {
+	case string:
 		return String
+	default:
+		return Unknown
 	}
-	return Unknown
 }
 
 func GetValueAndType(rawValue string) (any, Type) {

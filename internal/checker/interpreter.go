@@ -27,7 +27,12 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 		return false, err
 	}
 
-	L.SetGlobal("_O", getOptions(options, L))
+	luaOptions, err := getOptions(options, L)
+	if err != nil {
+		return false, err
+	}
+
+	L.SetGlobal("OPTIONS", luaOptions)
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
@@ -47,43 +52,54 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 	return bool(L.Get(-1).(lua.LBool)), nil
 }
 
-func getOptions(options []option.Option, L *lua.LState) lua.LValue {
+func getOptions(options []option.Option, L *lua.LState) (lua.LValue, error) {
 	structNamespace := newLuaNamespace()
 
 	for _, ruleOption := range options {
-		structNamespace.AddField(ruleOption.Name, getOptionLValue(ruleOption, L))
+		value, err := getOptionLValue(ruleOption, L)
+		if err != nil {
+			return structNamespace.createTable(L), err
+		}
+
+		structNamespace.AddField(ruleOption.Name, value)
 	}
 
-	return structNamespace.createTable(L)
+	return structNamespace.createTable(L), nil
 }
 
-func getOptionLValue(ruleOption option.Option, L *lua.LState) lua.LValue {
+func getOptionLValue(ruleOption option.Option, L *lua.LState) (lua.LValue, error) {
 	var value lua.LValue
+	var err error
 	switch ruleOption.Type {
 	case option.Struct:
-		value = getOptions(ruleOption.Options, L)
+		value, err = getOptions(ruleOption.Options, L)
 		break
 	case option.List:
-		value = getLList(ruleOption, L)
+		value, err = getLList(ruleOption, L)
 		break
 	default:
-		value = getAnyLValue(ruleOption.DefaultValue, ruleOption.Type)
+		value, err = getAnyLValue(ruleOption.DefaultValue, ruleOption.Type)
 	}
-	return value
+	return value, err
 }
 
 // TODO: allow to access array element by int not string
-func getLList(ruleOption option.Option, L *lua.LState) lua.LValue {
+func getLList(ruleOption option.Option, L *lua.LState) (lua.LValue, error) {
 	list := newLuaNamespace()
 
 	for i, value := range ruleOption.DefaultValue.([]string) {
-		list.AddField(strconv.Itoa(i), getAnyLValue(value, option.String))
+		value, err := getAnyLValue(value, option.String)
+		if err != nil {
+			return list.createTable(L), err
+		}
+
+		list.AddField(strconv.Itoa(i), value)
 	}
 
-	return list.createTable(L)
+	return list.createTable(L), nil
 }
 
-func getAnyLValue(rawValue any, optionType option.Type) lua.LValue {
+func getAnyLValue(rawValue any, optionType option.Type) (lua.LValue, error) {
 	value := lua.LNil
 	realOptionType := optionType
 	if rawValue != nil {
@@ -107,10 +123,10 @@ func getAnyLValue(rawValue any, optionType option.Type) lua.LValue {
 			value = lua.LBool(rawValue.(bool))
 			break
 		default:
-			value = lua.LNil
+			return value, fmt.Errorf("value '%s' of type '%d' is not supported", rawValue, optionType)
 		}
 	}
-	return value
+	return value, nil
 }
 
 func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
