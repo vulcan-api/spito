@@ -204,8 +204,7 @@ func detach(cmd *cobra.Command) {
 	if isDetached {
 		return
 	}
-	args := os.Args
-	args = append(os.Args, "--detached")
+	args := append(os.Args, "--detached")
 
 	command := exec.Command("nohup", args...)
 
