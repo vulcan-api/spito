@@ -4,7 +4,7 @@ local spitoTestPath = "/tmp/spito-test"
 local fileToRevertPath = spitoTestPath .. "/2fr4738gh5132"
 
 function main()
-    -- I create it manyally because I want to test the revert function
+    -- I create it manually because I want to test the revert function
     local _, err = api.sh.command("mkdir -p " .. spitoTestPath)
     if err then
         api.info.error(err)
