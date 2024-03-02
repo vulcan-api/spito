@@ -201,26 +201,27 @@ func detach(cmd *cobra.Command) {
 		panic(err)
 	}
 
-	if !isDetached {
-		args := os.Args
-		args = append(os.Args, "--detached")
-
-		command := exec.Command("nohup", args...)
-
-		var stdout bytes.Buffer
-		outWriter := io.MultiWriter(os.Stdout, &stdout)
-		command.Stdout = outWriter
-
-		var stderr bytes.Buffer
-		errWriter := io.MultiWriter(os.Stdout, &stderr)
-		command.Stdout = errWriter
-
-		err = command.Run()
-		if err != nil {
-			panic("failed to start spito: " + err.Error())
-		}
-		os.Exit(0)
+	if isDetached {
+		return
 	}
+	args := os.Args
+	args = append(os.Args, "--detached")
+
+	command := exec.Command("nohup", args...)
+
+	var stdout bytes.Buffer
+	outWriter := io.MultiWriter(os.Stdout, &stdout)
+	command.Stdout = outWriter
+
+	var stderr bytes.Buffer
+	errWriter := io.MultiWriter(os.Stdout, &stderr)
+	command.Stderr = errWriter
+
+	err = command.Run()
+	if err != nil {
+		panic("failed to start spito: " + err.Error())
+	}
+	os.Exit(0)
 }
 
 func communicateCliRuleResult(ruleName string, doesRulePass bool) {
