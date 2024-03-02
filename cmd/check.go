@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/avorty/spito/pkg/package_conflict"
@@ -9,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"unicode"
 
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
@@ -21,22 +19,6 @@ import (
 )
 
 func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
-	answer := 'y'
-	if !guiMode {
-		fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
-
-		reader := bufio.NewReader(os.Stdin)
-		var err error
-		answer, _, err = reader.ReadRune()
-		handleError(err)
-	}
-
-	answer = unicode.ToLower(answer)
-
-	if answer != 'y' {
-		return
-	}
-
 	revertNum, err := runtimeData.VRCT.Apply()
 	if err != nil {
 		err = runtimeData.VRCT.Revert()
@@ -44,7 +26,8 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
 		handleError(err)
 	}
 
-	if !guiMode {
+	runtimeData.InfoApi.Warn(guiMode)
+	if guiMode {
 		shared.DBusMethodP(runtimeData.DbusConn, "Success", "cannot send success message", revertNum)
 	} else {
 		revertCommand := fmt.Sprintf("spito revert %d", revertNum)
@@ -89,8 +72,6 @@ var checkFileCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-
-		communicateCliRuleResult(inputPath, doesRulePass)
 
 		if doesRulePass {
 			askAndExecuteRule(runtimeData, false)
@@ -149,10 +130,8 @@ var checkCmd = &cobra.Command{
 			if reply.Name != shared.DBusInterfaceId()+".Confirm" {
 				os.Exit(0)
 			}
-		} else {
-			communicateCliRuleResult(ruleName, doesRulePass)
 		}
-		askAndExecuteRule(runtimeData, true)
+		askAndExecuteRule(runtimeData, runtimeData.GuiMode)
 	},
 }
 
@@ -221,14 +200,6 @@ func detach(cmd *cobra.Command) {
 		panic("failed to start spito: " + err.Error())
 	}
 	os.Exit(0)
-}
-
-func communicateCliRuleResult(ruleName string, doesRulePass bool) {
-	if doesRulePass {
-		fmt.Printf("Rule %s successfuly passed requirements\n", ruleName)
-	} else {
-		fmt.Printf("Rule %s did not pass requirements\n", ruleName)
-	}
 }
 
 func panicIfEnvironment(ruleConf *shared.RuleConfigLayout, rulesetIdentifier, ruleName string) {
