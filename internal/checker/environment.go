@@ -3,8 +3,8 @@ package checker
 import (
 	"encoding/json"
 	"errors"
-	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 	"path/filepath"

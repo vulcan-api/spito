@@ -1,12 +1,11 @@
 package path
 
 import (
-	"fmt"
+	"github.com/avorty/spito/pkg/userinfo"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/avorty/spito/pkg/userinfo"
 )
 
 const (
@@ -15,7 +14,10 @@ const (
 )
 
 var UserHomeDir = func() string {
-	user := userinfo.GetRegularUser()
+	user, err := userinfo.GetRegularUser()
+	if err != nil {
+		panic("cannot determine user home directory")
+	}
 
 	// Exiting our program is only allowed because this function
 	// executes only once, at the program start

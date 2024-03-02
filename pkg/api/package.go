@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/avorty/spito/pkg/userinfo"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/userinfo"
 	"github.com/go-git/go-git/v5"
 	"github.com/oleiade/reflections"
 	"github.com/schollz/progressbar/v3"
@@ -253,7 +253,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		path.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
 
-	err := path.ExpandTilde(&cachePath)
+	err = path.ExpandTilde(&cachePath)
 	if err != nil {
 		return err
 	}
