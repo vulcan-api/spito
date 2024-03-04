@@ -6,6 +6,7 @@ import (
 	"github.com/avorty/spito/internal/checker"
 	daemontracker "github.com/avorty/spito/pkg"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
@@ -70,15 +71,15 @@ func finalizeRevertFuncTest(params afterLuaTestParams) error {
 		return err
 	}
 
-	path := "/tmp/spito-test/2fr4738gh5132"
-	exists, err := shared.PathExists(path)
+	filePath := "/tmp/spito-test/2fr4738gh5132"
+	exists, err := path.PathExists(filePath)
 	if err != nil {
 		return err
 	}
 
 	if exists {
-		_ = os.Remove(path)
-		params.t.Fatalf("Revert function did not remove the `%s` file\n", path)
+		_ = os.Remove(filePath)
+		params.t.Fatalf("Revert function did not remove the `%s` file\n", filePath)
 	}
 
 	return nil

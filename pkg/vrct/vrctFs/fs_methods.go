@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"github.com/avorty/spito/pkg/path"
 )
 
 // CreateFile function creating file
@@ -17,10 +18,13 @@ import (
 //	content - content of file
 //	isOptional - default option in configs / is able to merge in text files
 func (v *VRCTFs) CreateFile(filePath string, content []byte, isOptional bool) error {
+
+	path.ExpandTilde(&filePath)
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return err
 	}
+
 	dirPath := filepath.Dir(filePath)
 
 	err = os.MkdirAll(filepath.Join(v.virtualFSPath, dirPath), os.ModePerm)

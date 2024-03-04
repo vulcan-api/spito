@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/go-git/go-git/v5"
 	"os"
 )
@@ -12,7 +12,7 @@ type GitApi struct {
 }
 
 func (g *GitApi) GitClone(repoUrl, destinationPath string) error {
-	if err := os.MkdirAll("/tmp/spito", shared.DirectoryPermissions); err != nil {
+	if err := os.MkdirAll("/tmp/spito", path.DirectoryPermissions); err != nil {
 		return err
 	}
 

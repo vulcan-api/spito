@@ -6,6 +6,7 @@ import (
 	"fmt"
 	daemontracker "github.com/avorty/spito/pkg"
 	"github.com/avorty/spito/pkg/package_conflict"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"io"
 	"os"
@@ -116,7 +117,7 @@ var checkCmd = &cobra.Command{
 		identifierOrPath := args[0]
 		ruleName := args[1]
 
-		isPath, err := shared.PathExists(identifierOrPath)
+		isPath, err := path.PathExists(identifierOrPath)
 		handleError(err)
 
 		defer func() {

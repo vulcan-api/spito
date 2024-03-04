@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 )
@@ -17,7 +18,7 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 			ErrChan:      make(chan error),
 		}
 
-		isPath, err := shared.PathExists(rule.Url)
+		isPath, err := path.PathExists(rule.Url)
 		if err != nil {
 			isPath = false
 		}

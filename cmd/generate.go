@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -39,12 +40,12 @@ func handleGenerate(cmd *cobra.Command, args []string) {
 	err = yaml.Unmarshal(configFileContents, &config)
 	handleError(err)
 
-	err = os.Mkdir(rulesDirectory, shared.DirectoryPermissions)
+	err = os.Mkdir(rulesDirectory, path.DirectoryPermissions)
 	if err != nil && !os.IsExist(err) {
 		printErrorAndExit(err)
 	}
 
-	err = os.MkdirAll(filepath.Dir(rulePath), shared.DirectoryPermissions)
+	err = os.MkdirAll(filepath.Dir(rulePath), path.DirectoryPermissions)
 	handleError(err)
 
 	ruleFile, err := os.Create(filepath.Join(rulesDirectory, rulePath+".lua"))
