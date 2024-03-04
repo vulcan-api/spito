@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/internal/checker"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
@@ -86,7 +88,7 @@ func makeFsChanges(t *testing.T, fsVrct *vrctFs.VRCTFs, testFilePath string) int
 		t.Fatal("Failed to properly simulate " + testFilePath + " file content")
 	}
 
-	revertNum, err := fsVrct.Apply()
+	revertNum, err := fsVrct.Apply([]vrctFs.Rule{}, true)
 	if err != nil {
 		t.Fatal("Failed to apply VRCT\n", err)
 	}
@@ -119,7 +121,9 @@ func revertFsChanges(t *testing.T, testFilePath string, revertNum int) {
 		)
 	}
 
-	if err := revertSteps.Apply(); err != nil {
+	revertFn := checker.GetRevertRuleFn(cmdApi.InfoApi{})
+
+	if err := revertSteps.Apply(revertFn); err != nil {
 		t.Fatalf("Failed to revert VRCT\n%s", err.Error())
 	}
 

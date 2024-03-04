@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/avorty/spito/internal/checker"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/spf13/cobra"
 	"strconv"
@@ -27,7 +28,9 @@ var revertCmd = &cobra.Command{
 		err = revertSteps.Deserialize(revertNum)
 		handleError(err)
 
-		err = revertSteps.Apply()
+		importLoopData := getInitialRuntimeData(cmd)
+		
+		err = revertSteps.Apply(checker.GetRevertRuleFn(importLoopData.InfoApi))
 		handleError(err)
 	},
 }

@@ -164,7 +164,8 @@ func GetProperLines(regex string, fileContent string) ([]string, error) {
 }
 
 func (f *FsApi) Apply() (int, error) {
-	return f.FsVRCT.Apply()
+	// Because we expose it as lua api we can skip serializing revert steps
+	return f.FsVRCT.Apply([]vrctFs.Rule{}, false)
 }
 
 func (f *FsApi) CreateFile(path, content string, optional bool) error {

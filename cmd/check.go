@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/avorty/spito/pkg/package_conflict"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"unicode"
 
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/cmd/guiApi"
@@ -19,7 +22,32 @@ import (
 )
 
 func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
-	revertNum, err := runtimeData.VRCT.Apply()
+	answer := 'y'
+	if !guiMode {
+		fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
+
+		reader := bufio.NewReader(os.Stdin)
+		var err error
+		answer, _, err = reader.ReadRune()
+		handleError(err)
+	}
+
+	answer = unicode.ToLower(answer)
+
+	if answer != 'y' {
+		return
+	}
+
+	var rulesToRevert []vrctFs.Rule
+	for _, rule := range runtimeData.RulesHistory {
+		rulesToRevert = append(rulesToRevert, vrctFs.Rule{
+			Url:          rule.Url,
+			NameOrScript: rule.NameOrScript,
+			IsScript:     rule.IsScript,
+		})
+	}
+
+	revertNum, err := runtimeData.VRCT.Apply(rulesToRevert)
 	if err != nil {
 		err = runtimeData.VRCT.Revert()
 		runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
@@ -63,7 +91,7 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
+		ruleConf, err := checker.GetRuleConfFromScriptPath(fileAbsolutePath)
 		handleError(err)
 		panicIfEnvironment(runtimeData, &ruleConf, "file", inputPath)
 
