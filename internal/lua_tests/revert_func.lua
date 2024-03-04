@@ -21,8 +21,6 @@ function main()
 end
 
 function revert()
-    api.info.log("revert called!!!")
-
     local _, err = api.sh.command("rm " .. fileToRevertPath)
     if err then
         api.info.error(err)
