@@ -16,6 +16,7 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 
 	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
+	apiNamespace.AddField("daemon", getDaemonApiNamespace(importLoopData, L))
 	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 	apiNamespace.AddField("git", getGitNamespace(importLoopData, L))
@@ -57,18 +58,31 @@ func getSysInfoNamespace(L *lua.LState) lua.LValue {
 
 	sysInfoNamespace.AddFn("sleep", api.Sleep)
 	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
-	sysInfoNamespace.AddFn("getDaemon", api.GetDaemon)
 	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
 
 	return sysInfoNamespace.createTable(L)
 }
 
+func getDaemonApiNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
+	daemonNamespace := newLuaNamespace()
+
+	daemonApi := api.DaemonApi{ImportLoopData: importLoopData}
+
+	daemonNamespace.AddFn("start", daemonApi.StartDaemon)
+	daemonNamespace.AddFn("stop", daemonApi.StopDaemon)
+	daemonNamespace.AddFn("restart", daemonApi.RestartDaemon)
+	daemonNamespace.AddFn("enable", daemonApi.EnableDaemon)
+	daemonNamespace.AddFn("disable", daemonApi.DisableDaemon)
+
+	daemonNamespace.AddFn("get", api.GetDaemon)
+
+	return daemonNamespace.createTable(L)
+}
+
 func getFsNamespace(importLoop *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	fsNamespace := newLuaNamespace()
 
-	apiFs := api.FsApi{
-		FsVRCT: &importLoop.VRCT.Fs,
-	}
+	apiFs := api.FsApi{FsVRCT: &importLoop.VRCT.Fs}
 
 	fsNamespace.AddFn("pathExists", apiFs.PathExists)
 	fsNamespace.AddFn("fileExists", apiFs.FileExists)
