@@ -60,8 +60,8 @@ func (f *FsApi) ReadDir(path string) ([]DirData, error) {
 	return dirData, nil
 }
 
-func (f *FsApi) Move(from, to string) error {
-	return f.FsVRCT.Move(from, to)
+func (f *FsApi) Copy(from, to string) error {
+	return f.FsVRCT.Copy(from, to)
 }
 
 func RemoveComments(fileContent, singleLineStart, multiLineStart, multiLineEnd string) string {
