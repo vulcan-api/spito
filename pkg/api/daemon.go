@@ -295,11 +295,11 @@ func errorIfNotSystemd() error {
 	return errors.New("this api method supports only systemd")
 }
 
-type SysApi struct {
+type DaemonApi struct {
 	ImportLoopData *shared.ImportLoopData
 }
 
-func (s *SysApi) StartDaemon(daemonName string) error {
+func (s *DaemonApi) StartDaemon(daemonName string) error {
 	if err := errorIfNotSystemd(); err != nil {
 		return err
 	}
@@ -307,28 +307,28 @@ func (s *SysApi) StartDaemon(daemonName string) error {
 	return s.ImportLoopData.DaemonTracker.StartDaemon(daemonName)
 }
 
-func (s *SysApi) StopDaemon(daemonName string) error {
+func (s *DaemonApi) StopDaemon(daemonName string) error {
 	if err := errorIfNotSystemd(); err != nil {
 		return err
 	}
 
 	return s.ImportLoopData.DaemonTracker.StopDaemon(daemonName)
 }
-func (s *SysApi) RestartDaemon(daemonName string) error {
+func (s *DaemonApi) RestartDaemon(daemonName string) error {
 	if err := errorIfNotSystemd(); err != nil {
 		return err
 	}
 
 	return s.ImportLoopData.DaemonTracker.RestartDaemon(daemonName)
 }
-func (s *SysApi) EnableDaemon(daemonName string) error {
+func (s *DaemonApi) EnableDaemon(daemonName string) error {
 	if err := errorIfNotSystemd(); err != nil {
 		return err
 	}
 
 	return s.ImportLoopData.DaemonTracker.EnableDaemon(daemonName)
 }
-func (s *SysApi) DisableDaemon(daemonName string) error {
+func (s *DaemonApi) DisableDaemon(daemonName string) error {
 	if err := errorIfNotSystemd(); err != nil {
 		return err
 	}
