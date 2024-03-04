@@ -45,7 +45,7 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 	return ruleSets, nil
 }
 
-func GetRuleConfFromScript(scriptPath string) (shared.RuleConfigLayout, error) {
+func GetRuleConfFromScriptPath(scriptPath string) (shared.RuleConfigLayout, error) {
 	ruleConf := shared.RuleConfigLayout{Path: scriptPath}
 
 	scriptRaw, err := os.ReadFile(scriptPath)

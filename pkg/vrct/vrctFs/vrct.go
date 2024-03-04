@@ -82,8 +82,10 @@ func (v *VRCTFs) DeleteRuntimeTemp() error {
 	return os.RemoveAll(v.virtualFSPath)
 }
 
-// Apply returns revertNumber
-func (v *VRCTFs) Apply() (int, error) {
+// Apply
+// first parameter takes array of identifiers
+// returns revertNumber if serializeRevertSteps is true
+func (v *VRCTFs) Apply(rulesHistory []Rule, serializeRevertSteps bool) (int, error) {
 	mergeDir, err := os.MkdirTemp("/tmp", "spito-fs-vrct-merge")
 	if err != nil {
 		return 0, err
@@ -97,16 +99,19 @@ func (v *VRCTFs) Apply() (int, error) {
 		return 0, err
 	}
 
-	revertNum, err := v.revertSteps.Serialize()
-	if err != nil {
-		return 0, err
+	var revertNum int
+	if serializeRevertSteps {
+		revertNum, err = v.revertSteps.Serialize(rulesHistory)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	return revertNum, os.RemoveAll(mergeDir)
 }
 
-func (v *VRCTFs) Revert() error {
-	return v.revertSteps.Apply()
+func (v *VRCTFs) Revert(fn func(rule Rule) error) error {
+	return v.revertSteps.Apply(fn)
 }
 
 func (v *VRCTFs) mergeToRealFs(mergeDirPath string) error {
