@@ -20,28 +20,6 @@ The `api.sys` module provides functions for working with the system.
 distro = api.sys.getDistro()
 ```
 
-## getDaemon
-
-### Arguments:
-- `name` (string): The name of the package to get.
-
-### Returns:
-- `daemon` (Daemon): The daemon info.
-- `error` (error): The error message if the daemon does not exist.
-
-### Example usage:
-
-```lua
-function networkManagerExists()
-  daemon, err = api.sys.getDaemon("dbus")
-  if err ~= nil then
-    api.info.error("Error occured during obtaining daemon info!")
-    return false
-  end
-  return true
-end
-```
-
 ## getInitSystem
 
 ### Arguments:
