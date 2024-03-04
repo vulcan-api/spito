@@ -7,6 +7,7 @@ import (
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/spf13/cobra"
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
@@ -71,10 +72,10 @@ func publishPostRequest(body PublishRequestBody, token string) int {
 
 func getToken(isLocal bool, rulesetPath string) string {
 	tokenFilenamePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
+		path.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
 		secretDirectoryName,
 		tokenStorageFilename)
-	err := shared.ExpandTilde(&tokenFilenamePath)
+	err := path.ExpandTilde(&tokenFilenamePath)
 	handleError(err)
 
 	tokenFileRawData, err := os.ReadFile(tokenFilenamePath)

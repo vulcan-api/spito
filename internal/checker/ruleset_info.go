@@ -9,10 +9,7 @@ import (
 )
 
 func GetAllDownloadedRuleSets() ([]string, error) {
-	ruleSetsDir, err := getRuleSetsDir()
-	if err != nil {
-		return nil, err
-	}
+	ruleSetsDir := getRuleSetsDir()
 
 	_ = initRequiredTmpDirs() // Ignore error because it should potentially avoid errors, not cause
 	providerDirs, err := os.ReadDir(ruleSetsDir)

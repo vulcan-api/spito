@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/avorty/spito/cmd"
 	"github.com/joho/godotenv"
+	"github.com/avorty/spito/pkg/userinfo"
 	"os"
 )
 
 func main() {
+	userinfo.ChangeToUser()
 	initEnvs()
 	cmd.Execute()
 }

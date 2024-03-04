@@ -3,6 +3,7 @@ package checker
 import (
 	"errors"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
 	"gopkg.in/yaml.v3"
 	"io/fs"
 	"os"
@@ -11,17 +12,15 @@ import (
 	"sync"
 )
 
-func getRuleSetsDir() (string, error) {
-	dir, err := os.UserHomeDir()
-	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets"), err
+func getRuleSetsDir() string {
+	dir := path.UserHomeDir
+	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets")
 }
 
 func initRequiredTmpDirs() error {
-	dir, err := getRuleSetsDir()
-	if err != nil {
-		return err
-	}
-	err = os.MkdirAll(dir, 0700)
+	dir := getRuleSetsDir()
+
+	err := os.MkdirAll(dir, 0700)
 	if errors.Is(err, fs.ErrExist) {
 		return nil
 	}
@@ -109,10 +108,7 @@ func (r *RulesetLocation) GetRulesetPath() string {
 		return r.simpleUrlOrPath
 	}
 
-	dir, err := getRuleSetsDir()
-	if err != nil {
-		return ""
-	}
+	dir := getRuleSetsDir()
 	return dir + "/" + r.simpleUrlOrPath
 }
 
@@ -170,7 +166,7 @@ func (r *RulesetLocation) createLockfile(errChan chan error) error {
 			dependencyRulesetName, dependencyRuleName, _ := strings.Cut(dependencyString, "@")
 			rulesetLocation := NewRulesetLocation(dependencyRulesetName, false)
 
-			doesLockfileExist, err := shared.PathExists(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
+			doesLockfileExist, err := path.PathExists(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
 			if err != nil {
 				return err
 			}

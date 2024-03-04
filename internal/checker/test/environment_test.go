@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"html/template"
@@ -58,7 +59,7 @@ func TestRevertingPreviousEnv(t *testing.T) {
 	}
 	secondEnvTemplate = applyRule(secondEnvTemplate, t)
 
-	firstFileExists, err := shared.PathExists(firstEnvTemplate.Path)
+	firstFileExists, err := path.PathExists(firstEnvTemplate.Path)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -80,7 +81,7 @@ func TestRevertingPreviousEnv(t *testing.T) {
 }
 
 func applyRule(templateData templateDataT, t *testing.T) templateDataT {
-	templateData.Path = "/tmp/test-file-" + shared.RandomLetters(10)
+	templateData.Path = "/tmp/test-file-" + path.RandomLetters(10)
 
 	ruleSourceCode := getSourceCode(t, templateData)
 	importLoopData := getImportLoopData(t)
