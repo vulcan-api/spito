@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
+	daemon_tracker "github.com/avorty/spito/pkg"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"html/template"
@@ -127,10 +128,11 @@ func getImportLoopData(t *testing.T) *shared.ImportLoopData {
 	}
 
 	return &shared.ImportLoopData{
-		VRCT:         *ruleVRCT,
-		InfoApi:      cmdApi.InfoApi{},
-		RulesHistory: shared.RulesHistory{},
-		ErrChan:      make(chan error),
+		VRCT:          *ruleVRCT,
+		InfoApi:       cmdApi.InfoApi{},
+		RulesHistory:  shared.RulesHistory{},
+		DaemonTracker: daemon_tracker.NewDaemonTracker(),
+		ErrChan:       make(chan error),
 	}
 }
 

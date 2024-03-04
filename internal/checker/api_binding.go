@@ -15,7 +15,7 @@ func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfi
 	apiNamespace := newLuaNamespace()
 
 	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
-	apiNamespace.AddField("sys", getSysInfoNamespace(L))
+	apiNamespace.AddField("sys", getSysInfoNamespace(importLoopData, L))
 	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 	apiNamespace.AddField("git", getGitNamespace(importLoopData, L))
@@ -52,12 +52,20 @@ func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) l
 	return pkgNamespace.createTable(L)
 }
 
-func getSysInfoNamespace(L *lua.LState) lua.LValue {
+func getSysInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	sysInfoNamespace := newLuaNamespace()
+
+	sysApi := api.SysApi{ImportLoopData: importLoopData}
 
 	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
 	sysInfoNamespace.AddFn("getDaemon", api.GetDaemon)
 	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
+
+	sysInfoNamespace.AddFn("startDaemon", sysApi.StartDaemon)
+	sysInfoNamespace.AddFn("stopDaemon", sysApi.StopDaemon)
+	sysInfoNamespace.AddFn("restartDaemon", sysApi.RestartDaemon)
+	sysInfoNamespace.AddFn("enableDaemon", sysApi.EnableDaemon)
+	sysInfoNamespace.AddFn("disableDaemon", sysApi.DisableDaemon)
 
 	return sysInfoNamespace.createTable(L)
 }

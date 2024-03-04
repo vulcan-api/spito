@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
+	daemon_tracker "github.com/avorty/spito/pkg"
 	shared "github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
@@ -75,10 +76,11 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		runtimeData := shared.ImportLoopData{
-			VRCT:         *ruleVRCT,
-			RulesHistory: shared.RulesHistory{},
-			ErrChan:      make(chan error),
-			InfoApi:      cmdApi.InfoApi{},
+			VRCT:          *ruleVRCT,
+			RulesHistory:  shared.RulesHistory{},
+			DaemonTracker: daemon_tracker.NewDaemonTracker(),
+			ErrChan:       make(chan error),
+			InfoApi:       cmdApi.InfoApi{},
 		}
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
@@ -109,6 +111,6 @@ func TestLuaApi(t *testing.T) {
 }
 
 func logAndFail(t *testing.T, format string, args ...interface{}) {
-    t.Logf(format, args...)
-    t.Fail()
+	t.Logf(format, args...)
+	t.Fail()
 }

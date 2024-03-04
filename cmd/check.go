@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	daemon_tracker "github.com/avorty/spito/pkg"
 	"github.com/avorty/spito/pkg/package_conflict"
 	"os"
 	"path/filepath"
@@ -185,6 +186,7 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 		ErrChan:        make(chan error),
 		InfoApi:        infoApi,
 		PackageTracker: package_conflict.NewPackageConflictTracker(),
+		DaemonTracker:  daemon_tracker.NewDaemonTracker(),
 		DbusConn:       dbusConn,
 		GuiMode:        isExecutedByGui,
 	}
