@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/avorty/spito/pkg/shared"
 	"os"
 	"os/exec"
 	"regexp"
@@ -280,4 +281,57 @@ func GetDaemon(daemonName string) (Daemon, error) {
 	default:
 		return Daemon{}, ErrUnsupportedInit
 	}
+}
+
+func errorIfNotSystemd() error {
+	initSystem, err := GetInitSystem()
+	if err != nil {
+		return err
+	}
+
+	if initSystem == SYSTEMD {
+		return nil
+	}
+	return errors.New("this api method supports only systemd")
+}
+
+type DaemonApi struct {
+	ImportLoopData *shared.ImportLoopData
+}
+
+func (s *DaemonApi) StartDaemon(daemonName string) error {
+	if err := errorIfNotSystemd(); err != nil {
+		return err
+	}
+
+	return s.ImportLoopData.DaemonTracker.StartDaemon(daemonName)
+}
+
+func (s *DaemonApi) StopDaemon(daemonName string) error {
+	if err := errorIfNotSystemd(); err != nil {
+		return err
+	}
+
+	return s.ImportLoopData.DaemonTracker.StopDaemon(daemonName)
+}
+func (s *DaemonApi) RestartDaemon(daemonName string) error {
+	if err := errorIfNotSystemd(); err != nil {
+		return err
+	}
+
+	return s.ImportLoopData.DaemonTracker.RestartDaemon(daemonName)
+}
+func (s *DaemonApi) EnableDaemon(daemonName string) error {
+	if err := errorIfNotSystemd(); err != nil {
+		return err
+	}
+
+	return s.ImportLoopData.DaemonTracker.EnableDaemon(daemonName)
+}
+func (s *DaemonApi) DisableDaemon(daemonName string) error {
+	if err := errorIfNotSystemd(); err != nil {
+		return err
+	}
+
+	return s.ImportLoopData.DaemonTracker.DisableDaemon(daemonName)
 }
