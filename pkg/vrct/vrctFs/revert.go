@@ -40,6 +40,7 @@ type RevertStep struct {
 
 type RevertSteps struct {
 	Steps         []RevertStep `bson:"Steps"`
+	RulesToRevert []Rule       `bson:"RulesToRevert"`
 	RevertTempDir string       `bson:"-"`
 }
 
@@ -127,12 +128,19 @@ func (r *RevertStep) Apply() error {
 	}
 }
 
-func (r *RevertSteps) Apply() error {
+func (r *RevertSteps) Apply(revertFn func(rule Rule) error) error {
 	for _, step := range r.Steps {
 		if err := step.Apply(); err != nil {
 			return err
 		}
 	}
+
+	for _, rule := range r.RulesToRevert {
+		if err := revertFn(rule); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -140,8 +148,16 @@ func (r *RevertSteps) DeleteRuntimeTemp() error {
 	return os.RemoveAll(r.RevertTempDir)
 }
 
-// Serialize 1st return value is number which should be provided in order to deserialize propert RevertSteps
-func (r *RevertSteps) Serialize() (int, error) {
+type Rule struct {
+	Url          string `json:"url" bson:"url"`
+	NameOrScript string `json:"nameOrScript" bson:"nameOrScript"`
+	IsScript     bool   `json:"isScript" bson:"isScript"`
+}
+
+// Serialize first return value is number which should be provided to deserialize propert RevertSteps
+func (r *RevertSteps) Serialize(rulesToRevert []Rule) (int, error) {
+	r.RulesToRevert = rulesToRevert
+
 	outBson, err := bson.Marshal(r)
 	if err != nil {
 		return 0, err

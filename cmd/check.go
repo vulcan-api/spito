@@ -2,10 +2,14 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/avorty/spito/pkg/package_conflict"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"unicode"
 
@@ -35,19 +39,29 @@ func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
 		return
 	}
 
-	revertNum, err := runtimeData.VRCT.Apply()
+	var rulesToRevert []vrctFs.Rule
+	for _, rule := range runtimeData.RulesHistory {
+		rulesToRevert = append(rulesToRevert, vrctFs.Rule{
+			Url:          rule.Url,
+			NameOrScript: rule.NameOrScript,
+			IsScript:     rule.IsScript,
+		})
+	}
+
+	revertNum, err := runtimeData.VRCT.Apply(rulesToRevert)
 	if err != nil {
 		err = runtimeData.VRCT.Revert()
 		runtimeData.InfoApi.Error("unfortunately the rule couldn't be applied. Reverting changes...")
 		handleError(err)
 	}
 
-	if !guiMode {
+	if guiMode {
+		shared.DBusMethodP(runtimeData.DbusConn, "Success", "cannot send success message", revertNum)
+	} else {
 		revertCommand := fmt.Sprintf("spito revert %d", revertNum)
-		runtimeData.InfoApi.Log("In order to revert changes, use this command: ", revertCommand)
+		runtimeData.InfoApi.Log("In order to revert changes, use this command:", revertCommand)
 	}
 
-	shared.DBusMethodP(runtimeData.DbusConn, "Success", "cannot send success message", revertNum)
 }
 
 var checkFileCmd = &cobra.Command{
@@ -78,16 +92,14 @@ var checkFileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ruleConf, err := checker.GetRuleConfFromScript(fileAbsolutePath)
+		ruleConf, err := checker.GetRuleConfFromScriptPath(fileAbsolutePath)
 		handleError(err)
-		panicIfEnvironment(&ruleConf, "file", inputPath)
+		panicIfEnvironment(runtimeData, &ruleConf, "file", inputPath)
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(script), filepath.Dir(fileAbsolutePath))
 		if err != nil {
 			panic(err)
 		}
-
-		communicateCliRuleResult(inputPath, doesRulePass)
 
 		if doesRulePass {
 			askAndExecuteRule(runtimeData, false)
@@ -121,7 +133,7 @@ var checkCmd = &cobra.Command{
 
 		ruleConf, err := rulesetConfig.GetRuleConf(ruleName)
 		handleError(err)
-		panicIfEnvironment(&ruleConf, identifierOrPath, ruleName)
+		panicIfEnvironment(runtimeData, &ruleConf, identifierOrPath, ruleName)
 
 		var doesRulePass bool
 		if isPath {
@@ -146,14 +158,13 @@ var checkCmd = &cobra.Command{
 			if reply.Name != shared.DBusInterfaceId()+".Confirm" {
 				os.Exit(0)
 			}
-		} else {
-			communicateCliRuleResult(ruleName, doesRulePass)
 		}
-		askAndExecuteRule(runtimeData, true)
+		askAndExecuteRule(runtimeData, runtimeData.GuiMode)
 	},
 }
 
 func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
+	detach(cmd)
 	isExecutedByGui, err := cmd.Flags().GetBool("gui-child-mode")
 	if err != nil {
 		isExecutedByGui = true
@@ -191,19 +202,39 @@ func getInitialRuntimeData(cmd *cobra.Command) shared.ImportLoopData {
 	}
 }
 
-func communicateCliRuleResult(ruleName string, doesRulePass bool) {
-	if doesRulePass {
-		fmt.Printf("Rule %s successfuly passed requirements\n", ruleName)
-	} else {
-		fmt.Printf("Rule %s did not pass requirements\n", ruleName)
+func detach(cmd *cobra.Command) {
+	isDetached, err := cmd.Flags().GetBool("detached")
+	if err != nil {
+		panic(err)
 	}
+
+	if isDetached {
+		return
+	}
+	args := append(os.Args, "--detached")
+
+	command := exec.Command("nohup", args...)
+
+	var stdout bytes.Buffer
+	outWriter := io.MultiWriter(os.Stdout, &stdout)
+	command.Stdout = outWriter
+
+	var stderr bytes.Buffer
+	errWriter := io.MultiWriter(os.Stdout, &stderr)
+	command.Stderr = errWriter
+
+	err = command.Run()
+	if err != nil {
+		panic("failed to start spito: " + err.Error())
+	}
+	os.Exit(0)
 }
 
-func panicIfEnvironment(ruleConf *shared.RuleConfigLayout, rulesetIdentifier, ruleName string) {
+func panicIfEnvironment(runtimeData shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, rulesetIdentifier, ruleName string) {
 	if ruleConf.Environment {
-		fmt.Println("Rule which you were trying to check is an environment")
-		fmt.Println("In order to apply environment use command:")
-		fmt.Printf("spito env %s %s\n", rulesetIdentifier, ruleName)
+		runtimeData.InfoApi.Error("Rule which you were trying to check is an environment")
+		runtimeData.InfoApi.Error("In order to apply environment use command:")
+		runtimeData.InfoApi.Error("spito env", rulesetIdentifier, ruleName)
 
 		os.Exit(1)
 	}

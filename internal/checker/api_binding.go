@@ -55,6 +55,7 @@ func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) l
 func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	sysInfoNamespace := newLuaNamespace()
 
+	sysInfoNamespace.AddFn("sleep", api.Sleep)
 	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
 	sysInfoNamespace.AddFn("getDaemon", api.GetDaemon)
 	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
