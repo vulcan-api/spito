@@ -25,9 +25,9 @@ func NewDaemonTracker() DaemonTracker {
 func (daemonTracker *DaemonTracker) StartDaemon(daemonName string) error {
 	daemonTracker.startedDaemons = append(daemonTracker.startedDaemons, daemonName)
 
-	foundConflict, conflictMsg := daemonTracker.FindConflicts()
-	if foundConflict {
-		return errors.New(conflictMsg)
+	conflict := daemonTracker.FindConflicts()
+	if conflict != nil {
+		return conflict
 	}
 
 	return runSystemdCommand("start", daemonName)
@@ -36,9 +36,9 @@ func (daemonTracker *DaemonTracker) StartDaemon(daemonName string) error {
 func (daemonTracker *DaemonTracker) StopDaemon(daemonName string) error {
 	daemonTracker.stoppedDaemons = append(daemonTracker.stoppedDaemons, daemonName)
 
-	foundConflict, conflictMsg := daemonTracker.FindConflicts()
-	if foundConflict {
-		return errors.New(conflictMsg)
+	conflict := daemonTracker.FindConflicts()
+	if conflict != nil {
+		return conflict
 	}
 
 	return runSystemdCommand("stop", daemonName)
@@ -47,9 +47,9 @@ func (daemonTracker *DaemonTracker) StopDaemon(daemonName string) error {
 func (daemonTracker *DaemonTracker) RestartDaemon(daemonName string) error {
 	daemonTracker.restartedDaemons = append(daemonTracker.restartedDaemons, daemonName)
 
-	foundConflict, conflictMsg := daemonTracker.FindConflicts()
-	if foundConflict {
-		return errors.New(conflictMsg)
+	conflict := daemonTracker.FindConflicts()
+	if conflict != nil {
+		return conflict
 	}
 
 	return runSystemdCommand("restart", daemonName)
@@ -58,9 +58,9 @@ func (daemonTracker *DaemonTracker) RestartDaemon(daemonName string) error {
 func (daemonTracker *DaemonTracker) EnableDaemon(daemonName string) error {
 	daemonTracker.enabledDaemons = append(daemonTracker.enabledDaemons, daemonName)
 
-	foundConflict, conflictMsg := daemonTracker.FindConflicts()
-	if foundConflict {
-		return errors.New(conflictMsg)
+	conflict := daemonTracker.FindConflicts()
+	if conflict != nil {
+		return conflict
 	}
 
 	return runSystemdCommand("enable", daemonName)
@@ -69,32 +69,32 @@ func (daemonTracker *DaemonTracker) EnableDaemon(daemonName string) error {
 func (daemonTracker *DaemonTracker) DisableDaemon(daemonName string) error {
 	daemonTracker.disabledDaemons = append(daemonTracker.disabledDaemons, daemonName)
 
-	foundConflict, conflictMsg := daemonTracker.FindConflicts()
-	if foundConflict {
-		return errors.New(conflictMsg)
+	conflict := daemonTracker.FindConflicts()
+	if conflict != nil {
+		return conflict
 	}
 
 	return runSystemdCommand("disable", daemonName)
 }
 
 // FindConflicts returns a boolean indicating if there are any conflicts and a string with more details
-func (daemonTracker *DaemonTracker) FindConflicts() (bool, string) {
+func (daemonTracker *DaemonTracker) FindConflicts() error {
 	haveMutual, mutualElement := haveMutualElement(daemonTracker.startedDaemons, daemonTracker.stoppedDaemons)
 	if haveMutual {
-		return haveMutual, fmt.Sprintf("conflict: trying to start and stop at the same time %s daemon", mutualElement)
+		return fmt.Errorf("conflict: trying to start and stop at the same time %s daemon", mutualElement)
 	}
 
 	haveMutual, mutualElement = haveMutualElement(daemonTracker.restartedDaemons, daemonTracker.stoppedDaemons)
 	if haveMutual {
-		return haveMutual, fmt.Sprintf("conflict: trying to restart and stop at the same time %s daemon", mutualElement)
+		return fmt.Errorf("conflict: trying to restart and stop at the same time %s daemon", mutualElement)
 	}
 
 	haveMutual, mutualElement = haveMutualElement(daemonTracker.enabledDaemons, daemonTracker.disabledDaemons)
 	if haveMutual {
-		return haveMutual, fmt.Sprintf("conflict: trying to enable and disable at the same time %s daemon", mutualElement)
+		return fmt.Errorf("conflict: trying to enable and disable at the same time %s daemon", mutualElement)
 	}
 
-	return false, ""
+	return nil
 }
 
 // haveMutualElement returns bool and mutual element if exist
