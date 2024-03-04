@@ -3,6 +3,7 @@ package api
 import (
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/zcalusic/sysinfo"
@@ -52,6 +53,10 @@ const (
 )
 
 /* API FUNCTIONS */
+
+func Sleep(milliseconds int) {
+	time.Sleep(time.Duration(milliseconds) * time.Millisecond)
+}
 
 func GetDistro() Distro {
 	var systemInfo sysinfo.SysInfo

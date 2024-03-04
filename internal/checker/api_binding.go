@@ -57,6 +57,7 @@ func getSysInfoNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) l
 
 	sysApi := api.SysApi{ImportLoopData: importLoopData}
 
+	sysInfoNamespace.AddFn("sleep", api.Sleep)
 	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
 	sysInfoNamespace.AddFn("getDaemon", api.GetDaemon)
 	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
