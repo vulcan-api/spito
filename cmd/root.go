@@ -64,6 +64,7 @@ func init() {
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkFileCmd.Flags().Bool("detached", false, "Doesn't execute itself")
 	checkCmd.Flags().Bool("detached", false, "Doesn't execute itself")
+	revertCmd.Flags().Bool("detached", false, "Doesn't execute itself")
 
 	newRulesetCommand.Flags().BoolP("non-interactive", "y", false, "If true assume default values for spito.yaml")
 	loginCommand.Flags().BoolP("local", "l", false, "If true, save login credentials inside a spito ruleset")
