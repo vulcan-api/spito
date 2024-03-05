@@ -3,11 +3,11 @@ package vrctFs
 import (
 	"errors"
 	"fmt"
+	"github.com/avorty/spito/pkg/path"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/avorty/spito/pkg/path"
 )
 
 // CreateFile function creating file
@@ -183,8 +183,8 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 	return res, nil
 }
 
-// Move TODO: it doesn't handle situation when destination is not empty
-func (v *VRCTFs) Move(from, to string) error {
+// Copy TODO: it doesn't handle situation when destination is not empty
+func (v *VRCTFs) Copy(from, to string) error {
 	fromEntries, err := v.ReadDir(from)
 	if err != nil {
 		return err
@@ -195,7 +195,7 @@ func (v *VRCTFs) Move(from, to string) error {
 		toPath := filepath.Join(to, fromEntry.Name())
 
 		if fromEntry.IsDir() {
-			if err := v.Move(fromPath, toPath); err != nil {
+			if err := v.Copy(fromPath, toPath); err != nil {
 				return err
 			}
 			continue

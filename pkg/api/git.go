@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/go-git/go-git/v5"
 	"os"
 )
@@ -25,7 +25,7 @@ func (g *GitApi) GitClone(repoUrl, destinationPath string) error {
 		return err
 	}
 
-	if err := g.FsVrct.Move(tmpDir, destinationPath); err != nil {
+	if err := g.FsVrct.Copy(tmpDir, destinationPath); err != nil {
 		return err
 	}
 
