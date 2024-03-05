@@ -343,3 +343,12 @@ Applies virtual changes to real fs
 
 - `revertNumber` (int): number which is required to revert changes
 - `error` (error): if nil - applied changes successfully
+
+### Example usage:
+
+```lua
+local revertNumber, err = api.fs.apply()
+if err then
+    api.info.error("Error occured while applying changes: " .. err)
+end
+```
