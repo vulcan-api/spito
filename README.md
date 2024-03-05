@@ -10,21 +10,20 @@ lays the foundations for auto-repair tools.
 ## Installation
 
 First of all install [go](https://go.dev/doc/install).
-To install spito for the whole operating system **(remember to run as root)**
 
+For root
 ```bash
-export GOBIN=/usr/bin
-go install
+sudo GOBIN=/usr/bin /usr/local/go/bin/go install
 ```
 
-Only for local user
+For local user
 
 ```bash
 go install
 export PATH=$PATH:~/go/bin
 ```
 
-You can also add last line to .bashrc or other similar file.
+You can also add last line to `.bashrc` or other similar file.
 
 ## Use cases
 

@@ -25,11 +25,11 @@ var revertCmd = &cobra.Command{
 			fmt.Println("Failed to parse input, revert number needs to be an integer")
 		}
 
+		importLoopData := getInitialRuntimeData(cmd)
+
 		err = revertSteps.Deserialize(revertNum)
 		handleError(err)
 
-		importLoopData := getInitialRuntimeData(cmd)
-		
 		err = revertSteps.Apply(checker.GetRevertRuleFn(importLoopData.InfoApi))
 		handleError(err)
 	},

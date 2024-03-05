@@ -1,45 +1,26 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/cmd/guiApi"
+	"github.com/avorty/spito/internal/checker"
 	daemontracker "github.com/avorty/spito/pkg"
 	"github.com/avorty/spito/pkg/package_conflict"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/vrct"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
+	"github.com/godbus/dbus/v5"
+	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"unicode"
-
-	"github.com/avorty/spito/cmd/cmdApi"
-	"github.com/avorty/spito/cmd/guiApi"
-	"github.com/avorty/spito/internal/checker"
-	"github.com/avorty/spito/pkg/shared"
-	"github.com/avorty/spito/pkg/vrct"
-	"github.com/godbus/dbus/v5"
-	"github.com/spf13/cobra"
 )
 
-func askAndExecuteRule(runtimeData shared.ImportLoopData, guiMode bool) {
-	answer := 'y'
-	if !guiMode {
-		fmt.Printf("Would you like to apply this rule's changes? [y/N]: ")
-
-		reader := bufio.NewReader(os.Stdin)
-		var err error
-		answer, _, err = reader.ReadRune()
-		handleError(err)
-	}
-
-	answer = unicode.ToLower(answer)
-
-	if answer != 'y' {
-		return
-	}
-
+func finalizeExecution(runtimeData shared.ImportLoopData, guiMode bool) {
 	var rulesToRevert []vrctFs.Rule
 	for _, rule := range runtimeData.RulesHistory {
 		rulesToRevert = append(rulesToRevert, vrctFs.Rule{
@@ -103,7 +84,7 @@ var checkFileCmd = &cobra.Command{
 		}
 
 		if doesRulePass {
-			askAndExecuteRule(runtimeData, false)
+			finalizeExecution(runtimeData, false)
 		}
 	},
 }
@@ -160,7 +141,7 @@ var checkCmd = &cobra.Command{
 				os.Exit(0)
 			}
 		}
-		askAndExecuteRule(runtimeData, runtimeData.GuiMode)
+		finalizeExecution(runtimeData, runtimeData.GuiMode)
 	},
 }
 
@@ -229,6 +210,7 @@ func detach(cmd *cobra.Command) {
 	if err != nil {
 		panic("failed to start spito: " + err.Error())
 	}
+
 	os.Exit(0)
 }
 
