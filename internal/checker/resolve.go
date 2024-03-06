@@ -21,19 +21,36 @@ func getScript(ruleSetLocation *RulesetLocation, ruleName string) (string, error
 	return string(script), nil
 }
 
-func FetchRuleset(ruleSetLocation *RulesetLocation) error {
-	err := ruleSetLocation.CreateDir()
+func FetchRuleset(rulesetLocation *RulesetLocation) error {
+	err := rulesetLocation.CreateDir()
 	if err != nil {
-		println(err.Error())
 		return err
 	}
 
-	_, err = git.PlainClone(ruleSetLocation.GetRulesetPath(), false, &git.CloneOptions{
-		URL: *ruleSetLocation.GetFullUrl(),
+	fullRulesetUrl := *rulesetLocation.GetFullUrl()
+
+	_, err = git.PlainClone(rulesetLocation.GetRulesetPath(), false, &git.CloneOptions{
+		URL: fullRulesetUrl,
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		return nil
+		repo, err := git.PlainOpen(rulesetLocation.GetRulesetPath())
+		if err != nil {
+			return err
+		}
+
+		worktree, err := repo.Worktree()
+		if err != nil {
+			return err
+		}
+
+		// We force pull because nobody should modify by themselves rulesets in their spito directory
+		err = worktree.Pull(&git.PullOptions{Force: true, RemoteURL: fullRulesetUrl})
+		if errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return nil
+		}
+
+		return err
 	}
 	return err
 }

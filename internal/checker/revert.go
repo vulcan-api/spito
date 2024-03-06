@@ -19,7 +19,7 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 		}
 
 		isPath, err := path.PathExists(rule.Url)
-		if err != nil {
+		if err != nil || rule.Url == "" {
 			isPath = false
 		}
 

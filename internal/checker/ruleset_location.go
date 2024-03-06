@@ -57,6 +57,7 @@ func NewRulesetLocation(identifierOrPath string, isPath bool) (RulesetLocation, 
 
 	// check if simpleUrlOrPath is url:
 	if !strings.Contains(identifierOrPath, ".") {
+		println("-----------------------------------------------------")
 		simpleUrl := GetDefaultRepoPrefix() + "/" + identifierOrPath
 		simpleUrl = strings.ToLower(simpleUrl)
 
@@ -82,7 +83,14 @@ func NewRulesetLocation(identifierOrPath string, isPath bool) (RulesetLocation, 
 
 	r.simpleUrlOrPath = strings.ToLower(simpleUrl)
 
+	println("=================================================")
 	err := FetchRuleset(&r)
+	println("=================================================")
+	if err != nil {
+		println("---------------------------------------------------")
+		println("COO KURWA!?", err.Error())
+		println("---------------------------------------------------")
+	}
 	return r, err
 }
 
@@ -111,7 +119,7 @@ func (r *RulesetLocation) GetRulesetPath() string {
 		return r.simpleUrlOrPath
 	}
 
-	return getRuleSetsDir()
+	return filepath.Join(getRuleSetsDir(), r.simpleUrlOrPath)
 }
 
 func (r *RulesetLocation) IsRuleSetDownloaded() bool {
