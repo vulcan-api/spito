@@ -61,7 +61,9 @@ func NewRulesetLocation(identifierOrPath string, isPath bool) (RulesetLocation, 
 		simpleUrl = strings.ToLower(simpleUrl)
 
 		r.simpleUrlOrPath = simpleUrl
-		return r, nil
+
+		err := FetchRuleset(&r)
+		return r, err
 	}
 
 	simpleUrl := identifierOrPath
@@ -73,7 +75,7 @@ func NewRulesetLocation(identifierOrPath string, isPath bool) (RulesetLocation, 
 	if simpleUrl[urlLen-1] == '/' {
 		simpleUrl = simpleUrl[:urlLen-1]
 	}
-	// I still wonder whether it is good idea:
+	// I still wonder whether it is a good idea:
 	if simpleUrl[urlLen-4:] == ".git" {
 		simpleUrl = simpleUrl[:urlLen-4]
 	}
