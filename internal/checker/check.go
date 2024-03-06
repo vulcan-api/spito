@@ -127,7 +127,11 @@ func _internalCheckRule(
 	previousRuleConf *shared.RuleConfigLayout,
 	isPath bool,
 ) bool {
-	rulesetLocation := NewRulesetLocation(identifierOrPath, isPath)
+	rulesetLocation, err := NewRulesetLocation(identifierOrPath, isPath)
+	if err != nil {
+		importLoopData.ErrChan <- err
+		panic(nil)
+	}
 	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory

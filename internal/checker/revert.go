@@ -2,9 +2,9 @@ package checker
 
 import (
 	"errors"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
-	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
 )
@@ -23,7 +23,10 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 			isPath = false
 		}
 
-		rulesetLocation := NewRulesetLocation(rule.Url, isPath)
+		rulesetLocation, err := NewRulesetLocation(rule.Url, isPath)
+		if err != nil {
+			return err
+		}
 
 		var script string
 		if rule.IsScript {

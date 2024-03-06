@@ -2,8 +2,8 @@ package checker
 
 import (
 	"fmt"
-	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/yuin/gopher-lua"
 	"os"
 	"path/filepath"
@@ -64,7 +64,8 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 		doesRulePass, err := CheckRuleByIdentifier(importLoopData, rulesetIdentifier, ruleName)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
+		rulesetLocation, err := NewRulesetLocation(rulesetIdentifier, false)
+		handleErrorAndPanic(importLoopData.ErrChan, err)
 
 		if err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", ruleName+".lua")); err != nil {
 			importLoopData.ErrChan <- err
