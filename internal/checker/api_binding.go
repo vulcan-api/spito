@@ -142,6 +142,7 @@ func getShNamespace(L *lua.LState) lua.LValue {
 	shellNamespace := newLuaNamespace()
 
 	shellNamespace.AddFn("command", api.ShellCommand)
+	shellNamespace.AddFn("exec", api.Exec)
 
 	return shellNamespace.createTable(L)
 }

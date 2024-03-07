@@ -1,6 +1,11 @@
 package api
 
-import "os/exec"
+import (
+	"os"
+	"os/exec"
+	"strings"
+	"syscall"
+)
 
 func ShellCommand(script string) (string, error) {
 	cmd := exec.Command("sh", "-c", script)
@@ -11,4 +16,8 @@ func ShellCommand(script string) (string, error) {
 	}
 
 	return string(out), nil
+}
+
+func Exec(command string) error {
+	return syscall.Exec(command, strings.Split(command, " "), os.Environ())
 }
