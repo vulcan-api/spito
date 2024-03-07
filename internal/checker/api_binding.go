@@ -59,6 +59,7 @@ func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	sysInfoNamespace.AddFn("sleep", api.Sleep)
 	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
 	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
+	sysInfoNamespace.AddFn("getRandomLetters", api.GetRandomLetters)
 
 	return sysInfoNamespace.createTable(L)
 }
