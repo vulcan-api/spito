@@ -171,7 +171,6 @@ type AurResponseLayout struct {
 
 func getListOfAURPackages(packages ...string) ([]string, error) {
 
-	userinfo.ChangeToRoot()
 	requestValues := url.Values{
 		"arg[]": packages,
 	}
@@ -240,7 +239,10 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 	packageFilename := files[packageFileIndex].Name()
 	packageManagerCommand :=
 		exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, packageFilename))
-	return packageManagerCommand.Run()
+
+	err = packageManagerCommand.Run()
+	userinfo.ChangeToUser()	
+	return err
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
@@ -309,7 +311,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 	}
 	_ = bar.Add(1)
-	userinfo.ChangeToRoot()
+	userinfo.ChangeToUser()
 	return nil
 }
 
