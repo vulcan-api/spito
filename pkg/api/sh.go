@@ -1,15 +1,13 @@
 package api
 
 import (
+	"errors"
+	"github.com/avorty/spito/pkg/userinfo"
 	"os"
 	"os/exec"
-	"strings"
-	"path/filepath"
-	"fmt"
-	"github.com/avorty/spito/pkg/userinfo"
-	"syscall"
-	"errors"
 	"strconv"
+	"strings"
+	"syscall"
 )
 
 func ShellCommand(script string) (string, error) {
@@ -36,19 +34,13 @@ func Exec(command string) error {
 
 	uid, err := strconv.Atoi(regularUser.Uid)
 	if err != nil {
-		return err	
+		return err
 	}
 
 	err = syscall.Setreuid(uid, uid)
 	if err != nil {
-		return err	
+		return err
 	}
 
-	const executablesDirectory = "/usr/bin"
-	argv := strings.Split(command, " ")
-	argv[0] = filepath.Join(executablesDirectory, command)
-
-	err = syscall.Exec(argv[0], argv, os.Environ())
-	fmt.Println(err.Error())
-	return err
+	return syscall.Exec(command, strings.Split(command, " "), os.Environ())
 }
