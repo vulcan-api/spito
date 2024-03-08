@@ -134,7 +134,6 @@ func (r *RevertSteps) Apply(revertFn func(rule Rule) error) error {
 			return err
 		}
 	}
-
 	for _, rule := range r.RulesToRevert {
 		if err := revertFn(rule); err != nil {
 			return err

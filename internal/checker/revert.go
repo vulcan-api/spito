@@ -27,7 +27,6 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 		if err != nil {
 			return err
 		}
-
 		var script string
 		if rule.IsScript {
 			script = rule.NameOrScript
@@ -37,6 +36,45 @@ func GetRevertRuleFn(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error 
 				return err
 			}
 		}
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		ruleConfigLayout := shared.RuleConfigLayout{Path: cwd}
+		script = processScript(script, &ruleConfigLayout)
+
+		// TODO: Passing here cwd is not the best idea
+		L, err := GetLuaState(script, &importLoopData, &ruleConfigLayout, cwd)
+		if err != nil {
+			return err
+		}
+		defer L.Close()
+
+		pass, err := ExecuteLuaRevert(L)
+
+		if err != nil {
+			return err
+		}
+		if !pass {
+			return errors.New("revert failed by returning false")
+		}
+
+		return nil
+	}
+}
+
+func GetRevertRuleFnFromScript(infoApi shared.InfoInterface) func(rule vrctFs.Rule) error {
+	return func(rule vrctFs.Rule) error {
+		importLoopData := shared.ImportLoopData{
+			VRCT:         vrct.RuleVRCT{},
+			InfoApi:      infoApi,
+			RulesHistory: make(shared.RulesHistory),
+			ErrChan:      make(chan error),
+		}
+
+		script := rule.NameOrScript
 
 		cwd, err := os.Getwd()
 		if err != nil {

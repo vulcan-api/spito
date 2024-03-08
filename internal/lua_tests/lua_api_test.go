@@ -68,7 +68,7 @@ func finalizeRevertFuncTest(params afterLuaTestParams) error {
 		return err
 	}
 
-	err = revertSteps.Apply(checker.GetRevertRuleFn(cmdApi.InfoApi{}))
+	err = revertSteps.Apply(checker.GetRevertRuleFnFromScript(cmdApi.InfoApi{}))
 	if err != nil {
 		println("3*********************************************************")
 		return err
