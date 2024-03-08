@@ -59,25 +59,21 @@ func finalizeGitTest(_ afterLuaTestParams) error {
 func finalizeRevertFuncTest(params afterLuaTestParams) error {
 	revertSteps, err := vrctFs.NewRevertSteps()
 	if err != nil {
-		println("1*********************************************************")
 		return err
 	}
 
 	if err := revertSteps.Deserialize(params.revertNum); err != nil {
-		println("2*********************************************************")
 		return err
 	}
 
 	err = revertSteps.Apply(checker.GetRevertRuleFnFromScript(cmdApi.InfoApi{}))
 	if err != nil {
-		println("3*********************************************************")
 		return err
 	}
 
 	filePath := "/tmp/spito-test/2fr4738gh5132"
 	exists, err := path.PathExists(filePath)
 	if err != nil {
-		println("4*********************************************************")
 		return err
 	}
 

@@ -7,7 +7,6 @@ function main()
     -- I create it manually because I want to test the revert function
     local _, err = api.sh.command("mkdir -p " .. spitoTestPath)
     if err then
-        api.info.log("____________________________________________________________--")
         api.info.error(err)
         return false
     end
