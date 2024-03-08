@@ -2,8 +2,8 @@ package checker
 
 import (
 	"errors"
-	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
 	"gopkg.in/yaml.v3"
 	"io/fs"
 	"os"
@@ -13,8 +13,7 @@ import (
 )
 
 func getRuleSetsDir() string {
-	dir := path.UserHomeDir
-	return filepath.Join(dir, shared.LocalStateSpitoPath, "rulesets")
+	return filepath.Join(shared.LocalStateSpitoPath, "rulesets")
 }
 
 func initRequiredTmpDirs() error {
@@ -42,18 +41,18 @@ type DependencyTreeLayout struct {
 	Dependencies map[string][]string `yaml:"dependencies"`
 }
 
-// NewRulesetLocation e.g. from: https://github.com/avorty/spito-ruleset.git to avorty/spito-ruleset
-func NewRulesetLocation(identifierOrPath string, isPath bool) RulesetLocation {
+// NewRulesetLocation e.g., from: https://github.com/avorty/spito-ruleset.git to avorty/spito-ruleset
+func NewRulesetLocation(identifierOrPath string, isPath bool) (RulesetLocation, error) {
 	r := RulesetLocation{}
 	r.IsPath = isPath
 
 	if isPath {
 		absolutePath, err := filepath.Abs(identifierOrPath)
 		if err != nil {
-			return RulesetLocation{}
+			return RulesetLocation{}, err
 		}
 		r.simpleUrlOrPath = absolutePath
-		return r
+		return r, nil
 	}
 
 	// check if simpleUrlOrPath is url:
@@ -62,7 +61,9 @@ func NewRulesetLocation(identifierOrPath string, isPath bool) RulesetLocation {
 		simpleUrl = strings.ToLower(simpleUrl)
 
 		r.simpleUrlOrPath = simpleUrl
-		return r
+
+		err := FetchRuleset(&r)
+		return r, err
 	}
 
 	simpleUrl := identifierOrPath
@@ -74,13 +75,15 @@ func NewRulesetLocation(identifierOrPath string, isPath bool) RulesetLocation {
 	if simpleUrl[urlLen-1] == '/' {
 		simpleUrl = simpleUrl[:urlLen-1]
 	}
-	// I still wonder whether it is good idea:
+	// I still wonder whether it is a good idea:
 	if simpleUrl[urlLen-4:] == ".git" {
 		simpleUrl = simpleUrl[:urlLen-4]
 	}
 
 	r.simpleUrlOrPath = strings.ToLower(simpleUrl)
-	return r
+
+	err := FetchRuleset(&r)
+	return r, err
 }
 
 func (r *RulesetLocation) GetIdentifier() string {
@@ -108,8 +111,7 @@ func (r *RulesetLocation) GetRulesetPath() string {
 		return r.simpleUrlOrPath
 	}
 
-	dir := getRuleSetsDir()
-	return dir + "/" + r.simpleUrlOrPath
+	return filepath.Join(getRuleSetsDir(), r.simpleUrlOrPath)
 }
 
 func (r *RulesetLocation) IsRuleSetDownloaded() bool {
@@ -120,7 +122,12 @@ func (r *RulesetLocation) IsRuleSetDownloaded() bool {
 func InstallDependency(ruleIdentifier string, waitGroup *sync.WaitGroup, errChan chan error) {
 	var err error
 	defer waitGroup.Done()
-	dependencyLocation := NewRulesetLocation(strings.Split(ruleIdentifier, "@")[0], false)
+	dependencyLocation, err := NewRulesetLocation(strings.Split(ruleIdentifier, "@")[0], false)
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+
 	if !dependencyLocation.IsRuleSetDownloaded() {
 		err = FetchRuleset(&dependencyLocation)
 	}
@@ -164,7 +171,10 @@ func (r *RulesetLocation) createLockfile(errChan chan error) error {
 	for ruleName, ruleDependencies := range basicDependencyTree.Dependencies {
 		for _, dependencyString := range ruleDependencies {
 			dependencyRulesetName, dependencyRuleName, _ := strings.Cut(dependencyString, "@")
-			rulesetLocation := NewRulesetLocation(dependencyRulesetName, false)
+			rulesetLocation, err := NewRulesetLocation(dependencyRulesetName, false)
+			if err != nil {
+				return err
+			}
 
 			doesLockfileExist, err := path.PathExists(filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename))
 			if err != nil {

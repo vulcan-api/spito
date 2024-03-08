@@ -5,8 +5,8 @@ import (
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
 	daemontracker "github.com/avorty/spito/pkg"
-	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
@@ -66,7 +66,7 @@ func finalizeRevertFuncTest(params afterLuaTestParams) error {
 		return err
 	}
 
-	err = revertSteps.Apply(checker.GetRevertRuleFn(cmdApi.InfoApi{}))
+	err = revertSteps.Apply(checker.GetRevertRuleFnFromScript(cmdApi.InfoApi{}))
 	if err != nil {
 		return err
 	}

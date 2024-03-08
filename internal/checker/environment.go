@@ -95,7 +95,10 @@ func (e *AppliedEnvironments) RevertOther(importLoopData *shared.ImportLoopData,
 
 func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identifierOrPath string, envName string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
-		rulesetLocation := NewRulesetLocation(identifierOrPath, false)
+		rulesetLocation, err := NewRulesetLocation(identifierOrPath, false)
+		if err != nil {
+			return false, err
+		}
 		rulesetConfiguration, err := GetRulesetConf(&rulesetLocation)
 		if err != nil {
 			return false, err
@@ -124,7 +127,7 @@ func ApplyEnvironmentByIdentifier(importLoopData *shared.ImportLoopData, identif
 func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string, scriptPath string) error {
 	doesEnvPass, err := checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
 		importLoopData.RulesHistory.Push(scriptPath, script, true, true)
-	
+
 		ruleConf := shared.RuleConfigLayout{}
 		script = processScript(script, &ruleConf)
 		if !ruleConf.Environment {

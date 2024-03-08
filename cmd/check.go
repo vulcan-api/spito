@@ -109,7 +109,8 @@ var checkCmd = &cobra.Command{
 			}
 		}()
 
-		rulesetLocation := checker.NewRulesetLocation(identifierOrPath, isPath)
+		rulesetLocation, err := checker.NewRulesetLocation(identifierOrPath, isPath)
+		handleError(err)
 		rulesetConfig, err := checker.GetRulesetConf(&rulesetLocation)
 		handleError(err)
 

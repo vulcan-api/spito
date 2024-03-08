@@ -127,7 +127,11 @@ func _internalCheckRule(
 	previousRuleConf *shared.RuleConfigLayout,
 	isPath bool,
 ) bool {
-	rulesetLocation := NewRulesetLocation(identifierOrPath, isPath)
+	rulesetLocation, err := NewRulesetLocation(identifierOrPath, isPath)
+	if err != nil {
+		importLoopData.ErrChan <- err
+		panic(nil)
+	}
 	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory
@@ -143,13 +147,6 @@ func _internalCheckRule(
 	}
 	rulesHistory.Push(identifier, ruleName, true, false)
 
-	if !rulesetLocation.IsPath {
-		err := FetchRuleset(&rulesetLocation)
-		if err != nil {
-			errChan <- errors.New("Failed to fetch rules from: " + identifier + "\n" + err.Error())
-			panic(nil)
-		}
-	}
 	lockfilePath := filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename)
 	_, lockfileErr := os.ReadFile(lockfilePath)
 
