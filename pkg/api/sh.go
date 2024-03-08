@@ -42,5 +42,6 @@ func Exec(command string) error {
 		return err
 	}
 
-	return syscall.Exec(command, strings.Split(command, " "), os.Environ())
+	argv := strings.Split(command, " ")
+	return syscall.Exec(argv[0], argv, os.Environ())
 }
