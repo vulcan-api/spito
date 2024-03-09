@@ -21,6 +21,32 @@ func ShellCommand(script string) (string, error) {
 	return string(out), nil
 }
 
+func splitArgs(command string) []string {
+	command = strings.TrimSpace(command)
+	var argv []string
+	var currentArg string
+	isInQuotes := false
+
+	for _, char := range command {
+		switch {
+		case char == '"':
+			isInQuotes = !isInQuotes
+			break
+		case char == ' ' && !isInQuotes:
+			argv = append(argv, currentArg)
+			currentArg = ""
+			break
+		default:
+			currentArg += string(char)
+		}
+	}
+
+	if currentArg != "" {
+		argv = append(argv, currentArg)
+	}
+	return argv
+}
+
 func Exec(command string) error {
 
 	if strings.TrimSpace(command) == "" {
@@ -42,6 +68,6 @@ func Exec(command string) error {
 		return err
 	}
 
-	argv := strings.Split(command, " ")
+	argv := splitArgs(command)
 	return syscall.Exec(argv[0], argv, os.Environ())
 }
