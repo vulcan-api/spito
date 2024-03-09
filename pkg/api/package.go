@@ -171,7 +171,6 @@ type AurResponseLayout struct {
 
 func getListOfAURPackages(packages ...string) ([]string, error) {
 
-	userinfo.ChangeToRoot()
 	requestValues := url.Values{
 		"arg[]": packages,
 	}
@@ -220,7 +219,6 @@ func getListOfAURPackages(packages ...string) ([]string, error) {
 }
 
 func installPackageFromFile(packageName string, workingDirectory string) error {
-	userinfo.ChangeToRoot()
 	const pacmanPackageFileExtension = ".tar.zst"
 	files, err := os.ReadDir(workingDirectory)
 	if err != nil {
@@ -238,9 +236,18 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 	}
 
 	packageFilename := files[packageFileIndex].Name()
+
 	packageManagerCommand :=
 		exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, packageFilename))
-	return packageManagerCommand.Run()
+
+	userinfo.ChangeToRoot()
+	err = packageManagerCommand.Run()
+	if err != nil {
+		changeUserError := userinfo.ChangeToUser()
+		return errors.Join(err, changeUserError)
+	}
+	err = userinfo.ChangeToUser()
+	return err
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
@@ -309,8 +316,8 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 	}
 	_ = bar.Add(1)
-	userinfo.ChangeToRoot()
-	return nil
+	err = userinfo.ChangeToUser()
+	return err
 }
 
 func installRegularPackages(neededOnly bool, packages ...string) error {
@@ -321,8 +328,16 @@ func installRegularPackages(neededOnly bool, packages ...string) error {
 	}
 	argv = append(argv, packages...)
 
+	userinfo.ChangeToRoot()
 	packageManagerCommand := exec.Command(packageManager, argv...)
-	return packageManagerCommand.Run()
+	err := packageManagerCommand.Run()
+	if err != nil {
+		changeUserError := userinfo.ChangeToUser()
+		return errors.Join(err, changeUserError)
+	}
+
+	err = userinfo.ChangeToUser()
+	return err
 }
 
 func InstallPackages(packageStrings ...string) error {

@@ -112,7 +112,6 @@ func (p *FilePrototype) Save() error {
 	if err != nil {
 		return err
 	}
-
 	return os.WriteFile(p.getVirtualPath(), rawBson, os.ModePerm)
 }
 

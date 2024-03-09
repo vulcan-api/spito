@@ -57,6 +57,8 @@ func (v *VRCTFs) CreateFile(filePath string, content []byte, isOptional bool) er
 }
 
 func (v *VRCTFs) ReadFile(filePath string) ([]byte, error) {
+	path.ExpandTilde(&filePath)
+
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return nil, err
@@ -73,23 +75,25 @@ func (v *VRCTFs) ReadFile(filePath string) ([]byte, error) {
 		return file, nil
 	}
 
-	if len(filePrototype.Layers) == 0 {
+	/*if len(filePrototype.Layers) == 0 {
 		return nil, os.ErrNotExist
-	}
+	}*/
 
 	return filePrototype.SimulateFile()
 }
 
-func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
-	path, err := filepath.Abs(path)
+func (v *VRCTFs) Stat(filePath string) (os.FileInfo, error) {
+
+	path.ExpandTilde(&filePath)
+	filePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	splitPath := strings.Split(path, "/")
+	splitPath := strings.Split(filePath, "/")
 	name := splitPath[len(splitPath)-1]
 
-	prototypePath := fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, path)
+	prototypePath := fmt.Sprintf("%s%s.prototype.bson", v.virtualFSPath, filePath)
 
 	stat, err := os.Stat(prototypePath)
 	if err != nil {
@@ -98,7 +102,7 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 		}
 	} else {
 		filePrototype := FilePrototype{}
-		if err := filePrototype.Read(v.virtualFSPath, path); err != nil {
+		if err := filePrototype.Read(v.virtualFSPath, filePath); err != nil {
 			return nil, err
 		}
 		content, err := filePrototype.SimulateFile()
@@ -115,7 +119,7 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 		}, nil
 	}
 
-	fileStat, err := os.Stat(path)
+	fileStat, err := os.Stat(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -129,15 +133,16 @@ func (v *VRCTFs) Stat(path string) (os.FileInfo, error) {
 	}, nil
 }
 
-func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
+func (v *VRCTFs) ReadDir(dirPath string) ([]os.DirEntry, error) {
 	dirEntries := make(map[string]os.DirEntry)
 
-	path, err := filepath.Abs(path)
+	path.ExpandTilde(&dirPath)
+	dirPath, err := filepath.Abs(dirPath)
 	if err != nil {
 		return nil, err
 	}
 
-	realFsEntries, err := os.ReadDir(path)
+	realFsEntries, err := os.ReadDir(dirPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -148,7 +153,7 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 		}
 	}
 
-	vrctEntries, err := os.ReadDir(filepath.Join(v.virtualFSPath, path))
+	vrctEntries, err := os.ReadDir(filepath.Join(v.virtualFSPath, dirPath))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -169,7 +174,7 @@ func (v *VRCTFs) ReadDir(path string) ([]os.DirEntry, error) {
 				isDir:     entry.IsDir(),
 				entryType: entry.Type(),
 				StatFn: func() (fs.FileInfo, error) {
-					return v.Stat(path)
+					return v.Stat(dirPath)
 				},
 			}
 		}
