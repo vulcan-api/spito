@@ -25,12 +25,21 @@ func splitArgs(command string) []string {
 	command = strings.TrimSpace(command)
 	var argv []string
 	var currentArg string
+	previousQuote := int32(0)
+
 	isInQuotes := false
 
 	for _, char := range command {
+		isOpeningQuote := previousQuote == 0 && (char == '"' || char == '\'')
+		isClosingQuote := (previousQuote == '"' && char == '"') || (previousQuote == '\'' && char == '\'')
 		switch {
-		case char == '"':
+		case isOpeningQuote || isClosingQuote:
 			isInQuotes = !isInQuotes
+			if isOpeningQuote {
+				previousQuote = char
+			} else {
+				previousQuote = 0
+			}
 			break
 		case char == ' ' && !isInQuotes:
 			argv = append(argv, currentArg)
