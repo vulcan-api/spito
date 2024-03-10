@@ -2,10 +2,8 @@ package api
 
 import (
 	"errors"
-	"github.com/avorty/spito/pkg/userinfo"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"syscall"
 )
@@ -57,24 +55,8 @@ func splitArgs(command string) []string {
 }
 
 func Exec(command string) error {
-
 	if strings.TrimSpace(command) == "" {
 		return errors.New("command cannot be empty")
-	}
-
-	regularUser, err := userinfo.GetRegularUser()
-	if err != nil {
-		return err
-	}
-
-	uid, err := strconv.Atoi(regularUser.Uid)
-	if err != nil {
-		return err
-	}
-
-	err = syscall.Setreuid(uid, uid)
-	if err != nil {
-		return err
 	}
 
 	argv := splitArgs(command)
