@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"os"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/zcalusic/sysinfo"
@@ -97,4 +98,8 @@ func GetRandomLetters(length int) string {
 		result[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(result)
+}
+
+func GetEnv(variableName string) string {
+	return os.Getenv(variableName)
 }
