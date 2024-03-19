@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/avorty/spito/cmd/cmdApi"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/mgo.v2/bson"
@@ -44,7 +45,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("the token cannot be empty"))
 	}
 
-	if exists, _ := shared.PathExists(shared.ConfigFilename); isLoggingInLocally && !exists {
+	if exists, _ := path.PathExists(shared.ConfigFilename); isLoggingInLocally && !exists {
 		printErrorAndExit(errors.New("please run this command inside a spito ruleset"))
 	}
 
@@ -75,12 +76,12 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 		printErrorAndExit(errors.New("your token is invalid. Please check if the token really belongs to your account"))
 	}
 	secretFilePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
+		path.GetEnvWithDefaultValue("XDG_STATE_HOME", shared.LocalStateSpitoPath),
 		secretDirectoryName,
 		tokenStorageFilename)
-	err = shared.ExpandTilde(&secretFilePath)
+	err = path.ExpandTilde(&secretFilePath)
 	handleError(err)
-	err = os.MkdirAll(filepath.Dir(secretFilePath), shared.DirectoryPermissions)
+	err = os.MkdirAll(filepath.Dir(secretFilePath), path.DirectoryPermissions)
 
 	if err != nil && !os.IsExist(err) {
 		err = httpResponse.Body.Close()
@@ -90,7 +91,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 
 	tokenData := TokenStorageLayout{}
 
-	if doesTokenFileExists, _ := shared.PathExists(secretFilePath); doesTokenFileExists {
+	if doesTokenFileExists, _ := path.PathExists(secretFilePath); doesTokenFileExists {
 		tokenFileRaw, err := os.ReadFile(secretFilePath)
 		handleError(err)
 		err = bson.Unmarshal(tokenFileRaw, &tokenData)
@@ -112,7 +113,7 @@ func onLoginCommand(cmd *cobra.Command, args []string) {
 	bsonOutput, err := bson.Marshal(tokenData)
 	handleError(err)
 
-	err = os.WriteFile(secretFilePath, bsonOutput, shared.FilePermissions)
+	err = os.WriteFile(secretFilePath, bsonOutput, path.FilePermissions)
 	handleError(err)
 
 	cmdApi.InfoApi{}.Log("successfully logged into the spito store")

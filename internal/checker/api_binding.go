@@ -1,20 +1,22 @@
 package checker
 
 import (
+	"reflect"
+
 	"github.com/avorty/spito/pkg/api"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"github.com/yuin/gopher-lua"
 	luar "layeh.com/gopher-luar"
-	"reflect"
 )
 
-// Every cmdApi needs to be attached here in order to be available:
+// Every cmdApi needs to be attached here to be available:
 func attachApi(importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, L *lua.LState) {
 	apiNamespace := newLuaNamespace()
 
 	apiNamespace.AddField("pkg", getPackageNamespace(importLoopData, L))
 	apiNamespace.AddField("sys", getSysInfoNamespace(L))
+	apiNamespace.AddField("daemon", getDaemonApiNamespace(importLoopData, L))
 	apiNamespace.AddField("fs", getFsNamespace(importLoopData, L))
 	apiNamespace.AddField("info", getInfoNamespace(importLoopData, L))
 	apiNamespace.AddField("git", getGitNamespace(importLoopData, L))
@@ -54,19 +56,35 @@ func getPackageNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) l
 func getSysInfoNamespace(L *lua.LState) lua.LValue {
 	sysInfoNamespace := newLuaNamespace()
 
+	sysInfoNamespace.AddFn("sleep", api.Sleep)
 	sysInfoNamespace.AddFn("getDistro", api.GetDistro)
-	sysInfoNamespace.AddFn("getDaemon", api.GetDaemon)
 	sysInfoNamespace.AddFn("getInitSystem", api.GetInitSystem)
+	sysInfoNamespace.AddFn("getRandomLetters", api.GetRandomLetters)
+	sysInfoNamespace.AddFn("getEnv", api.GetEnv)
 
 	return sysInfoNamespace.createTable(L)
+}
+
+func getDaemonApiNamespace(importLoopData *shared.ImportLoopData, L *lua.LState) lua.LValue {
+	daemonNamespace := newLuaNamespace()
+
+	daemonApi := api.DaemonApi{ImportLoopData: importLoopData}
+
+	daemonNamespace.AddFn("start", daemonApi.StartDaemon)
+	daemonNamespace.AddFn("stop", daemonApi.StopDaemon)
+	daemonNamespace.AddFn("restart", daemonApi.RestartDaemon)
+	daemonNamespace.AddFn("enable", daemonApi.EnableDaemon)
+	daemonNamespace.AddFn("disable", daemonApi.DisableDaemon)
+
+	daemonNamespace.AddFn("get", api.GetDaemon)
+
+	return daemonNamespace.createTable(L)
 }
 
 func getFsNamespace(importLoop *shared.ImportLoopData, L *lua.LState) lua.LValue {
 	fsNamespace := newLuaNamespace()
 
-	apiFs := api.FsApi{
-		FsVRCT: &importLoop.VRCT.Fs,
-	}
+	apiFs := api.FsApi{FsVRCT: &importLoop.VRCT.Fs}
 
 	fsNamespace.AddFn("pathExists", apiFs.PathExists)
 	fsNamespace.AddFn("fileExists", apiFs.FileExists)
@@ -81,7 +99,7 @@ func getFsNamespace(importLoop *shared.ImportLoopData, L *lua.LState) lua.LValue
 	fsNamespace.AddFn("createConfig", apiFs.CreateConfig)
 	fsNamespace.AddFn("updateConfig", apiFs.UpdateConfig)
 	fsNamespace.AddFn("compareConfigs", apiFs.CompareConfigs)
-	fsNamespace.AddFn("move", apiFs.Move)
+	fsNamespace.AddFn("copy", apiFs.Copy)
 	fsNamespace.AddFn("apply", apiFs.Apply)
 	fsNamespace.AddField("config", getConfigEnums(L))
 
@@ -125,30 +143,25 @@ func getShNamespace(L *lua.LState) lua.LValue {
 	shellNamespace := newLuaNamespace()
 
 	shellNamespace.AddFn("command", api.ShellCommand)
+	shellNamespace.AddFn("exec", api.Exec)
 
 	return shellNamespace.createTable(L)
 }
 
 type LuaNamespace struct {
-	constructors map[string]reflect.Type
-	functions    map[string]interface{}
-	fields       map[string]lua.LValue
+	functions map[string]interface{}
+	fields    map[string]lua.LValue
 }
 
 func newLuaNamespace() LuaNamespace {
 	return LuaNamespace{
-		constructors: map[string]reflect.Type{},
-		functions:    make(map[string]interface{}),
-		fields:       make(map[string]lua.LValue),
+		functions: make(map[string]interface{}),
+		fields:    make(map[string]lua.LValue),
 	}
 }
 
-func (ln LuaNamespace) AddConstructor(name string, Obj reflect.Type) {
-	ln.constructors[name] = Obj
-}
-
 func (ln LuaNamespace) AddFn(name string, fn interface{}) {
-	ln.functions[name] = fn
+	ln.functions[name] = mapFunctionErrorReturnToString(fn)
 }
 
 func (ln LuaNamespace) AddField(name string, field lua.LValue) {
@@ -166,10 +179,6 @@ func (ln LuaNamespace) createTable(L *lua.LState) *lua.LTable {
 	for fnName, fn := range ln.functions {
 		L.SetField(namespaceTable, fnName, luar.New(L, fn))
 	}
-	for constrName, constrInterface := range ln.constructors {
-		constr := constructorFunction(L, constrInterface)
-		L.SetField(namespaceTable, constrName, constr)
-	}
 	for fieldName, field := range ln.fields {
 		L.SetField(namespaceTable, fieldName, field)
 	}
@@ -177,11 +186,72 @@ func (ln LuaNamespace) createTable(L *lua.LState) *lua.LTable {
 	return namespaceTable
 }
 
-func constructorFunction(L *lua.LState, Obj reflect.Type) lua.LValue {
-	return L.NewFunction(func(state *lua.LState) int {
-		obj := reflect.New(Obj)
+func isTypeError(t reflect.Type) bool {
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	return t.Implements(errorType)
+}
 
-		state.Push(luar.New(state, obj.Interface()))
-		return 1
-	})
+func mapFunctionErrorReturnToString(fn any) any {
+	fnType := reflect.TypeOf(fn)
+	reflectLValueType := reflect.TypeOf((*lua.LValue)(nil)).Elem()
+
+	if fnType.Kind() != reflect.Func {
+		// It throws panic, because if I would avoid it, fnType.NumIn() would panic which would be harder to debug
+		panic("fn argument in `mapFunctionErrorReturnToString` must be a function")
+	}
+
+	var inTypes = make([]reflect.Type, fnType.NumIn())
+	var outTypes = make([]reflect.Type, fnType.NumOut())
+
+	for i := 0; i < fnType.NumIn(); i++ {
+		inTypes[i] = fnType.In(i)
+	}
+
+	for i := 0; i < fnType.NumOut(); i++ {
+		outType := fnType.Out(i)
+
+		// If returns error, map it to string (lua.LString)
+		if isTypeError(outType) {
+			outTypes[i] = reflectLValueType
+		} else {
+			outTypes[i] = outType
+		}
+	}
+
+	// Create new function definition
+	newFnType := reflect.FuncOf(inTypes, outTypes, fnType.IsVariadic())
+
+	return reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		var fnResults []reflect.Value
+
+		// IDK why but .Call doesn't automatically detect if it is variadic
+		if newFnType.IsVariadic() {
+			fnResults = reflect.ValueOf(fn).CallSlice(args)
+		} else {
+			fnResults = reflect.ValueOf(fn).Call(args)
+		}
+
+		var newResults = make([]reflect.Value, len(fnResults))
+
+		for i, result := range fnResults {
+			// If not error - skip
+			if !isTypeError(result.Type()) {
+				newResults[i] = result
+				continue
+			}
+			var newErr lua.LValue
+
+			// If error is not nil, map it to string
+			if result.Interface() == nil {
+				newErr = lua.LNil
+			} else {
+				err := result.Interface().(error).Error()
+				newErr = lua.LString(err)
+			}
+
+			newResults[i] = reflect.ValueOf(newErr)
+		}
+
+		return newResults
+	}).Interface()
 }

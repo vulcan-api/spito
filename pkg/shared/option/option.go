@@ -53,7 +53,7 @@ const (
 
 var ParsableTypes = []Type{Int, UInt, Float, Bool}
 
-var types = map[Type]string{Any: "any", Int: "int", UInt: "uint", Float: "float", Bool: "bool", List: "list", Struct: "struct", Enum: "enum"}
+var types = map[Type]string{Any: "any", Int: "int", UInt: "uint", Float: "float", String: "string", Bool: "bool", List: "list", Struct: "struct", Enum: "enum"}
 
 func FromString(rawType string) Type {
 	for t, s := range types {

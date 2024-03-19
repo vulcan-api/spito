@@ -1,5 +1,8 @@
 package shared
 
-import "path/filepath"
+import (
+	"github.com/avorty/spito/pkg/path"
+	"path/filepath"
+)
 
-var LocalStateSpitoPath = filepath.Join(UserHomeDir, ".local/state/spito")
+var LocalStateSpitoPath = filepath.Join(path.UserHomeDir, ".local/state/spito")

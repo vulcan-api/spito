@@ -9,10 +9,7 @@ import (
 )
 
 func GetAllDownloadedRuleSets() ([]string, error) {
-	ruleSetsDir, err := getRuleSetsDir()
-	if err != nil {
-		return nil, err
-	}
+	ruleSetsDir := getRuleSetsDir()
 
 	_ = initRequiredTmpDirs() // Ignore error because it should potentially avoid errors, not cause
 	providerDirs, err := os.ReadDir(ruleSetsDir)
@@ -45,7 +42,7 @@ func GetAllDownloadedRuleSets() ([]string, error) {
 	return ruleSets, nil
 }
 
-func GetRuleConfFromScript(scriptPath string) (shared.RuleConfigLayout, error) {
+func GetRuleConfFromScriptPath(scriptPath string) (shared.RuleConfigLayout, error) {
 	ruleConf := shared.RuleConfigLayout{Path: scriptPath}
 
 	scriptRaw, err := os.ReadFile(scriptPath)

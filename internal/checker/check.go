@@ -4,15 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/userinfo"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 type Rule struct {
-	url          string
-	name         string
-	isInProgress bool
+	Url          string `json:"Url" bson:"Url"`
+	Name         string `json:"Name" bson:"Name"`
+	IsInProgress bool   `json:"IsInProgress" bson:"IsInProgress"`
 }
 
 type RulesHistory map[string]Rule
@@ -24,20 +25,20 @@ func (r RulesHistory) Contains(url string, name string) bool {
 
 func (r RulesHistory) IsRuleInProgress(url string, name string) bool {
 	val := r[url+name]
-	return val.isInProgress
+	return val.IsInProgress
 }
 
 func (r RulesHistory) Push(url string, name string, isInProgress bool) {
 	r[url+name] = Rule{
-		url:          url,
-		name:         name,
-		isInProgress: isInProgress,
+		Url:          url,
+		Name:         name,
+		IsInProgress: isInProgress,
 	}
 }
 
 func (r RulesHistory) SetProgress(url string, name string, isInProgress bool) {
 	rule := r[url+name]
-	rule.isInProgress = isInProgress
+	rule.IsInProgress = isInProgress
 }
 
 func anyToError(val any) error {
@@ -64,13 +65,22 @@ func CheckRuleByIdentifier(importLoopData *shared.ImportLoopData, identifier str
 
 func CheckRuleScript(importLoopData *shared.ImportLoopData, script string, scriptDirectory string) (bool, error) {
 	return checkAndProcessPanics(importLoopData, func(errChan chan error) (bool, error) {
+		importLoopData.RulesHistory.Push(scriptDirectory, script, true, true)
+
 		// TODO: implement preprocessing instead of hard coding ruleConf
 		ruleConf := shared.RuleConfigLayout{}
 		script, err := processScript(script, &ruleConf)
 		if err != nil {
 			return false, err
 		}
-		return ExecuteLuaMain(script, importLoopData, &ruleConf, scriptDirectory)
+
+		L, err := GetLuaState(script, importLoopData, &ruleConf, scriptDirectory)
+		if err != nil {
+			return false, err
+		}
+		defer L.Close()
+
+		return ExecuteLuaMain(L)
 	})
 }
 
@@ -120,7 +130,11 @@ func _internalCheckRule(
 	previousRuleConf *shared.RuleConfigLayout,
 	isPath bool,
 ) bool {
-	rulesetLocation := NewRulesetLocation(identifierOrPath, isPath)
+	rulesetLocation, err := NewRulesetLocation(identifierOrPath, isPath)
+	if err != nil {
+		importLoopData.ErrChan <- err
+		panic(nil)
+	}
 	identifier := rulesetLocation.GetIdentifier()
 
 	rulesHistory := &importLoopData.RulesHistory
@@ -134,15 +148,8 @@ func _internalCheckRule(
 			return true
 		}
 	}
-	rulesHistory.Push(identifier, ruleName, true)
+	rulesHistory.Push(identifier, ruleName, true, false)
 
-	if !rulesetLocation.IsPath {
-		err := FetchRuleset(&rulesetLocation)
-		if err != nil {
-			errChan <- errors.New("Failed to fetch rules from: " + identifier + "\n" + err.Error())
-			panic(nil)
-		}
-	}
 	lockfilePath := filepath.Join(rulesetLocation.GetRulesetPath(), shared.LockFilename)
 	_, lockfileErr := os.ReadFile(lockfilePath)
 
@@ -196,19 +203,26 @@ func _internalCheckRule(
 		}
 	}
 
-	isRunAsRoot, err := shared.IsRoot()
+	isRunAsRoot, err := userinfo.IsRoot()
 	if err != nil {
 		errChan <- err
 		panic(nil)
 	}
 
 	if ruleConf.Sudo && !isRunAsRoot {
-		errChan <- errors.New("tried to execute a spito rule that requires root privileges")
+		errChan <- errors.New("tried to execute a spito rule that requires root privileges (run check with sudo -E)")
 		panic(nil)
 	}
 
 	rulesHistory.SetProgress(identifier, ruleName, false)
-	doesRulePass, err := ExecuteLuaMain(processedScript, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
+
+	L, err := GetLuaState(processedScript, importLoopData, &ruleConf, rulesetLocation.GetRulesetPath())
+	if err != nil {
+		errChan <- err
+		panic(nil)
+	}
+
+	doesRulePass, err := ExecuteLuaMain(L)
 	if err != nil {
 		errChan <- err
 		panic(nil)

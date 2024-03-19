@@ -4,11 +4,13 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/avorty/spito/cmd"
+	"github.com/avorty/spito/pkg/userinfo"
 	"github.com/joho/godotenv"
 	"os"
 )
 
 func main() {
+	userinfo.ChangeToUser()
 	initEnvs()
 	cmd.Execute()
 }

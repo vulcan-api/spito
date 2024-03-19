@@ -52,7 +52,7 @@ func init() {
 
 	rootCmd.AddCommand(envCmd)
 	envCmd.AddCommand(envFileCmd)
-	
+
 	rootCmd.AddCommand(revertCmd)
 	rootCmd.AddCommand(newRulesetCommand)
 	rootCmd.AddCommand(generateRuleCommand)
@@ -64,6 +64,9 @@ func init() {
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkFileCmd.Flags().StringArrayP("options", "o", nil, "Overwrites default values of rule's options")
 	checkCmd.Flags().StringArrayP("options", "o", nil, "Overwrites default values of rule's options")
+	checkFileCmd.Flags().Bool("detached", false, "Doesn't execute itself")
+	checkCmd.Flags().Bool("detached", false, "Doesn't execute itself")
+	revertCmd.Flags().Bool("detached", false, "Doesn't execute itself")
 
 	newRulesetCommand.Flags().BoolP("non-interactive", "y", false, "If true assume default values for spito.yaml")
 	loginCommand.Flags().BoolP("local", "l", false, "If true, save login credentials inside a spito ruleset")

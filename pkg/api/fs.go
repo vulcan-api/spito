@@ -60,8 +60,8 @@ func (f *FsApi) ReadDir(path string) ([]DirData, error) {
 	return dirData, nil
 }
 
-func (f *FsApi) Move(from, to string) error {
-	return f.FsVRCT.Move(from, to)
+func (f *FsApi) Copy(from, to string) error {
+	return f.FsVRCT.Copy(from, to)
 }
 
 func RemoveComments(fileContent, singleLineStart, multiLineStart, multiLineEnd string) string {
@@ -164,7 +164,8 @@ func GetProperLines(regex string, fileContent string) ([]string, error) {
 }
 
 func (f *FsApi) Apply() (int, error) {
-	return f.FsVRCT.Apply()
+	// Because we expose it as lua api we can skip serializing revert steps
+	return f.FsVRCT.Apply([]vrctFs.Rule{}, false)
 }
 
 func (f *FsApi) CreateFile(path, content string, optional bool) error {

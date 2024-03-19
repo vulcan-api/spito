@@ -1,8 +1,11 @@
 package api
 
 import (
+	"math/rand"
+	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/zcalusic/sysinfo"
@@ -53,6 +56,10 @@ const (
 
 /* API FUNCTIONS */
 
+func Sleep(milliseconds int) {
+	time.Sleep(time.Duration(milliseconds) * time.Millisecond)
+}
+
 func GetDistro() Distro {
 	var systemInfo sysinfo.SysInfo
 	systemInfo.GetSysInfo()
@@ -82,4 +89,17 @@ func GetInitSystem() (InitSystem, error) {
 	}
 
 	return UNKNOWN, nil
+}
+
+func GetRandomLetters(length int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	result := make([]byte, length)
+	for i := range result {
+		result[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(result)
+}
+
+func GetEnv(variableName string) string {
+	return os.Getenv(variableName)
 }

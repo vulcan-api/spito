@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
-	shared "github.com/avorty/spito/pkg/shared"
+	daemontracker "github.com/avorty/spito/pkg"
+	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/vrct"
 	"github.com/avorty/spito/pkg/vrct/vrctFs"
 	"os"
@@ -12,10 +14,19 @@ import (
 	"testing"
 )
 
+type beforeLuaTestParams struct {
+	t *testing.T
+}
+
+type afterLuaTestParams struct {
+	t         *testing.T
+	revertNum int
+}
+
 type luaTest struct {
 	file       string
-	beforeTest func() error
-	afterTest  func() error
+	beforeTest func(params beforeLuaTestParams) error
+	afterTest  func(params afterLuaTestParams) error
 }
 
 const basePath = "/tmp/spito-lua-test/"
@@ -24,7 +35,7 @@ const expectedExampleJsonContent = `{"first-key": "first-val", "example-key": "e
 
 var exampleJsonPath = filepath.Join(basePath, exampleJsonName)
 
-func prepareFsTest() error {
+func prepareFsTest(_ beforeLuaTestParams) error {
 	err := os.MkdirAll(basePath, 0755)
 	if err != nil {
 		return err
@@ -32,7 +43,7 @@ func prepareFsTest() error {
 	return os.WriteFile(exampleJsonPath, []byte(`{"first-key": "first-val"}`), 0755)
 }
 
-func finalizeFsTest() error {
+func finalizeFsTest(_ afterLuaTestParams) error {
 	content, err := os.ReadFile(exampleJsonPath)
 	if err != nil {
 		return err
@@ -41,8 +52,37 @@ func finalizeFsTest() error {
 	return vrctFs.CompareConfigs(content, []byte(expectedExampleJsonContent), vrctFs.JsonConfig)
 }
 
-func finalizeGitTest() error {
+func finalizeGitTest(_ afterLuaTestParams) error {
 	return os.RemoveAll("/tmp/spito-test/nfdsa321980")
+}
+
+func finalizeRevertFuncTest(params afterLuaTestParams) error {
+	revertSteps, err := vrctFs.NewRevertSteps()
+	if err != nil {
+		return err
+	}
+
+	if err := revertSteps.Deserialize(params.revertNum); err != nil {
+		return err
+	}
+
+	err = revertSteps.Apply(checker.GetRevertRuleFnFromScript(cmdApi.InfoApi{}))
+	if err != nil {
+		return err
+	}
+
+	filePath := "/tmp/spito-test/2fr4738gh5132"
+	exists, err := path.PathExists(filePath)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		_ = os.Remove(filePath)
+		params.t.Fatalf("Revert function did not remove the `%s` file\n", filePath)
+	}
+
+	return nil
 }
 
 func TestLuaApi(t *testing.T) {
@@ -55,6 +95,7 @@ func TestLuaApi(t *testing.T) {
 		{file: "sh_test.lua"},
 		{file: "sysinfo_test.lua"},
 		{file: "git_test.lua", afterTest: finalizeGitTest},
+		{file: "revert_func.lua", afterTest: finalizeRevertFuncTest},
 	}
 
 	for _, script := range scripts {
@@ -64,7 +105,9 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if script.beforeTest != nil {
-			err = script.beforeTest()
+			err = script.beforeTest(beforeLuaTestParams{
+				t: t,
+			})
 			if err != nil {
 				t.Fatalf("error occured during preparation stage of test '%s': %s", script.file, err)
 			}
@@ -76,10 +119,11 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		runtimeData := shared.ImportLoopData{
-			VRCT:         *ruleVRCT,
-			RulesHistory: shared.RulesHistory{},
-			ErrChan:      make(chan error),
-			InfoApi:      cmdApi.InfoApi{},
+			VRCT:          *ruleVRCT,
+			RulesHistory:  shared.RulesHistory{},
+			DaemonTracker: daemontracker.NewDaemonTracker(),
+			ErrChan:       make(chan error),
+			InfoApi:       cmdApi.InfoApi{},
 		}
 
 		doesRulePass, err := checker.CheckRuleScript(&runtimeData, string(file), "")
@@ -91,7 +135,16 @@ func TestLuaApi(t *testing.T) {
 			logAndFail(t, "Rule %s did not pass!", script.file)
 		}
 
-		_, err = ruleVRCT.Apply()
+		var ruleIdentifiers []vrctFs.Rule
+		for _, rule := range runtimeData.RulesHistory {
+			ruleIdentifiers = append(ruleIdentifiers, vrctFs.Rule{
+				Url:          rule.Url,
+				NameOrScript: rule.NameOrScript,
+				IsScript:     rule.IsScript,
+			})
+		}
+
+		revertNum, err := ruleVRCT.Apply(ruleIdentifiers)
 		if err != nil {
 			return
 		}
@@ -101,9 +154,12 @@ func TestLuaApi(t *testing.T) {
 		}
 
 		if script.afterTest != nil {
-			err = script.afterTest()
+			err = script.afterTest(afterLuaTestParams{
+				t:         t,
+				revertNum: revertNum,
+			})
 			if err != nil {
-				logAndFail(t, "error occured during finalization stage of test '%s': %s", script.file, err)
+				logAndFail(t, "error occurred during finalization stage of test '%s': %s", script.file, err)
 			}
 		}
 	}

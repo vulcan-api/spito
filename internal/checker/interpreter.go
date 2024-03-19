@@ -2,6 +2,7 @@ package checker
 
 import (
 	"fmt"
+	"github.com/avorty/spito/pkg/path"
 	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/shared/option"
 	"github.com/yuin/gopher-lua"
@@ -12,9 +13,8 @@ import (
 
 const rulesetDirConstantName = "RULESET_DIR"
 
-func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, rulesetPath string) (bool, error) {
+func GetLuaState(script string, importLoopData *shared.ImportLoopData, ruleConf *shared.RuleConfigLayout, rulesetPath string) (*lua.LState, error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
-	defer L.Close()
 
 	// Standard libraries
 	lua.OpenString(L)
@@ -24,24 +24,42 @@ func ExecuteLuaMain(script string, importLoopData *shared.ImportLoopData, ruleCo
 
 	options, err := option.Compare(importLoopData.Options, ruleConf.Options)
 	if err != nil {
-		return false, err
+		return L, err
 	}
 
 	luaOptions, err := getOptions(options, L)
 	if err != nil {
-		return false, err
+		return L, err
 	}
 
 	L.SetGlobal("OPTIONS", luaOptions)
 	attachApi(importLoopData, ruleConf, L)
 	attachRuleRequiring(importLoopData, L)
 
-	if err := L.DoString(script); err != nil {
+	return L, L.DoString(script)
+}
+
+func ExecuteLuaMain(L *lua.LState) (bool, error) {
+	err := L.CallByParam(lua.P{
+		Fn:      L.GetGlobal("main"),
+		Protect: true,
+		NRet:    1,
+	})
+	if err != nil {
 		return false, err
 	}
 
-	err = L.CallByParam(lua.P{
-		Fn:      L.GetGlobal("main"),
+	return bool(L.Get(-1).(lua.LBool)), nil
+}
+
+func ExecuteLuaRevert(L *lua.LState) (bool, error) {
+	revertFn := L.GetGlobal("revert")
+	if revertFn.Type() == lua.LTNil {
+		return true, nil
+	}
+
+	err := L.CallByParam(lua.P{
+		Fn:      L.GetGlobal("revert"),
 		Protect: true,
 		NRet:    1,
 	})
@@ -137,7 +155,8 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 		doesRulePass, err := CheckRuleByIdentifier(importLoopData, rulesetIdentifier, ruleName)
 		handleErrorAndPanic(importLoopData.ErrChan, err)
 
-		rulesetLocation := NewRulesetLocation(rulesetIdentifier, false)
+		rulesetLocation, err := NewRulesetLocation(rulesetIdentifier, false)
+		handleErrorAndPanic(importLoopData.ErrChan, err)
 
 		if err = L.DoFile(filepath.Join(rulesetLocation.GetRulesetPath(), "rules", ruleName+".lua")); err != nil {
 			importLoopData.ErrChan <- err
@@ -154,7 +173,7 @@ func attachRuleRequiring(importLoopData *shared.ImportLoopData, L *lua.LState) {
 	L.SetGlobal("require_file", L.NewFunction(func(state *lua.LState) int {
 		rulePath := L.Get(1).String()
 
-		err := shared.ExpandTilde(&rulePath)
+		err := path.ExpandTilde(&rulePath)
 		if err != nil {
 			importLoopData.ErrChan <- err
 			panic(nil)

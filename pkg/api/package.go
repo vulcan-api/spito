@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/avorty/spito/pkg/shared"
+	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/userinfo"
 	"github.com/go-git/go-git/v5"
 	"github.com/oleiade/reflections"
 	"github.com/schollz/progressbar/v3"
@@ -170,7 +171,6 @@ type AurResponseLayout struct {
 
 func getListOfAURPackages(packages ...string) ([]string, error) {
 
-	shared.ChangeToRoot()
 	requestValues := url.Values{
 		"arg[]": packages,
 	}
@@ -219,7 +219,6 @@ func getListOfAURPackages(packages ...string) ([]string, error) {
 }
 
 func installPackageFromFile(packageName string, workingDirectory string) error {
-	shared.ChangeToRoot()
 	const pacmanPackageFileExtension = ".tar.zst"
 	files, err := os.ReadDir(workingDirectory)
 	if err != nil {
@@ -237,37 +236,46 @@ func installPackageFromFile(packageName string, workingDirectory string) error {
 	}
 
 	packageFilename := files[packageFileIndex].Name()
+
 	packageManagerCommand :=
 		exec.Command(packageManager, installFromFileOption, noConfirmOption, filepath.Join(workingDirectory, packageFilename))
-	return packageManagerCommand.Run()
+
+	userinfo.ChangeToRoot()
+	err = packageManagerCommand.Run()
+	if err != nil {
+		changeUserError := userinfo.ChangeToUser()
+		return errors.Join(err, changeUserError)
+	}
+	err = userinfo.ChangeToUser()
+	return err
 }
 
 func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
-	err := shared.ChangeToUser()
+	err := userinfo.ChangeToUser()
 	if err != nil {
 		return err
 	}
 
 	cachePath := filepath.Join(
-		shared.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
+		path.GetEnvWithDefaultValue("XDG_CACHE_HOME", defaultCacheLocation),
 		"spito")
 
-	err = shared.ExpandTilde(&cachePath)
+	err = path.ExpandTilde(&cachePath)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(cachePath, shared.DirectoryPermissions)
+	err = os.MkdirAll(cachePath, path.DirectoryPermissions)
 	if err != nil {
 		return err
 	}
 
 	for _, pkg := range packages {
-		err = shared.ChangeToUser()
+		err = userinfo.ChangeToUser()
 		if err != nil {
 			return err
 		}
 		repoPath := filepath.Join(cachePath, pkg)
-		if doesExist, _ := shared.PathExists(repoPath); doesExist {
+		if doesExist, _ := path.PathExists(repoPath); doesExist {
 			err = os.RemoveAll(repoPath)
 			if err != nil {
 				return err
@@ -283,7 +291,7 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Building AUR package %s...", pkg))
-		username, err := shared.GetRegularUser()
+		username, err := userinfo.GetRegularUser()
 		if err != nil {
 			return err
 		}
@@ -301,15 +309,15 @@ func installAurPackages(packages []string, bar *progressbar.ProgressBar) error {
 		}
 
 		bar.Describe(fmt.Sprintf("Installing AUR package %s...", pkg))
-		shared.ChangeToRoot()
+		userinfo.ChangeToRoot()
 		err = installPackageFromFile(pkg, repoPath)
 		if err != nil {
 			return err
 		}
 	}
 	_ = bar.Add(1)
-	shared.ChangeToRoot()
-	return nil
+	err = userinfo.ChangeToUser()
+	return err
 }
 
 func installRegularPackages(neededOnly bool, packages ...string) error {
@@ -320,13 +328,21 @@ func installRegularPackages(neededOnly bool, packages ...string) error {
 	}
 	argv = append(argv, packages...)
 
+	userinfo.ChangeToRoot()
 	packageManagerCommand := exec.Command(packageManager, argv...)
-	return packageManagerCommand.Run()
+	err := packageManagerCommand.Run()
+	if err != nil {
+		changeUserError := userinfo.ChangeToUser()
+		return errors.Join(err, changeUserError)
+	}
+
+	err = userinfo.ChangeToUser()
+	return err
 }
 
 func InstallPackages(packageStrings ...string) error {
 
-	if isRoot, err := shared.IsRoot(); !isRoot || err != nil {
+	if isRoot, err := userinfo.IsRoot(); !isRoot || err != nil {
 		fmt.Println("[error] Please run this rule as root")
 		os.Exit(1)
 	}
@@ -407,7 +423,7 @@ func InstallPackages(packageStrings ...string) error {
 }
 
 func RemovePackages(packagesToRemove ...string) error {
-	if isRoot, err := shared.IsRoot(); !isRoot || err != nil {
+	if isRoot, err := userinfo.IsRoot(); !isRoot || err != nil {
 		fmt.Println("[error] Please run this rule as root")
 		os.Exit(1)
 	}

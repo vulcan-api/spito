@@ -63,7 +63,8 @@ var newRulesetCommand = &cobra.Command{
 
 		gitUsername := getGitUsername()
 		rulesetIdentifier := gitUsername + "/" + rulesetName
-		newRulesetLocation := checker.NewRulesetLocation(rulesetIdentifier, false)
+		newRulesetLocation, err := checker.NewRulesetLocation(rulesetIdentifier, false)
+		handleError(err)
 
 		// Because we create RulesetLocation based on git identifier, we can be sure that full url is not nil
 		repositoryUrl := *newRulesetLocation.GetFullUrl()
