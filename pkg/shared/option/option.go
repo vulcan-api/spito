@@ -53,28 +53,16 @@ const (
 
 var ParsableTypes = []Type{Int, UInt, Float, Bool}
 
-func FromString(rawType string) Type {
-	switch rawType {
-	case "any":
-		return Any
-	case "int":
-		return Int
-	case "uint":
-		return UInt
-	case "float":
-		return Float
-	case "string":
-		return String
-	case "bool":
-		return Bool
-	case "list":
-		return List
-	default:
-		return Unknown
-	}
-}
-
 var types = map[Type]string{Any: "any", Int: "int", UInt: "uint", Float: "float", Bool: "bool", List: "list", Struct: "struct", Enum: "enum"}
+
+func FromString(rawType string) Type {
+	for t, s := range types {
+		if s == rawType {
+			return t
+		}
+	}
+	return Unknown
+}
 
 const unknown = "unknown"
 
@@ -87,12 +75,20 @@ func (t Type) ToString() string {
 }
 
 func GetType(rawValue any) Type {
-	for t, s := range types {
-		if s == rawValue {
-			return t
-		}
+	switch rawValue.(type) {
+	case int:
+		return Int
+	case uint:
+		return UInt
+	case float64:
+		return Float
+	case bool:
+		return Bool
+	case string:
+		return String
+	default:
+		return Unknown
 	}
-	return Unknown
 }
 
 func GetValueAndType(rawValue string) (any, Type) {
