@@ -74,46 +74,25 @@ func FromString(rawType string) Type {
 	}
 }
 
+var types = map[Type]string{Any: "any", Int: "int", UInt: "uint", Float: "float", Bool: "bool", List: "list", Struct: "struct", Enum: "enum"}
+
+const unknown = "unknown"
+
 func (t Type) ToString() string {
-	switch t {
-	case Any:
-		return "any"
-	case Int:
-		return "int"
-	case UInt:
-		return "uint"
-	case Float:
-		return "float"
-	case String:
-		return "string"
-	case Bool:
-		return "bool"
-	case List:
-		return "list"
-	case Struct:
-		return "struct"
-	case Enum:
-		return "enum"
-	default:
-		return "unknown"
+	val, ok := types[t]
+	if ok {
+		return val
 	}
+	return unknown
 }
 
 func GetType(rawValue any) Type {
-	switch rawValue.(type) {
-	case int:
-		return Int
-	case uint:
-		return UInt
-	case float64:
-		return Float
-	case bool:
-		return Bool
-	case string:
-		return String
-	default:
-		return Unknown
+	for t, s := range types {
+		if s == rawValue {
+			return t
+		}
 	}
+	return Unknown
 }
 
 func GetValueAndType(rawValue string) (any, Type) {
