@@ -13,6 +13,7 @@ type ImportLoopData struct {
 	RulesHistory   RulesHistory
 	ErrChan        chan error
 	PackageTracker package_conflict.PackageConflictTracker
+	Options        []string
 	DaemonTracker  daemon_tracker.DaemonTracker
 	DbusConn       *dbus.Conn
 	GuiMode        bool

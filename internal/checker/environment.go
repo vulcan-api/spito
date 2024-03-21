@@ -129,7 +129,11 @@ func ApplyEnvironmentScript(importLoopData *shared.ImportLoopData, script string
 		importLoopData.RulesHistory.Push(scriptPath, script, true, true)
 
 		ruleConf := shared.RuleConfigLayout{}
-		script = processScript(script, &ruleConf)
+		var err error
+		script, err = processScript(script, &ruleConf)
+		if err != nil {
+			return false, err
+		}
 		if !ruleConf.Environment {
 			return false, NotEnvironmentErr
 		}

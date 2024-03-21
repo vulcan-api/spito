@@ -2,10 +2,10 @@ package api
 
 import (
 	"math/rand"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
-	"os"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/zcalusic/sysinfo"

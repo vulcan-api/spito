@@ -62,6 +62,8 @@ func init() {
 
 	checkFileCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
 	checkCmd.Flags().Bool("gui-child-mode", false, "Tells app that it is executed by gui")
+	checkFileCmd.Flags().StringArrayP("options", "o", nil, "Overwrites default values of rule's options")
+	checkCmd.Flags().StringArrayP("options", "o", nil, "Overwrites default values of rule's options")
 	checkFileCmd.Flags().Bool("detached", false, "Doesn't execute itself")
 	checkCmd.Flags().Bool("detached", false, "Doesn't execute itself")
 	revertCmd.Flags().Bool("detached", false, "Doesn't execute itself")

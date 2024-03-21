@@ -3,6 +3,7 @@ package shared
 import (
 	"errors"
 	"fmt"
+	"github.com/avorty/spito/pkg/shared/option"
 	"path/filepath"
 )
 
@@ -15,6 +16,7 @@ type RuleConfigLayout struct {
 	Unsafe      bool   `yaml:"unsafe"`
 	Environment bool
 	Sudo        bool
+	Options     []option.Option
 }
 
 type ConfigFileLayout struct {

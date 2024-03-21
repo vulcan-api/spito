@@ -6,15 +6,14 @@ import (
 	"errors"
 	"github.com/avorty/spito/cmd/cmdApi"
 	"github.com/avorty/spito/internal/checker"
-	"github.com/avorty/spito/pkg/shared"
 	"github.com/avorty/spito/pkg/path"
+	"github.com/avorty/spito/pkg/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 )
@@ -39,10 +38,8 @@ type PublishRequestBody struct {
 	Rules  []RuleForRequest `json:"rules"`
 }
 
-func isDescriptionDecorator(decoratorCode string) bool {
-	result, err := regexp.Match(`^Description\(.*\)$`, []byte(decoratorCode))
-	handleError(err)
-	return result
+func isDescriptionDecorator(decoratorCode checker.RawDecorator) bool {
+	return decoratorCode.Type == checker.DescriptionDecorator
 }
 
 func publishPostRequest(body PublishRequestBody, token string) int {
@@ -101,7 +98,10 @@ func getToken(isLocal bool, rulesetPath string) string {
 }
 
 func getDescriptionFromDecorator(script string, rulesetPath string, rulePath string) string {
-	_, decorators := checker.GetDecorators(string(script))
+	_, decorators, err := checker.GetDecorators(script)
+	if err != nil {
+		return ""
+	}
 
 	descriptionDecoratorPosition := slices.IndexFunc(decorators, isDescriptionDecorator)
 
@@ -109,8 +109,8 @@ func getDescriptionFromDecorator(script string, rulesetPath string, rulePath str
 		return ""
 	}
 
-	decorator := &decorators[descriptionDecoratorPosition]
-	description, pathArgument, err := checker.GetDecoratorArguments(*decorator)
+	decorator := decorators[descriptionDecoratorPosition]
+	description, pathArgument, err := checker.GetDecoratorArguments(decorator.Content)
 
 	var result string
 	path, ok := pathArgument["path"]

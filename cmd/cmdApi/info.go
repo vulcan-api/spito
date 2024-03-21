@@ -29,16 +29,14 @@ func (_ InfoApi) Important(args ...any) {
 	fmt.Println(_args...)
 }
 
-func (_ InfoApi) ProgressBar(progress float32, description string) {
-	//bar := progressbar.(100, description)
-}
-
 func intoPrintArray(prefix string, args []any) []any {
 	result := make([]any, len(args)+1)
-	result[0] = "[" + prefix + "]"
 
 	for i, e := range args {
-		result[i+1] = e
+		if i == 0 {
+			result[i] = "[" + prefix + "]"
+		}
+		result[i] = fmt.Sprint(e)
 	}
 
 	return result

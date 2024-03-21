@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/avorty/spito/cmd"
-	"github.com/joho/godotenv"
 	"github.com/avorty/spito/pkg/userinfo"
+	"github.com/joho/godotenv"
 	"os"
 )
 
